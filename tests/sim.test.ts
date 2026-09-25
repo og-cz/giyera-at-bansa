@@ -14,12 +14,16 @@ import { World } from '../src/sim/world';
 
 const at = (tx: number, ty: number) => ({ x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE });
 
-function run(world: World, seconds: number, ais: AICommander[] = []): void {
+/** Advances the simulation; returns how many soldiers/vehicles died. */
+function run(world: World, seconds: number, ais: AICommander[] = []): number {
+  let deaths = 0;
   for (let t = 0; t < seconds; t += SIM_DT) {
     for (const ai of ais) ai.update(world, SIM_DT);
     world.step(SIM_DT);
+    for (const e of world.events) if (e.type === 'death') deaths++;
     world.events.length = 0;
   }
+  return deaths;
 }
 
 describe('pathfinding', () => {
@@ -159,10 +163,10 @@ describe('AI vs AI', () => {
   it.each(MAP_IDS)('plays a full skirmish on %s without errors', (id) => {
     const world = new World({ map: MAPS[id], factions: ['usaffe', 'ija'], seed: 7 });
     const ais = [new AICommander(0), new AICommander(1)];
-    run(world, 480, ais);
+    const deaths = run(world, 480, ais);
     const captured = world.points.filter((p) => p.owner !== -1).length;
     expect(captured).toBeGreaterThan(2);
     expect(world.teams[0].stats.produced + world.teams[1].stats.produced).toBeGreaterThan(4);
-    expect(world.teams[0].stats.lost + world.teams[1].stats.lost).toBeGreaterThan(0);
+    expect(deaths).toBeGreaterThan(5);
   }, 60000);
 });
