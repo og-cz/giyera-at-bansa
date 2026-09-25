@@ -1,9 +1,29 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+release/
+*.tsbuildinfo
+.vite/
+
+# Test output
 coverage/
+
+# Logs
 *.log
+npm-debug.log*
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# OS files
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Editor / tool config
 .vscode/
 .idea/
-release/
