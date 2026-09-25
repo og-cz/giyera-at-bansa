@@ -16,7 +16,7 @@ const LIST: FactionDef[] = [
     name: 'Imperial Army',
     longName: 'Imperial Japanese Army — 14th Army',
     description:
-      'Large rifle squads with long-ranged rifles, a heavy 81mm mortar and the Chi-Ha tank whose HE shells shred infantry.',
+      'Six-man rifle squads, a heavy 81mm mortar, AT rifle teams and the Chi-Ha tank whose HE shells shred infantry.',
     hq: 'ija_hq',
     roster: ['ija_riflemen', 'ija_hmg', 'ija_mortar', 'ija_at', 'ija_chiha'],
     starting: ['ija_riflemen', 'ija_riflemen'],
