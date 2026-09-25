@@ -1,0 +1,19 @@
+{
+  "name": "giyera-at-bansa",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A 2D squad-based tactical RTS inspired by Company of Heroes 2, set in the 1941-42 Philippine campaign.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2"
+  }
+}
