@@ -1,0 +1,187 @@
+import { TILE } from '../data/balance';
+import { T } from '../data/terrain';
+import { hash2 } from '../core/rng';
+import type { GameMap } from '../sim/grid';
+import { TERRAIN_BASE } from './palette';
+
+const SCALE = 2;
+const PX = TILE * SCALE;
+
+function shade(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (c: number) => Math.max(0, Math.min(255, Math.round(c + amount * 255)));
+  return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`;
+}
+
+/**
+ * Pre-rendered terrain at 2px per world unit. Only tiles that change (craters,
+ * crushed hedges) are redrawn, together with their neighbours for edge detail.
+ */
+export class TerrainLayer {
+  readonly canvas: HTMLCanvasElement;
+  private readonly ctx: CanvasRenderingContext2D;
+
+  constructor(private readonly map: GameMap) {
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = map.w * PX;
+    this.canvas.height = map.h * PX;
+    this.ctx = this.canvas.getContext('2d')!;
+    for (let ty = 0; ty < map.h; ty++) for (let tx = 0; tx < map.w; tx++) this.drawTile(tx, ty);
+  }
+
+  sync(): void {
+    const changes = this.map.changes;
+    if (changes.length === 0) return;
+    const redo = new Set<number>();
+    for (const i of changes) {
+      const tx = i % this.map.w;
+      const ty = Math.floor(i / this.map.w);
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) if (this.map.inBounds(tx + dx, ty + dy)) redo.add(this.map.idx(tx + dx, ty + dy));
+      }
+    }
+    changes.length = 0;
+    for (const i of redo) this.drawTile(i % this.map.w, Math.floor(i / this.map.w));
+  }
+
+  draw(ctx: CanvasRenderingContext2D): void {
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.canvas, 0, 0, this.map.pixelWidth, this.map.pixelHeight);
+  }
+
+  private drawTile(tx: number, ty: number): void {
+    const c = this.ctx;
+    const t = this.map.get(tx, ty);
+    const x = tx * PX;
+    const y = ty * PX;
+    const h = hash2(tx, ty);
+    c.save();
+    c.beginPath();
+    c.rect(x, y, PX, PX);
+    c.clip();
+
+    c.fillStyle = shade(TERRAIN_BASE[t] ?? '#5f7b3c', (h - 0.5) * 0.05);
+    c.fillRect(x, y, PX, PX);
+    if (t !== T.Water && t !== T.Building && t !== T.Road) this.grassSpecks(x, y, tx, ty, t);
+
+    const same = (dx: number, dy: number) => this.map.get(tx + dx, ty + dy) === t;
+    switch (t) {
+      case T.Road:
+        c.fillStyle = 'rgba(0,0,0,0.08)';
+        for (let i = 0; i < 4; i++) c.fillRect(x + hash2(tx, ty, i) * PX, y + hash2(ty, tx, i) * PX, 3, 2);
+        break;
+      case T.Paddy:
+        c.fillStyle = 'rgba(120,170,190,0.35)';
+        c.fillRect(x, y, PX, PX);
+        c.strokeStyle = 'rgba(160,210,110,0.55)';
+        c.lineWidth = 2;
+        for (let i = 4; i < PX; i += 7) {
+          c.beginPath();
+          c.moveTo(x, y + i);
+          c.lineTo(x + PX, y + i);
+          c.stroke();
+        }
+        if (!same(0, -1)) this.edge(x, y, PX, 3, '#5a4a30');
+        if (!same(0, 1)) this.edge(x, y + PX - 3, PX, 3, '#5a4a30');
+        break;
+      case T.Hedge:
+        for (let i = 0; i < 4; i++) {
+          c.fillStyle = shade('#2f5b24', (hash2(tx, ty, i + 9) - 0.5) * 0.12);
+          c.beginPath();
+          c.arc(x + 6 + hash2(tx, ty, i) * (PX - 12), y + 6 + hash2(ty, tx, i) * (PX - 12), 8 + hash2(tx, i, ty) * 4, 0, Math.PI * 2);
+          c.fill();
+        }
+        break;
+      case T.Crater:
+        c.fillStyle = '#4a3b27';
+        c.beginPath();
+        c.ellipse(x + PX / 2, y + PX / 2, PX * 0.42, PX * 0.36, h * 3, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = '#2f2518';
+        c.beginPath();
+        c.ellipse(x + PX / 2, y + PX / 2, PX * 0.25, PX * 0.2, h * 3, 0, Math.PI * 2);
+        c.fill();
+        break;
+      case T.Sandbag: {
+        const horizontal = same(-1, 0) || same(1, 0) || !(same(0, -1) || same(0, 1));
+        c.fillStyle = '#b39c6c';
+        c.strokeStyle = '#6f5f3e';
+        c.lineWidth = 1.5;
+        for (let i = 0; i < 3; i++) {
+          const bx = horizontal ? x + i * (PX / 3) + 1 : x + PX / 2 - 7;
+          const by = horizontal ? y + PX / 2 - 7 : y + i * (PX / 3) + 1;
+          c.beginPath();
+          c.roundRect(bx, by, horizontal ? PX / 3 - 2 : 14, horizontal ? 14 : PX / 3 - 2, 4);
+          c.fill();
+          c.stroke();
+        }
+        break;
+      }
+      case T.Wall:
+        c.fillStyle = '#8d8a84';
+        c.fillRect(x + 4, y + 4, PX - 8, PX - 8);
+        if (same(-1, 0)) c.fillRect(x, y + 4, 6, PX - 8);
+        if (same(1, 0)) c.fillRect(x + PX - 6, y + 4, 6, PX - 8);
+        if (same(0, -1)) c.fillRect(x + 4, y, PX - 8, 6);
+        if (same(0, 1)) c.fillRect(x + 4, y + PX - 6, PX - 8, 6);
+        c.strokeStyle = 'rgba(40,40,40,0.35)';
+        c.lineWidth = 1;
+        c.strokeRect(x + 8, y + 8, PX - 16, PX - 16);
+        break;
+      case T.Building:
+        // Thatched/tin roofs with a ridge; darker eaves on outer edges.
+        c.fillStyle = shade('#7a5236', (hash2(Math.floor(tx / 3), Math.floor(ty / 3)) - 0.5) * 0.12);
+        c.fillRect(x, y, PX, PX);
+        c.strokeStyle = 'rgba(0,0,0,0.12)';
+        c.lineWidth = 1;
+        for (let i = 3; i < PX; i += 6) {
+          c.beginPath();
+          c.moveTo(x, y + i);
+          c.lineTo(x + PX, y + i);
+          c.stroke();
+        }
+        if (!same(-1, 0)) this.edge(x, y, 4, PX, '#3b2616');
+        if (!same(1, 0)) this.edge(x + PX - 4, y, 4, PX, '#3b2616');
+        if (!same(0, -1)) this.edge(x, y, PX, 4, '#3b2616');
+        if (!same(0, 1)) this.edge(x, y + PX - 5, PX, 5, '#24170c');
+        break;
+      case T.Jungle:
+        for (let i = 0; i < 5; i++) {
+          c.fillStyle = shade('#2f5a23', (hash2(tx, ty, i + 3) - 0.5) * 0.18);
+          c.beginPath();
+          c.arc(x + hash2(tx, ty, i) * PX, y + hash2(ty, tx, i) * PX, 9 + hash2(i, tx, ty) * 7, 0, Math.PI * 2);
+          c.fill();
+        }
+        break;
+      case T.Water:
+        c.strokeStyle = 'rgba(200,230,255,0.18)';
+        c.lineWidth = 1.5;
+        for (let i = 0; i < 2; i++) {
+          const wy = y + 8 + hash2(tx, ty, i) * (PX - 16);
+          c.beginPath();
+          c.moveTo(x + 4, wy);
+          c.quadraticCurveTo(x + PX / 2, wy - 3, x + PX - 4, wy);
+          c.stroke();
+        }
+        if (!same(0, -1)) this.edge(x, y, PX, 3, 'rgba(220,210,170,0.6)');
+        if (!same(0, 1)) this.edge(x, y + PX - 3, PX, 3, 'rgba(220,210,170,0.6)');
+        if (!same(-1, 0)) this.edge(x, y, 3, PX, 'rgba(220,210,170,0.6)');
+        if (!same(1, 0)) this.edge(x + PX - 3, y, 3, PX, 'rgba(220,210,170,0.6)');
+        break;
+    }
+    c.restore();
+  }
+
+  private grassSpecks(x: number, y: number, tx: number, ty: number, t: number): void {
+    const c = this.ctx;
+    c.fillStyle = t === T.Paddy ? 'rgba(40,70,40,0.25)' : 'rgba(30,50,20,0.22)';
+    for (let i = 0; i < 5; i++) c.fillRect(x + hash2(tx, ty, i + 20) * PX, y + hash2(ty, tx, i + 20) * PX, 2, 2);
+    c.fillStyle = 'rgba(160,190,90,0.18)';
+    for (let i = 0; i < 3; i++) c.fillRect(x + hash2(tx, ty, i + 40) * PX, y + hash2(ty, tx, i + 40) * PX, 2, 2);
+  }
+
+  private edge(x: number, y: number, w: number, h: number, color: string): void {
+    this.ctx.fillStyle = color;
+    this.ctx.fillRect(x, y, w, h);
+  }
+}
