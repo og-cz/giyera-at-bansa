@@ -1,0 +1,271 @@
+import { WEAPONS } from '../data/weapons';
+import type { FactionDef, Owner, PointKind, ProjectileKind, Resources, TeamId, UnitDef, WeaponDef } from '../data/types';
+import { add, rotate, type Vec2 } from '../core/vec';
+
+export interface WeaponState {
+  def: WeaponDef;
+  cooldown: number;
+  clip: number;
+  reloading: number;
+}
+
+/** One soldier, or the single hull of a vehicle/structure. */
+export interface Model {
+  id: number;
+  pos: Vec2;
+  hp: number;
+  maxHp: number;
+  alive: boolean;
+  facing: number;
+  /** Which loadout entry this model carries; used for crew hand-over and reinforcing. */
+  loadoutIndex: number;
+  weapons: WeaponState[];
+  coverSlot: Vec2 | null;
+}
+
+export type OrderKind = 'idle' | 'move' | 'attackMove' | 'attack' | 'retreat' | 'ability';
+
+export interface Order {
+  kind: OrderKind;
+  dest?: Vec2;
+  targetId?: number;
+  abilityId?: string;
+}
+
+export type SetupState = 'packed' | 'settingUp' | 'deployed' | 'tearingDown';
+export type SuppressionState = 'normal' | 'suppressed' | 'pinned';
+
+export interface ProductionItem {
+  unitId: string;
+  remaining: number;
+}
+
+export interface AbilityChannel {
+  abilityId: string;
+  target: Vec2;
+  timer: number;
+  shots: number;
+}
+
+/** The primary gameplay entity: a squad, team, vehicle or structure. */
+export interface Squad {
+  id: number;
+  team: TeamId;
+  def: UnitDef;
+  pos: Vec2;
+  heading: number;
+  speedNow: number;
+  reversing: boolean;
+  moving: boolean;
+  blockedTime: number;
+  models: Model[];
+  order: Order;
+  queue: Order[];
+  path: Vec2[];
+  pathGoal: Vec2 | null;
+  repathTimer: number;
+  targetId: number | null;
+  scanTimer: number;
+  suppression: number;
+  suppState: SuppressionState;
+  lastSuppressed: number;
+  retreating: boolean;
+  setup: SetupState;
+  setupTimer: number;
+  setupFacing: number;
+  turret: number;
+  xp: number;
+  vet: number;
+  kills: number;
+  cooldowns: Record<string, number>;
+  channel: AbilityChannel | null;
+  reinforcing: boolean;
+  reinforceTimer: number;
+  production: ProductionItem[];
+  rally: Vec2 | null;
+  lastHurt: number;
+  lastFired: number;
+  dead: boolean;
+}
+
+export interface CapturePoint {
+  index: number;
+  name: string;
+  kind: PointKind;
+  pos: Vec2;
+  /** -1 = fully held by team 1, +1 = fully held by team 0. */
+  control: number;
+  owner: Owner;
+  contested: boolean;
+  sector: number;
+}
+
+export interface Projectile {
+  id: number;
+  team: TeamId;
+  sourceId: number | null;
+  weapon: WeaponDef;
+  from: Vec2;
+  to: Vec2;
+  t: number;
+  flight: number;
+  arc: boolean;
+}
+
+export interface TeamStats {
+  produced: number;
+  lost: number;
+  killed: number;
+}
+
+export interface TeamState {
+  id: TeamId;
+  faction: FactionDef;
+  resources: Resources;
+  income: Resources;
+  incomeMult: number;
+  pop: number;
+  tickets: number;
+  hqId: number;
+  base: Vec2;
+  spawn: Vec2;
+  retreatPoint: Vec2;
+  stats: TeamStats;
+}
+
+export type Tone = 'info' | 'good' | 'bad';
+
+export type SimEvent =
+  | { type: 'shot'; from: Vec2; to: Vec2; projectile: ProjectileKind; hit: boolean; team: TeamId }
+  | { type: 'launch'; from: Vec2; team: TeamId }
+  | { type: 'explosion'; pos: Vec2; radius: number }
+  | { type: 'death'; pos: Vec2; team: TeamId; vehicle: boolean; heading: number }
+  | { type: 'float'; pos: Vec2; text: string; tone: Tone }
+  | { type: 'notify'; team: TeamId | -1; text: string; tone: Tone; pos?: Vec2 };
+
+export function createWeaponStates(ids: readonly string[]): WeaponState[] {
+  return ids.map((id) => {
+    const def = WEAPONS[id];
+    if (!def) throw new Error(`Unknown weapon ${id}`);
+    return { def, cooldown: def.cooldown * 0.5, clip: def.clip, reloading: 0 };
+  });
+}
+
+export function loadoutIndexFor(def: UnitDef, modelIndex: number): number {
+  let acc = 0;
+  for (let i = 0; i < def.loadout.length; i++) {
+    acc += def.loadout[i].count;
+    if (modelIndex < acc) return i;
+  }
+  return Math.max(0, def.loadout.length - 1);
+}
+
+export function createModel(id: number, def: UnitDef, loadoutIndex: number, pos: Vec2): Model {
+  const entry = def.loadout[loadoutIndex];
+  return {
+    id,
+    pos: { x: pos.x, y: pos.y },
+    hp: def.modelHp,
+    maxHp: def.modelHp,
+    alive: true,
+    facing: 0,
+    loadoutIndex,
+    weapons: entry ? createWeaponStates(entry.weapons) : [],
+    coverSlot: null,
+  };
+}
+
+/** Loose rows of three, perpendicular to the heading (local x = forward). */
+export function formationOffset(i: number, n: number): Vec2 {
+  const perRow = Math.min(3, n);
+  const row = Math.floor(i / perRow);
+  const col = i % perRow;
+  const rowCount = Math.min(perRow, n - row * perRow);
+  const jitter = (((i * 37) % 7) - 3) * 0.8;
+  return { x: -row * 13 + jitter, y: (col - (rowCount - 1) / 2) * 13 };
+}
+
+/** Crew huddle behind a deployed weapon. */
+export function crewOffset(i: number): Vec2 {
+  if (i === 0) return { x: 0, y: 0 };
+  return { x: -10 - Math.floor((i - 1) / 2) * 8, y: i % 2 === 0 ? 8 : -8 };
+}
+
+export function createSquad(nextId: () => number, team: TeamId, def: UnitDef, pos: Vec2, heading: number): Squad {
+  const models: Model[] = [];
+  for (let i = 0; i < def.models; i++) {
+    const p = add(pos, rotate(formationOffset(i, def.models), heading));
+    const m = createModel(nextId(), def, loadoutIndexFor(def, i), def.kind === 'infantry' || def.kind === 'team' ? p : pos);
+    m.facing = heading;
+    models.push(m);
+  }
+  return {
+    id: nextId(),
+    team,
+    def,
+    pos: { x: pos.x, y: pos.y },
+    heading,
+    speedNow: 0,
+    reversing: false,
+    moving: false,
+    blockedTime: 0,
+    models,
+    order: { kind: 'idle' },
+    queue: [],
+    path: [],
+    pathGoal: null,
+    repathTimer: 0,
+    targetId: null,
+    scanTimer: 0,
+    suppression: 0,
+    suppState: 'normal',
+    lastSuppressed: -Infinity,
+    retreating: false,
+    setup: 'packed',
+    setupTimer: 0,
+    setupFacing: heading,
+    turret: heading,
+    xp: 0,
+    vet: 0,
+    kills: 0,
+    cooldowns: {},
+    channel: null,
+    reinforcing: false,
+    reinforceTimer: 0,
+    production: [],
+    rally: null,
+    lastHurt: -Infinity,
+    lastFired: -Infinity,
+    dead: false,
+  };
+}
+
+export const isSoft = (sq: Squad): boolean => sq.def.kind === 'infantry' || sq.def.kind === 'team';
+
+export function aliveCount(sq: Squad): number {
+  let n = 0;
+  for (const m of sq.models) if (m.alive) n++;
+  return n;
+}
+
+export function healthFraction(sq: Squad): number {
+  let hp = 0;
+  for (const m of sq.models) if (m.alive) hp += m.hp;
+  return hp / (sq.def.modelHp * sq.def.models);
+}
+
+/** Longest reach of any weapon the squad currently carries. */
+export function maxRange(sq: Squad): number {
+  let r = 0;
+  for (const m of sq.models) {
+    if (!m.alive) continue;
+    for (const w of m.weapons) if (w.def.range > r) r = w.def.range;
+  }
+  return r;
+}
+
+/** What the squad's signature weapon wants to shoot at. */
+export function preference(def: UnitDef): 'infantry' | 'vehicle' | 'any' {
+  const first = def.loadout[0]?.weapons[0];
+  return first ? WEAPONS[first].prefers : 'any';
+}
