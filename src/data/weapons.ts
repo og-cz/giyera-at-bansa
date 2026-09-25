@@ -33,11 +33,11 @@ const weapon = (id: string, name: string, stats: Partial<WeaponDef>): WeaponDef 
 const LIST: WeaponDef[] = [
   // Small arms
   weapon('m1_garand', 'M1 Garand', {
-    range: 180, accuracy: [0.6, 0.34], damage: 16, cooldown: 1.15, clip: 8, reload: 2.5,
+    range: 180, accuracy: [0.62, 0.36], damage: 16, cooldown: 1.15, clip: 8, reload: 2.5,
     suppression: 0.006, moveAccuracy: 0.55,
   }),
   weapon('arisaka', 'Type 99 Arisaka', {
-    range: 195, accuracy: [0.58, 0.38], damage: 18, cooldown: 1.45, clip: 5, reload: 2.6,
+    range: 180, accuracy: [0.56, 0.36], damage: 16, cooldown: 1.5, clip: 5, reload: 2.6,
     suppression: 0.006, moveAccuracy: 0.45,
   }),
   weapon('m1_carbine', 'M1 Carbine', {
@@ -71,22 +71,22 @@ const LIST: WeaponDef[] = [
 
   // Anti-tank
   weapon('bazooka', 'M1 Bazooka', {
-    range: 190, accuracy: [0.62, 0.42], damage: 120, penetration: [110, 85], cooldown: 5,
+    range: 215, accuracy: [0.62, 0.42], damage: 150, penetration: [110, 85], cooldown: 4.5,
     suppression: 0.05, moveAccuracy: 0, infantryAccuracy: 0.3, prefers: 'vehicle', projectile: 'rocket',
   }),
   weapon('type97_at_rifle', 'Type 97 20mm AT Rifle', {
-    range: 225, accuracy: [0.7, 0.5], damage: 40, penetration: [75, 55], cooldown: 2.6, clip: 7, reload: 6,
+    range: 225, accuracy: [0.7, 0.5], damage: 55, penetration: [75, 55], cooldown: 2.6, clip: 7, reload: 6,
     suppression: 0.03, moveAccuracy: 0, infantryAccuracy: 0.45, prefers: 'vehicle', projectile: 'shell',
   }),
 
   // Tank guns
   weapon('m6_37mm', 'M6 37mm Gun', {
-    range: 240, accuracy: [0.72, 0.5], damage: 85, penetration: [85, 65], cooldown: 3.1, suppression: 0.04,
+    range: 210, accuracy: [0.72, 0.5], damage: 70, penetration: [85, 65], cooldown: 3.1, suppression: 0.04,
     moveAccuracy: 0.7, infantryAccuracy: 0.45, turret: true, prefers: 'any', projectile: 'shell',
   }),
   weapon('type97_57mm', 'Type 97 57mm Gun', {
-    range: 230, accuracy: [0.62, 0.42], damage: 60, penetration: [48, 36], cooldown: 3.8, suppression: 0.2,
-    moveAccuracy: 0.6, aoe: 22, craterChance: 0.15, turret: true, prefers: 'infantry', projectile: 'shell',
+    range: 205, accuracy: [0.62, 0.42], damage: 45, penetration: [62, 48], cooldown: 3.8, suppression: 0.2,
+    moveAccuracy: 0.6, aoe: 18, craterChance: 0.15, turret: true, prefers: 'infantry', projectile: 'shell',
   }),
   weapon('coax_30cal', 'Coaxial .30 cal', {
     range: 190, accuracy: [0.4, 0.22], damage: 8, cooldown: 0.16, clip: 40, reload: 3.5,
