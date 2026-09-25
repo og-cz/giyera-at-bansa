@@ -66,7 +66,7 @@ const LIST: UnitDef[] = [
     description: 'Fast light tank with a 37mm gun. Keep its thin rear armour away from AT weapons.',
     modelHp: 480, cost: { manpower: 240, munitions: 0, fuel: 70 }, pop: 10, buildTime: 35,
     speed: 32, sight: 230, loadout: [{ weapons: ['m6_37mm', 'coax_30cal'], count: 1 }],
-    armor: { front: 85, rear: 45 }, radius: 14, vetXp: [800, 2000, 3600],
+    armor: { front: 75, rear: 40 }, radius: 14, vetXp: [800, 2000, 3600],
     vehicle: { turnRate: 1.9, turretRate: 1.6, length: 30, width: 18, reverseFactor: 0.6 },
   }),
 
@@ -79,7 +79,7 @@ const LIST: UnitDef[] = [
   }),
   unit({
     id: 'ija_riflemen', name: 'Hohei Rifle Squad', kind: 'infantry', role: 'line',
-    description: 'Six riflemen with long-ranged Arisakas. Fragile individually but numerous. Can throw grenades.',
+    description: 'Six riflemen with bolt-action Arisakas. Fragile individually but numerous. Can throw grenades.',
     models: 6, modelHp: 70, cost: { manpower: 260, munitions: 0, fuel: 0 }, pop: 6, buildTime: 22,
     speed: 23, sight: 215, loadout: [{ weapons: ['arisaka'], count: 6 }], canCapture: true,
     abilities: ['grenade_ija'],
@@ -108,7 +108,7 @@ const LIST: UnitDef[] = [
   unit({
     id: 'ija_chiha', name: 'Type 97 Chi-Ha', kind: 'vehicle', role: 'tank',
     description: 'Medium tank with a low-velocity 57mm gun firing high-explosive shells. Deadly to infantry.',
-    modelHp: 520, cost: { manpower: 250, munitions: 0, fuel: 65 }, pop: 10, buildTime: 35,
+    modelHp: 560, cost: { manpower: 250, munitions: 0, fuel: 65 }, pop: 10, buildTime: 35,
     speed: 27, sight: 225, loadout: [{ weapons: ['type97_57mm', 'coax_type97'], count: 1 }],
     armor: { front: 70, rear: 38 }, radius: 14, vetXp: [800, 2000, 3600],
     vehicle: { turnRate: 1.7, turretRate: 1.3, length: 30, width: 19, reverseFactor: 0.55 },
