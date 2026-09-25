@@ -50,8 +50,8 @@ export const ECONOMY: {
   popCap: number;
   maxQueue: number;
 } = {
-  start: { manpower: 420, munitions: 60, fuel: 25 },
-  base: { manpower: 280, munitions: 14, fuel: 8 },
+  start: { manpower: 480, munitions: 60, fuel: 25 },
+  base: { manpower: 340, munitions: 14, fuel: 8 },
   points: {
     victory: { manpower: 0, munitions: 10, fuel: 0 },
     munitions: { manpower: 0, munitions: 32, fuel: 0 },
