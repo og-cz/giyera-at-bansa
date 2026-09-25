@@ -1,17 +1,50 @@
 {
   "name": "giyera-at-bansa",
+  "productName": "Giyera at Bansa",
   "private": true,
   "version": "0.1.0",
   "description": "A 2D squad-based tactical RTS inspired by Company of Heroes 2, set in the 1941-42 Philippine campaign.",
+  "author": "og-cz",
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "app": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --win nsis portable"
+  },
+  "build": {
+    "appId": "com.ogcz.giyeraatbansa",
+    "productName": "Giyera at Bansa",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "GiyeraAtBansa-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "GiyeraAtBansa-Portable-${version}.${ext}"
+    }
   },
   "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
     "typescript": "^5.9.3",
     "vite": "^8.3.1",
     "vitest": "^5.0.2"
