@@ -194,7 +194,8 @@ export class AICommander {
         if (!isSoft(e) || dist(e.pos, sq.pos) > range) return false;
         if (e.def.kind === 'team' && e.setup === 'deployed') return true;
         if (ab.requiresSetup) return aliveCount(e) >= 3 && e.order.kind === 'idle';
-        return coverAt(world.map, e.pos, sq.pos) === 'heavy' && aliveCount(e) >= 3;
+        const cover = coverAt(world.map, e.pos, sq.pos);
+        return (cover === 'heavy' || cover === 'light') && aliveCount(e) >= 3;
       });
       if (target && issueAbility(world, sq, id, target.pos).ok) return;
     }
