@@ -1,23 +1,36 @@
 import { AICommander } from './ai/commander';
 import { DIFFICULTY, SIM_DT } from './data/balance';
-import { MAPS } from './data/maps';
-import type { TeamId } from './data/types';
+import { ALL_MAPS } from './data/theaterMaps';
+import type { Difficulty, ScenarioDef, TeamId } from './data/types';
 import { Input } from './input/input';
 import { createUIState } from './input/uiState';
 import { Camera } from './render/camera';
 import { Renderer } from './render/renderer';
 import { World } from './sim/world';
 import { Hud } from './ui/hud';
-import type { MatchSetup } from './ui/menu';
 import { Minimap } from './ui/minimap';
 import { endOverlay, helpOverlay, pauseOverlay } from './ui/overlays';
 
 const PLAYER: TeamId = 0;
 
+export interface MatchSetup {
+  faction: string;
+  enemyFaction: string;
+  map: string;
+  difficulty: Difficulty;
+  /** Theater of War / Campaign mission; omitted for a plain skirmish. */
+  scenario?: ScenarioDef;
+}
+
+export interface MatchResult {
+  won: boolean;
+  action: 'menu' | 'retry' | 'continue';
+}
+
 /** Wires the simulation to rendering, input and UI and runs the fixed-timestep loop. */
 export class Game {
   private readonly world: World;
-  private readonly ai: AICommander;
+  private readonly ai: AICommander | null;
   private readonly camera: Camera;
   private readonly renderer: Renderer;
   private readonly input: Input;
@@ -35,16 +48,22 @@ export class Game {
   constructor(
     private readonly canvas: HTMLCanvasElement,
     private readonly layer: HTMLElement,
-    setup: MatchSetup,
-    private readonly onExit: () => void,
+    private readonly setup: MatchSetup,
+    private readonly continueLabel: string,
+    private readonly onExit: (result: MatchResult) => void,
   ) {
+    const scenario = setup.scenario;
+    const skirmishRules = !scenario || scenario.mode === 'skirmish';
     this.world = new World({
-      map: MAPS[setup.map],
+      map: ALL_MAPS[setup.map],
       factions: [setup.faction, setup.enemyFaction],
       seed: (Date.now() & 0xffff) + 1,
-      incomeMult: [1, DIFFICULTY[setup.difficulty]],
+      incomeMult: [1, skirmishRules ? DIFFICULTY[setup.difficulty] : 1],
+      scenario,
+      difficulty: setup.difficulty,
     });
-    this.ai = new AICommander(1);
+    // Defense waves and offensive garrisons are scripted; only skirmish battles need the AI commander.
+    this.ai = skirmishRules ? new AICommander(1) : null;
     this.camera = new Camera(this.world.map.pixelWidth, this.world.map.pixelHeight);
     this.renderer = new Renderer(canvas, this.world, this.camera, PLAYER);
     this.input = new Input(canvas, this.world, this.camera, this.ui, PLAYER, {
@@ -58,11 +77,23 @@ export class Game {
     window.addEventListener('resize', this.onResize);
     this.resize();
     this.camera.zoom = 1.1;
-    this.camera.centerOn(this.world.teams[PLAYER].spawn);
-    this.input.select(this.world.squads.filter((s) => s.team === PLAYER && s.def.kind === 'infantry').map((s) => s.id));
-    this.hud.toast('Capture the victory points. Right-click to move your squads.', 'info');
+    const hold = scenario?.defense ? this.world.points[scenario.defense.hold[0]].pos : null;
+    this.camera.centerOn(hold ?? this.world.teams[PLAYER].spawn);
+    this.input.select(this.world.squads.filter((s) => s.team === PLAYER && (s.def.kind === 'infantry' || s.def.kind === 'team')).map((s) => s.id));
+    this.hud.toast(this.openingHint(), 'info');
     if (import.meta.env.DEV) Object.assign(window, { game: this });
     requestAnimationFrame(this.frame);
+  }
+
+  private openingHint(): string {
+    switch (this.world.objective.mode) {
+      case 'defense':
+        return 'Dig in: set up your guns and reinforce before the first wave arrives.';
+      case 'offensive':
+        return 'Take the marked objective. Flank the machine guns through the paddies.';
+      default:
+        return 'Capture the victory points. Right-click to move your squads.';
+    }
   }
 
   private resize(): void {
@@ -76,7 +107,7 @@ export class Game {
     if (!this.paused && !this.ended) {
       this.acc += dt;
       while (this.acc >= SIM_DT) {
-        this.ai.update(this.world, SIM_DT);
+        this.ai?.update(this.world, SIM_DT);
         this.world.step(SIM_DT);
         this.acc -= SIM_DT;
       }
@@ -89,10 +120,25 @@ export class Game {
     this.minimap.draw();
     if (!this.ended && this.world.winner !== -1) {
       this.ended = true;
-      this.showOverlay(endOverlay(this.world, PLAYER, () => this.exit()));
+      // Let the final moment play out briefly before the result screen.
+      window.setTimeout(() => this.showResult(), 1400);
     }
     requestAnimationFrame(this.frame);
   };
+
+  private showResult(): void {
+    if (!this.running) return;
+    const won = this.world.winner === PLAYER;
+    const title = this.setup.scenario?.name ?? `Skirmish · ${ALL_MAPS[this.setup.map].name}`;
+    this.showOverlay(
+      endOverlay(this.world, PLAYER, title, {
+        continueLabel: this.continueLabel,
+        onContinue: () => this.exit({ won, action: 'continue' }),
+        onRetry: () => this.exit({ won, action: 'retry' }),
+        onMenu: () => this.exit({ won, action: 'menu' }),
+      }),
+    );
+  }
 
   private showOverlay(node: HTMLElement | null): void {
     this.overlay?.remove();
@@ -107,7 +153,7 @@ export class Game {
       this.paused
         ? pauseOverlay(
             () => this.togglePause(),
-            () => this.exit(),
+            () => this.exit({ won: false, action: 'menu' }),
           )
         : null,
     );
@@ -129,7 +175,7 @@ export class Game {
     );
   }
 
-  private exit(): void {
+  private exit(result: MatchResult): void {
     this.running = false;
     this.input.dispose();
     this.minimap.dispose();
@@ -139,6 +185,6 @@ export class Game {
     const ctx = this.canvas.getContext('2d')!;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.onExit();
+    this.onExit(result);
   }
 }
