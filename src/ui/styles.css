@@ -11,7 +11,7 @@
   --good: #8ef58e;
   --bad: #ffb35c;
   --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --display: 'Georgia', 'Times New Roman', serif;
+  --display: 'Bahnschrift SemiBold Condensed', 'Bahnschrift', 'Arial Narrow', sans-serif;
 }
 
 * {
@@ -483,12 +483,6 @@ button:disabled {
   padding: 16px;
 }
 
-.overlay.menu {
-  background:
-    radial-gradient(ellipse at 30% 20%, rgba(217, 180, 90, 0.12), transparent 60%),
-    linear-gradient(160deg, #1a2016 0%, #0c0f0b 100%);
-}
-
 .overlay.dim {
   background: rgba(5, 7, 5, 0.7);
 }
@@ -581,37 +575,11 @@ button:disabled {
   margin: 0;
 }
 
-.start {
-  margin-left: auto;
-  padding: 10px 34px;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--accent-ink);
-  background: var(--accent);
-  border: none;
-  border-radius: 4px;
-}
-
-.start:hover {
-  filter: brightness(1.1);
-}
-
 .secondary {
   padding: 9px 16px;
   background: transparent;
   border: 1px solid var(--panel-edge);
   border-radius: 4px;
-}
-
-details {
-  margin-top: 18px;
-  color: var(--ink-dim);
-}
-
-summary {
-  cursor: pointer;
 }
 
 .controls {
@@ -631,39 +599,6 @@ summary {
   color: var(--accent);
   white-space: nowrap;
   font-weight: 600;
-}
-
-.rules {
-  margin-top: 10px;
-}
-
-.end h1 {
-  text-align: center;
-}
-
-.end.won h1 { color: var(--good); }
-.end.lost h1 { color: var(--red); }
-
-.end .tagline {
-  text-align: center;
-}
-
-.stats {
-  width: 100%;
-  margin: 16px 0;
-  border-collapse: collapse;
-}
-
-.stats th,
-.stats td {
-  padding: 4px 8px;
-  text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.end .start {
-  display: block;
-  margin: 0 auto;
 }
 
 @media (max-width: 1100px) {
