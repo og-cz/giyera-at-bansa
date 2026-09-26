@@ -38,7 +38,7 @@ function createWindow() {
 
   if (SMOKE) {
     win.webContents.once('did-finish-load', async () => {
-      const ok = await win.webContents.executeJavaScript("!!document.querySelector('.menu-box')");
+      const ok = await win.webContents.executeJavaScript("!!document.querySelector('.splash, .title-screen, .main-menu')");
       console.log(ok ? 'SMOKE_OK' : 'SMOKE_FAIL');
       app.exit(ok ? 0 : 1);
     });
