@@ -41,6 +41,8 @@ export class Renderer {
     private readonly world: World,
     private readonly camera: Camera,
     private readonly player: TeamId,
+    /** Spectator view (menu background): no fog, everything visible. */
+    private readonly spectator = false,
   ) {
     this.ctx = canvas.getContext('2d')!;
     this.terrain = new TerrainLayer(world.map);
@@ -65,7 +67,7 @@ export class Renderer {
     this.camera.resize(w, h);
   }
 
-  visibleToPlayer = (p: Vec2): boolean => this.world.vision.isVisible(this.player, p);
+  visibleToPlayer = (p: Vec2): boolean => this.spectator || this.world.vision.isVisible(this.player, p);
 
   draw(ui: UIState, dt: number): void {
     const { ctx, world, camera } = this;
@@ -84,14 +86,14 @@ export class Renderer {
     this.effects.drawGround(ctx);
     this.drawSelectionUnderlays(ui);
 
-    const visible = world.squads.filter((s) => !s.dead && world.canSee(this.player, s));
+    const visible = world.squads.filter((s) => !s.dead && (this.spectator || world.canSee(this.player, s)));
     for (const sq of visible) if (sq.def.kind === 'structure') this.drawStructure(sq, ui);
     for (const sq of visible) if (sq.def.kind === 'vehicle') this.drawVehicle(sq, ui);
     for (const sq of visible) if (sq.def.kind === 'infantry' || sq.def.kind === 'team') this.drawInfantry(sq, ui);
 
     this.drawProjectiles();
     this.effects.drawAir(ctx);
-    this.drawFog();
+    if (!this.spectator) this.drawFog();
     this.drawOrders(ui);
     this.drawCursorPreview(ui);
 
@@ -198,6 +200,7 @@ export class Renderer {
       ctx.fillText(POINT_GLYPH[p.kind], p.pos.x, p.pos.y + 0.5);
       ctx.textBaseline = 'alphabetic';
 
+      this.drawObjectiveMarker(p.index, p.pos.x, p.pos.y);
       const cutOff = p.owner !== -1 && !world.territory.isSupplied(p.owner, p.sector);
       if (cutOff) {
         ctx.strokeStyle = '#ffb35c';
@@ -210,6 +213,40 @@ export class Renderer {
     }
   }
 
+  /** Role of a point in the current scenario, if any. */
+  private objectiveRole(index: number): 'hold' | 'target' | 'locked' | 'taken' | null {
+    const s = this.world.scenario;
+    if (s?.defense?.hold.includes(index)) return 'hold';
+    const sectors = s?.offensive?.sectors;
+    if (!sectors) return null;
+    const order = sectors.indexOf(index);
+    if (order < 0) return null;
+    const current = this.world.objective.sector;
+    return order === current ? 'target' : order < current ? 'taken' : 'locked';
+  }
+
+  private drawObjectiveMarker(index: number, x: number, y: number): void {
+    const role = this.objectiveRole(index);
+    if (!role || role === 'taken') return;
+    const { ctx } = this;
+    const pulse = (Math.sin(performance.now() / 300) + 1) / 2;
+    if (role === 'locked') {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(x + 10, y - 22, 12, 11);
+      ctx.strokeStyle = '#cfc9b4';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(x + 16, y - 22, 3.5, Math.PI, 0);
+      ctx.stroke();
+      return;
+    }
+    ctx.strokeStyle = role === 'hold' ? `rgba(240,200,90,${0.5 + pulse * 0.5})` : `rgba(255,90,60,${0.5 + pulse * 0.5})`;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(x, y, CAPTURE.radius + 4 + pulse * 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   private drawPointLabels(): void {
     if (this.camera.zoom < 0.7) return;
     const { ctx, world } = this;
@@ -218,10 +255,12 @@ export class Renderer {
     for (const p of world.points) {
       const s = this.camera.worldToScreen(p.pos);
       const cutOff = p.owner !== -1 && !world.territory.isSupplied(p.owner, p.sector);
-      const label = cutOff ? `${p.name} (cut off)` : p.name;
+      const role = this.objectiveRole(p.index);
+      const tag = role === 'hold' ? 'HOLD · ' : role === 'target' ? 'OBJECTIVE · ' : '';
+      const label = tag + (cutOff ? `${p.name} (cut off)` : p.name);
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.fillText(label, s.x + 1, s.y + 13 * this.camera.zoom + 15);
-      ctx.fillStyle = cutOff ? '#ffcf8a' : '#f2ecd9';
+      ctx.fillStyle = role === 'hold' ? '#f0c85a' : role === 'target' ? '#ff8a6a' : cutOff ? '#ffcf8a' : '#f2ecd9';
       ctx.fillText(label, s.x, s.y + 13 * this.camera.zoom + 14);
     }
   }
@@ -604,7 +643,7 @@ export class Renderer {
       ctx.fillRect(x - barW / 2, y + 5, barW * sq.suppression, 2);
     }
 
-    if (sq.team !== this.player) return;
+    if (sq.team !== this.player || this.spectator) return;
     let status = '';
     if (sq.retreating) status = 'RETREATING';
     else if (sq.suppState === 'pinned') status = 'PINNED';
