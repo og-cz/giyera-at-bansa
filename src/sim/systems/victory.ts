@@ -19,10 +19,14 @@ export function updateVictory(world: World, dt: number): void {
 
   for (const team of [0, 1] as const) {
     const hq = world.hqOf(team);
-    const lost = world.teams[team].tickets <= 0 || !hq || hq.dead;
+    const noTickets = world.teams[team].tickets <= 0;
+    const lost = noTickets || !hq || hq.dead;
     if (!lost) continue;
     const winner: TeamId = team === 0 ? 1 : 0;
     world.winner = winner;
+    world.endReason = noTickets
+      ? `${world.teams[team].faction.name} ran out of tickets`
+      : `${world.teams[team].faction.name} headquarters destroyed`;
     world.emit({ type: 'notify', team: -1, text: `${world.teams[winner].faction.name} wins`, tone: 'info' });
     return;
   }
