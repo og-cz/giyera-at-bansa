@@ -98,6 +98,8 @@ export interface CapturePoint {
   owner: Owner;
   contested: boolean;
   sector: number;
+  /** Locked points cannot change hands (offensive mode: future and already-taken sectors). */
+  locked: boolean;
 }
 
 export interface Projectile {
