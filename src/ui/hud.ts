@@ -26,6 +26,7 @@ export class Hud {
   private readonly tickets: [HTMLElement, HTMLElement];
   private readonly ticketBars: [HTMLElement, HTMLElement];
   private readonly pointIcons: HTMLElement;
+  private readonly objective: { box: HTMLElement; title: HTMLElement; detail: HTMLElement } | null;
   private readonly clock: HTMLElement;
   private readonly selection: HTMLElement;
   private readonly commands: CommandButton[] = [];
@@ -65,12 +66,19 @@ export class Hud {
     this.ticketBars = [b0, b1];
     this.pointIcons = el('div', { class: 'vp-icons' });
     this.clock = el('div', { class: 'clock' });
+    if (world.objective.mode === 'skirmish') {
+      this.objective = null;
+    } else {
+      const title = el('div', { class: 'obj-title' });
+      const detail = el('div', { class: 'obj-detail' });
+      this.objective = { box: el('div', { class: `objective-panel mode-${world.objective.mode}` }, title, detail), title, detail };
+    }
 
     const top = el(
       'div',
       { class: 'topbar' },
       el('div', { class: 'resources' }, mpBox, muBox, fuBox, popBox),
-      el('div', { class: 'score' }, t0, this.pointIcons, t1),
+      this.objective ? this.objective.box : el('div', { class: 'score' }, t0, this.pointIcons, t1),
       el('div', { class: 'meta' }, this.clock, this.menuButton()),
     );
 
@@ -207,12 +215,34 @@ export class Hud {
         .map((p) => el('span', { class: `vp o${p.owner}`, title: p.name, text: 'V' })),
     );
     this.clock.textContent = formatTime(world.time);
+    if (this.objective) this.renderObjective();
 
     const own = this.input.selectedOwn();
     for (const c of this.commands) c.refresh(own);
     for (const b of this.prodButtons) b.node.disabled = !canAfford(r, UNITS[b.id].cost);
     this.renderQueue();
     this.renderSelection();
+  }
+
+  private renderObjective(): void {
+    const { world } = this;
+    const o = world.objective;
+    const s = world.scenario!;
+    const { title, detail, box } = this.objective!;
+    if (s.defense) {
+      const hold = s.defense.hold.map((i) => world.points[i]);
+      const threatened = hold.some((p) => p.contested || p.control < 1);
+      title.textContent = o.wave === 0 ? 'Prepare your defences' : `Wave ${o.wave} / ${o.totalWaves}`;
+      if (o.wave < o.totalWaves) detail.textContent = `Next wave in ${formatTime(Math.max(0, o.nextWaveIn))}`;
+      else detail.textContent = `Final wave · ${o.waveSquads.length} enemy units remaining`;
+      detail.textContent += ` · Hold ${hold.map((p) => p.name).join(', ')}${threatened ? ' — UNDER ATTACK' : ''}`;
+      box.classList.toggle('alert', threatened);
+    } else if (s.offensive) {
+      const next = world.points[s.offensive.sectors[Math.min(o.sector, o.totalSectors - 1)]];
+      title.textContent = `Sector ${Math.min(o.sector + 1, o.totalSectors)} / ${o.totalSectors} · ${next.name}`;
+      detail.textContent = `Time remaining ${formatTime(Math.max(0, o.timeLeft))}`;
+      box.classList.toggle('alert', o.timeLeft < 60);
+    }
   }
 
   private renderQueue(): void {
