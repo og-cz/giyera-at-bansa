@@ -34,10 +34,10 @@ function layered(W: number, H: number, layers: MapFeature[][], shared: MapFeatur
   return out;
 }
 
-const rect = (terrain: number, x: number, y: number, w: number, h: number): MapFeature => ({ kind: 'rect', terrain, x, y, w, h });
-const circle = (terrain: number, x: number, y: number, r: number): MapFeature => ({ kind: 'circle', terrain, x, y, r });
-const line = (terrain: number, width: number, ...points: [number, number][]): MapFeature => ({ kind: 'line', terrain, width, points });
-const scatter = (terrain: number, x: number, y: number, w: number, h: number, count: number, seed: number): MapFeature => ({
+export const rect = (terrain: number, x: number, y: number, w: number, h: number): MapFeature => ({ kind: 'rect', terrain, x, y, w, h });
+export const circle = (terrain: number, x: number, y: number, r: number): MapFeature => ({ kind: 'circle', terrain, x, y, r });
+export const line = (terrain: number, width: number, ...points: [number, number][]): MapFeature => ({ kind: 'line', terrain, width, points });
+export const scatter = (terrain: number, x: number, y: number, w: number, h: number, count: number, seed: number): MapFeature => ({
   kind: 'scatter', terrain, x, y, w, h, count, seed,
 });
 
