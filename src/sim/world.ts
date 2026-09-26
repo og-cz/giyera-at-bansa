@@ -1,7 +1,7 @@
 import { ECONOMY, TILE, VICTORY } from '../data/balance';
 import { FACTIONS } from '../data/factions';
 import { T } from '../data/terrain';
-import type { MapDef, Owner, TeamId } from '../data/types';
+import type { Difficulty, MapDef, Owner, PlacedUnit, ScenarioDef, TeamId } from '../data/types';
 import { UNITS } from '../data/units';
 import { Rng } from '../core/rng';
 import { add, angleTo, normalize, scale, sub, type Vec2 } from '../core/vec';
@@ -15,7 +15,7 @@ import { updateMovement } from './systems/movement';
 import { updateProduction } from './systems/production';
 import { updateSuppression } from './systems/suppression';
 import { Territory, updateCapture } from './systems/territory';
-import { updateVictory } from './systems/victory';
+import { createObjective, updateObjectives, type ObjectiveState } from './systems/objectives';
 import { Vision } from './systems/vision';
 
 export interface WorldOptions {
@@ -23,6 +23,9 @@ export interface WorldOptions {
   factions: [string, string];
   seed?: number;
   incomeMult?: [number, number];
+  /** Theater of War / Campaign rules; omitted for a plain skirmish. */
+  scenario?: ScenarioDef;
+  difficulty?: Difficulty;
 }
 
 /** Owns all simulation state and runs the systems in a fixed order. No rendering here. */
@@ -40,11 +43,17 @@ export class World {
   readonly territory: Territory;
   winner: Owner = -1;
   ticketTimer = 0;
+  readonly scenario: ScenarioDef | null;
+  readonly difficulty: Difficulty;
+  readonly objective: ObjectiveState;
   private readonly byId = new Map<number, Squad>();
   private idCounter = 1;
 
   constructor(opts: WorldOptions) {
     this.mapDef = opts.map;
+    this.scenario = opts.scenario ?? null;
+    this.difficulty = opts.difficulty ?? 'normal';
+    const scenario = this.scenario;
     this.rng = new Rng(opts.seed ?? 1);
     this.map = GameMap.fromDef(opts.map);
     const center = { x: this.map.pixelWidth / 2, y: this.map.pixelHeight / 2 };
@@ -58,7 +67,15 @@ export class World {
       owner: -1 as Owner,
       contested: false,
       sector: -1,
+      locked: false,
     }));
+    for (const [i, owner] of Object.entries(scenario?.owners ?? {})) {
+      const p = this.points[Number(i)];
+      p.owner = owner;
+      p.control = owner === 0 ? 1 : owner === 1 ? -1 : 0;
+    }
+    // Offensive: only the first sector can be fought over at the start.
+    scenario?.offensive?.sectors.forEach((idx, order) => (this.points[idx].locked = order > 0));
 
     const teams = ([0, 1] as const).map((id): TeamState => {
       const faction = FACTIONS[opts.factions[id]];
@@ -69,7 +86,7 @@ export class World {
       return {
         id,
         faction,
-        resources: { ...ECONOMY.start },
+        resources: { ...(id === 0 && scenario?.startResources ? scenario.startResources : ECONOMY.start) },
         income: { manpower: 0, munitions: 0, fuel: 0 },
         incomeMult: opts.incomeMult?.[id] ?? 1,
         pop: 0,
@@ -90,6 +107,11 @@ export class World {
       const facing = angleTo(team.base, center);
       const hq = this.spawn(team.id, team.faction.hq, team.base, facing);
       team.hqId = hq.id;
+      const placed = team.id === 0 ? scenario?.playerUnits : scenario && scenario.mode !== 'skirmish' ? (scenario.enemyUnits ?? []) : undefined;
+      if (placed) {
+        this.place(team.id, placed);
+        continue;
+      }
       team.faction.starting.forEach((unitId, i) => {
         const offset = scale(normalize({ x: -Math.sin(facing), y: Math.cos(facing) }), (i - (team.faction.starting.length - 1) / 2) * 40);
         this.spawn(team.id, unitId, this.map.nearestPassable(add(team.spawn, offset), 'infantry'), facing);
@@ -100,6 +122,20 @@ export class World {
     this.territory = new Territory(this.map, this.points, [this.teams[0].base, this.teams[1].base]);
     this.vision = new Vision(this.map);
     this.vision.recompute(this);
+    this.objective = createObjective(this.scenario);
+  }
+
+  private place(team: TeamId, units: readonly PlacedUnit[]): void {
+    for (const u of units) {
+      const def = UNITS[u.unitId];
+      const facing = ((u.facing ?? 0) * Math.PI) / 180;
+      const pos = this.map.nearestPassable({ x: u.x * TILE, y: u.y * TILE }, def.vehicle ? 'vehicle' : 'infantry');
+      const sq = this.spawn(team, u.unitId, pos, facing);
+      if (u.deployed && def.kind === 'team') {
+        sq.setup = 'deployed';
+        sq.setupFacing = facing;
+      }
+    }
   }
 
   readonly nextId = (): number => this.idCounter++;
@@ -145,7 +181,7 @@ export class World {
     updateSuppression(this, dt);
     updateCapture(this, dt);
     this.vision.update(this, dt);
-    updateVictory(this, dt);
+    updateObjectives(this, dt);
     this.cleanup();
   }
 
