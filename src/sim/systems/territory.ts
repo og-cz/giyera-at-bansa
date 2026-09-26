@@ -118,6 +118,10 @@ export class Territory {
 export function updateCapture(world: World, dt: number): void {
   let changed = false;
   for (const p of world.points) {
+    if (p.locked) {
+      p.contested = false;
+      continue;
+    }
     const present = [0, 0];
     for (const sq of world.squads) {
       if (sq.dead || sq.retreating || !sq.def.canCapture) continue;
