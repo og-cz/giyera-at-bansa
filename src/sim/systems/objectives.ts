@@ -60,6 +60,7 @@ function alive(world: World, id: number): boolean {
 function end(world: World, winner: TeamId, reason: string): void {
   if (world.winner !== -1) return;
   world.winner = winner;
+  world.endReason = reason;
   world.emit({ type: 'notify', team: -1, text: reason, tone: winner === PLAYER ? 'good' : 'bad' });
 }
 
