@@ -1,8 +1,8 @@
 # Giyera at Bansa
 
-Squad-based real-time tactics game for Windows. Luzon, 1941–42. Inspired by Company of Heroes 2.
+Squad-based real-time tactics game for Windows. Luzon, 1941–45. Inspired by Company of Heroes 2.
 
-Version 0.1.0 · Single-player skirmish vs. AI · Offline
+Version 0.2.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -34,12 +34,39 @@ Version 0.1.0 · Single-player skirmish vs. AI · Offline
 
 **Uninstall:** Settings → Apps → Giyera at Bansa → Uninstall. The portable version: delete the file.
 
+## Game modes
+
+Pick a mode from the main menu.
+
+**Campaign**: the defence and liberation of Luzon, played in order. Each mission unlocks the next.
+
+| # | Mission | Date | Type |
+| --- | --- | --- | --- |
+| 1 | Withdrawal to Bataan | December 1941 | Battle: win the victory points |
+| 2 | Layac Junction | 6 January 1942 | Defense: hold the stone bridge against 6 waves |
+| 3 | Mount Samat | April 1942 | Defense: hold the summit against 10 waves |
+| 4 | The Road to Manila | January 1945 | Offensive: take Route 3 town by town to the Calumpit bridge |
+
+**Theater of War**: standalone operations you can replay on any difficulty. Win on Easy, Normal and Hard for Bronze, Silver and Gold medals.
+
+- **Hold the Summit**: defend a hilltop against 8 waves.
+- **Defend the Barrio**: hold a crossroads village against 7 waves.
+- **Highway 3 Assault**: break 4 fortified positions along a highway before time runs out.
+
+**Skirmish**: a classic match against the AI on a map of your choice.
+
+How the mission types work:
+
+- **Defense:** keep the marked **HOLD** point. Waves come on a timer and get stronger. You lose if the point falls.
+- **Offensive:** capture the marked **OBJECTIVE** sectors in order. Each one adds 3 minutes and moves your reinforcement point forward. The enemy counterattacks.
+- **Battle / Skirmish:** holding more victory points drains the enemy's 500 tickets.
+
 ## How to play
 
-1. Choose a faction, a map and the AI difficulty, then press **Deploy**.
+1. Choose a mode, then a mission or map and the difficulty, then press **Deploy**.
 2. Capture points with infantry. Vehicles can't capture.
-3. Each side has **500 tickets**. Holding more victory points (**V**) than the enemy drains their tickets.
-4. You win when the enemy reaches 0 tickets or loses their HQ.
+3. Complete the mission objective shown at the top of the screen.
+4. Destroying the enemy HQ always wins; losing yours always loses.
 
 **Resources**
 
@@ -94,7 +121,20 @@ Version 0.1.0 · Single-player skirmish vs. AI · Offline
 | Anti-tank | Bazooka Squad | AT Rifle Team |
 | Tank | M3 Stuart | Type 97 Chi-Ha |
 
-**Maps:** Bataan Crossroads, Barrio San Roque.
+**Maps:** Bataan Crossroads, Barrio San Roque (skirmish), Mount Samat, Route 3 (missions).
+
+## Changelog
+
+**0.2.0**
+- New main menu with a cinematic startup: studio card, title screen and a live battle in the background.
+- Three modes: **Campaign** (4 historical missions), **Theater of War** (3 replayable operations with medals) and **Skirmish**.
+- New mission types: **Defense** (survive waves) and **Offensive** (capture sectors in order against the clock).
+- New maps: Mount Samat and Route 3.
+- Mission briefings before every campaign and Theater of War mission.
+- New result screens: Victory in gold on white, Defeat in red on black. Retry or continue straight from the result.
+
+**0.1.0**
+- First playable release: skirmish vs. AI, 2 factions, 10 unit types, 2 maps.
 
 ## Troubleshooting
 
