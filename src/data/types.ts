@@ -152,3 +152,64 @@ export interface MapDef {
   bases: readonly [{ x: number; y: number }, { x: number; y: number }];
   points: readonly MapPointDef[];
 }
+
+/** skirmish = VP tickets; defense = survive enemy waves; offensive = capture sectors in order. */
+export type GameMode = 'skirmish' | 'defense' | 'offensive';
+
+/** A unit placed on the map at the start of a scenario (tile coordinates). */
+export interface PlacedUnit {
+  unitId: string;
+  x: number;
+  y: number;
+  /** Facing in degrees (0 = east, 90 = south). */
+  facing?: number;
+  /** Crew weapons start already set up. */
+  deployed?: boolean;
+}
+
+export interface WaveDef {
+  units: readonly string[];
+  /** Seconds after the previous wave (or after the prep phase for the first wave). */
+  delay: number;
+}
+
+export interface DefenseRules {
+  /** Point indices the player must not lose. */
+  hold: readonly number[];
+  prepTime: number;
+  waves: readonly WaveDef[];
+  /** Where waves enter the map (tile coordinates). */
+  spawns: readonly { x: number; y: number }[];
+}
+
+export interface OffensiveRules {
+  /** Point indices to capture, in order. */
+  sectors: readonly number[];
+  timeLimit: number;
+  bonusTime: number;
+  /** Seconds between enemy counterattacks (0 = none). */
+  counterattackEvery: number;
+  counterattack: readonly string[];
+}
+
+export interface ScenarioDef {
+  id: string;
+  name: string;
+  tagline: string;
+  date: string;
+  location: string;
+  /** Briefing paragraphs shown before the mission. */
+  briefing: readonly string[];
+  map: string;
+  mode: GameMode;
+  /** [player faction, enemy faction]. */
+  factions: readonly [string, string];
+  startResources?: Resources;
+  /** Replaces the faction's default starting squads when set. */
+  playerUnits?: readonly PlacedUnit[];
+  enemyUnits?: readonly PlacedUnit[];
+  /** Initial point owners by index (unlisted points start neutral). */
+  owners?: Readonly<Record<number, Owner>>;
+  defense?: DefenseRules;
+  offensive?: OffensiveRules;
+}
