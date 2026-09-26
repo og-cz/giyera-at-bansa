@@ -42,6 +42,8 @@ export class World {
   readonly vision: Vision;
   readonly territory: Territory;
   winner: Owner = -1;
+  /** Why the match ended, for the end screen. */
+  endReason = '';
   ticketTimer = 0;
   readonly scenario: ScenarioDef | null;
   readonly difficulty: Difficulty;
