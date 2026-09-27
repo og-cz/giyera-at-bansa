@@ -18,6 +18,8 @@ const DEFAULTS: Omit<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'> =
   vehicle: null,
   radius: 0,
   vetXp: [400, 1100, 2200],
+  strongVs: '',
+  weakVs: '',
 };
 
 const unit = (def: Partial<UnitDef> & Pick<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'>): UnitDef => ({
@@ -30,12 +32,16 @@ const LIST: UnitDef[] = [
   unit({
     id: 'us_hq', name: 'Maharlika Headquarters', kind: 'structure', role: 'hq',
     description: 'Produces units, heals and reinforces nearby squads. Lose it and you lose the battle.',
+    strongVs: 'Infantry raids on the base',
+    weakVs: 'Tanks and mortars',
     modelHp: 2800, speed: 0, sight: 260, loadout: [{ weapons: ['hq_mg'], count: 1 }],
     armor: { front: 180, rear: 180 }, radius: 36, receivedAccuracy: 1.5, vetXp: [],
   }),
   unit({
     id: 'us_riflemen', name: 'Rifle Squad', kind: 'infantry', role: 'line',
     description: 'Five riflemen with semi-automatic M1 Garands. Captures territory. Can throw frag grenades.',
+    strongVs: 'Weapon teams from the flank, other infantry',
+    weakVs: 'Machine guns from the front, tanks',
     models: 5, modelHp: 80, cost: { manpower: 280, munitions: 0, fuel: 0 }, pop: 6, buildTime: 22,
     speed: 22, sight: 210, loadout: [{ weapons: ['m1_garand'], count: 5 }], canCapture: true,
     abilities: ['grenade_us'],
@@ -43,6 +49,8 @@ const LIST: UnitDef[] = [
   unit({
     id: 'us_hmg', name: 'M1917 HMG Team', kind: 'team', role: 'mg',
     description: 'Water-cooled heavy machine gun. Must set up to fire; pins infantry inside its arc.',
+    strongVs: 'Infantry inside its firing cone',
+    weakVs: 'Mortars, flanking infantry, tanks',
     models: 3, modelHp: 80, cost: { manpower: 250, munitions: 0, fuel: 0 }, pop: 5, buildTime: 24,
     speed: 19, sight: 220, loadout: [{ weapons: ['m1917_hmg'], count: 1 }, { weapons: ['m1_carbine'], count: 2 }],
     canCapture: true, setupTime: 2.4, teardownTime: 2,
@@ -50,6 +58,8 @@ const LIST: UnitDef[] = [
   unit({
     id: 'us_mortar', name: '60mm Mortar Team', kind: 'team', role: 'mortar',
     description: 'Indirect fire support. Needs allied eyes on the target. Can fire a barrage.',
+    strongVs: 'Set-up weapon teams, infantry in cover',
+    weakVs: 'Infantry rushes, tanks. Needs a spotter to see its target',
     models: 3, modelHp: 80, cost: { manpower: 240, munitions: 0, fuel: 0 }, pop: 5, buildTime: 24,
     speed: 19, sight: 200, loadout: [{ weapons: ['m2_mortar'], count: 1 }, { weapons: ['m1_carbine'], count: 2 }],
     canCapture: true, setupTime: 2, teardownTime: 2, abilities: ['barrage_us'],
@@ -57,6 +67,8 @@ const LIST: UnitDef[] = [
   unit({
     id: 'us_bazooka', name: 'Bazooka Squad', kind: 'infantry', role: 'at',
     description: 'Two M1 bazookas and two carbines. Hunts armour; weak against infantry.',
+    strongVs: 'Tanks, especially from the side or rear',
+    weakVs: 'Infantry and machine guns',
     models: 4, modelHp: 80, cost: { manpower: 250, munitions: 20, fuel: 0 }, pop: 6, buildTime: 24,
     speed: 21, sight: 200, loadout: [{ weapons: ['bazooka'], count: 2 }, { weapons: ['m1_carbine'], count: 2 }],
     canCapture: true,
@@ -64,6 +76,8 @@ const LIST: UnitDef[] = [
   unit({
     id: 'us_stuart', name: 'M3 Stuart', kind: 'vehicle', role: 'tank',
     description: 'Fast light tank with a 37mm gun. Keep its thin rear armour away from AT weapons.',
+    strongVs: 'Infantry and weapon teams',
+    weakVs: 'Anti-tank squads, shots to its thin rear armour',
     modelHp: 480, cost: { manpower: 240, munitions: 0, fuel: 70 }, pop: 10, buildTime: 35,
     speed: 32, sight: 230, loadout: [{ weapons: ['m6_37mm', 'coax_30cal'], count: 1 }],
     armor: { front: 75, rear: 40 }, radius: 14, vetXp: [800, 2000, 3600],
@@ -74,12 +88,16 @@ const LIST: UnitDef[] = [
   unit({
     id: 'ija_hq', name: 'Imperial Army Headquarters', kind: 'structure', role: 'hq',
     description: 'Produces units, heals and reinforces nearby squads. Lose it and you lose the battle.',
+    strongVs: 'Infantry raids on the base',
+    weakVs: 'Tanks and mortars',
     modelHp: 2800, speed: 0, sight: 260, loadout: [{ weapons: ['hq_mg'], count: 1 }],
     armor: { front: 180, rear: 180 }, radius: 36, receivedAccuracy: 1.5, vetXp: [],
   }),
   unit({
     id: 'ija_riflemen', name: 'Hohei Rifle Squad', kind: 'infantry', role: 'line',
     description: 'Six riflemen with bolt-action Arisakas. Fragile individually but numerous. Can throw grenades.',
+    strongVs: 'Weapon teams from the flank, other infantry',
+    weakVs: 'Machine guns from the front, tanks',
     models: 6, modelHp: 70, cost: { manpower: 260, munitions: 0, fuel: 0 }, pop: 6, buildTime: 22,
     speed: 23, sight: 215, loadout: [{ weapons: ['arisaka'], count: 6 }], canCapture: true,
     abilities: ['grenade_ija'],
@@ -87,6 +105,8 @@ const LIST: UnitDef[] = [
   unit({
     id: 'ija_hmg', name: 'Type 92 HMG Team', kind: 'team', role: 'mg',
     description: 'Heavy machine gun with long reach. Must set up; devastating suppression in its arc.',
+    strongVs: 'Infantry inside its firing cone',
+    weakVs: 'Mortars, flanking infantry, tanks',
     models: 3, modelHp: 80, cost: { manpower: 260, munitions: 0, fuel: 0 }, pop: 5, buildTime: 24,
     speed: 19, sight: 225, loadout: [{ weapons: ['type92_hmg'], count: 1 }, { weapons: ['type38_carbine'], count: 2 }],
     canCapture: true, setupTime: 2.6, teardownTime: 2.2,
@@ -94,6 +114,8 @@ const LIST: UnitDef[] = [
   unit({
     id: 'ija_mortar', name: 'Type 97 Mortar Team', kind: 'team', role: 'mortar',
     description: '81mm mortar: heavier shells and longer reach than the 60mm, slower rate of fire.',
+    strongVs: 'Set-up weapon teams, infantry in cover',
+    weakVs: 'Infantry rushes, tanks. Needs a spotter to see its target',
     models: 3, modelHp: 80, cost: { manpower: 250, munitions: 0, fuel: 0 }, pop: 5, buildTime: 24,
     speed: 18, sight: 200, loadout: [{ weapons: ['type97_mortar'], count: 1 }, { weapons: ['type38_carbine'], count: 2 }],
     canCapture: true, setupTime: 2.2, teardownTime: 2, abilities: ['barrage_ija'],
@@ -101,6 +123,8 @@ const LIST: UnitDef[] = [
   unit({
     id: 'ija_at', name: 'AT Rifle Team', kind: 'infantry', role: 'at',
     description: 'Two Type 97 20mm anti-tank rifles. Accurate at range; needs flank shots on heavier armour.',
+    strongVs: 'Tanks, especially from the side or rear',
+    weakVs: 'Infantry and machine guns',
     models: 4, modelHp: 75, cost: { manpower: 230, munitions: 15, fuel: 0 }, pop: 6, buildTime: 22,
     speed: 20, sight: 210, loadout: [{ weapons: ['type97_at_rifle'], count: 2 }, { weapons: ['type38_carbine'], count: 2 }],
     canCapture: true,
@@ -108,6 +132,8 @@ const LIST: UnitDef[] = [
   unit({
     id: 'ija_chiha', name: 'Type 97 Chi-Ha', kind: 'vehicle', role: 'tank',
     description: 'Medium tank with a low-velocity 57mm gun firing high-explosive shells. Deadly to infantry.',
+    strongVs: 'Infantry and weapon teams',
+    weakVs: 'Anti-tank squads, enemy tanks, shots to the rear',
     modelHp: 560, cost: { manpower: 250, munitions: 0, fuel: 65 }, pop: 10, buildTime: 35,
     speed: 27, sight: 225, loadout: [{ weapons: ['type97_57mm', 'coax_type97'], count: 1 }],
     armor: { front: 70, rear: 38 }, radius: 14, vetXp: [800, 2000, 3600],
