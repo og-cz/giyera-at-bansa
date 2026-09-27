@@ -63,7 +63,7 @@ export class Camera {
   }
 
   /** Screen pixels covered by HUD bars; the map edge may scroll clear of them. */
-  insets = { top: 44, bottom: 176, side: 60 };
+  insets = { top: 44, bottom: 190, side: 60 };
 
   private clamp(): void {
     const z = this.zoom;
