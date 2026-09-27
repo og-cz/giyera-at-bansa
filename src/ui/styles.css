@@ -58,7 +58,7 @@ button:disabled {
 }
 
 /* ─── HUD ─────────────────────────────────────────── */
-/* Laid out like Company of Heroes 2: objective top centre, roster top right,
+/* Objective top centre, roster top right,
    minimap / unit card / command card along the bottom. */
 
 .hud {
