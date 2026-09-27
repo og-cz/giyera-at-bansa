@@ -43,7 +43,7 @@ export function endOverlay(world: World, player: TeamId, title: string, actions:
     'table',
     { class: 'end-stats' },
     el('tr', {}, el('th', {}), el('th', { text: me.faction.name }), el('th', { text: enemy.faction.name })),
-    ...(world.objective.mode === 'skirmish' ? [row('Tickets remaining', me.tickets, enemy.tickets)] : []),
+    ...(world.objective.mode === 'skirmish' && world.win === 'points' ? [row('Tickets remaining', me.tickets, enemy.tickets)] : []),
     row('Units produced', me.stats.produced, enemy.stats.produced),
     row('Units lost', me.stats.lost, enemy.stats.lost),
     row('Enemy units destroyed', me.stats.killed, enemy.stats.killed),
