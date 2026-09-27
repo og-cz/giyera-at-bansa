@@ -16,7 +16,7 @@ interface Item {
 
 const isDesktopApp = navigator.userAgent.includes('Electron');
 
-/** CoH-style main menu: large mode entries on the left, context on the right. */
+/** Main menu: large mode entries on the left, context on the right. */
 export function showMainMenu(layer: HTMLElement, actions: MenuActions): HTMLElement {
   const items: Item[] = [
     { label: 'Campaign', major: true, action: actions.campaign, info: 'Fight through the defence of Luzon in 1941–42 and the return in 1945. Missions unlock in order.' },
