@@ -1,7 +1,7 @@
 import { AICommander } from './ai/commander';
 import { DIFFICULTY, SIM_DT } from './data/balance';
 import { ALL_MAPS } from './data/theaterMaps';
-import type { Difficulty, ScenarioDef, TeamId } from './data/types';
+import type { Difficulty, ScenarioDef, TeamId, WinCondition } from './data/types';
 import { Input } from './input/input';
 import { createUIState } from './input/uiState';
 import { Camera } from './render/camera';
@@ -20,6 +20,8 @@ export interface MatchSetup {
   difficulty: Difficulty;
   /** Theater of War / Campaign mission; omitted for a plain skirmish. */
   scenario?: ScenarioDef;
+  /** Skirmish win condition; missions use their own. */
+  win?: WinCondition;
 }
 
 export interface MatchResult {
@@ -61,6 +63,7 @@ export class Game {
       incomeMult: [1, skirmishRules ? DIFFICULTY[setup.difficulty] : 1],
       scenario,
       difficulty: setup.difficulty,
+      win: setup.win,
     });
     // Defense waves and offensive garrisons are scripted; only skirmish battles need the AI commander.
     this.ai = skirmishRules ? new AICommander(1) : null;
@@ -92,6 +95,8 @@ export class Game {
       case 'offensive':
         return 'Take the marked objective. Flank the machine guns through the paddies.';
       default:
+        if (this.world.win === 'annihilation') return 'Annihilation: destroy every enemy unit and their headquarters.';
+        if (this.world.win === 'none') return 'Free battle: there is no victory condition. Leave from the Menu when you are done.';
         return 'Capture the victory points. Right-click to move your squads.';
     }
   }
