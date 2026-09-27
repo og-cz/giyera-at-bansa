@@ -77,6 +77,7 @@ export class Game {
     this.minimap = new Minimap(this.world, this.camera, PLAYER);
     this.hud = new Hud(layer, this.world, this.ui, this.input, PLAYER, this.minimap);
     this.hud.onMenu = () => this.togglePause();
+    this.hud.onHelp = () => this.toggleHelp();
     window.addEventListener('resize', this.onResize);
     this.resize();
     this.camera.zoom = 1.1;
