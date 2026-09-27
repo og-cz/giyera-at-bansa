@@ -156,7 +156,7 @@ export const CAMPAIGN: readonly ScenarioDef[] = [
     location: 'Central Luzon',
     briefing: [
       'On 22 December 1941 the Japanese 14th Army landed at Lingayen Gulf and drove south towards Manila.',
-      'The USAFFE command has ordered a fighting withdrawal into the Bataan peninsula. Every day the roads stay open, more men and supplies reach the new line.',
+      'Command has ordered a fighting withdrawal into the Bataan peninsula. Every day the roads stay open, more men and supplies reach the new line.',
       'Your company holds a crossroads on the withdrawal route. Take the victory points and bleed the enemy advance.',
     ],
     map: 'bataan',
@@ -244,7 +244,7 @@ export const CAMPAIGN: readonly ScenarioDef[] = [
     date: 'January 1945',
     location: 'Route 3, Central Luzon',
     briefing: [
-      'Three years later, American and Filipino forces have returned. On 9 January 1945 they landed at Lingayen Gulf, where the invasion began.',
+      'Three years later, the Hukbong Maharlika has returned. On 9 January 1945 the landings came at Lingayen Gulf, where the invasion began.',
       'The road to Manila runs straight down Route 3 through Tarlac, Bamban and San Fernando to the bridge at Calumpit.',
       'Every town is fortified. Take them in order, keep the advance moving, and seize the bridge before the enemy can blow it.',
     ],
