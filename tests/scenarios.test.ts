@@ -96,7 +96,7 @@ describe('defense mode', () => {
   });
 
   it('is won when every wave is destroyed', () => {
-    const world = worldFor('tow-barrio', 'easy');
+    const world = worldFor('tow-city', 'easy');
     while (world.objective.wave < world.objective.totalWaves) {
       run(world, 1);
       killTeam(world, 1);
