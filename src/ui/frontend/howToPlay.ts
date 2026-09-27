@@ -9,7 +9,7 @@ const RULES: [string, string][] = [
   ['Suppression', 'Machine guns suppress and then pin infantry. Pinned squads can only crawl or retreat. Flank the gun or throw a grenade.'],
   ['Weapon teams', 'Machine guns and mortars must set up to fire and tear down to move. Mortars need a friendly unit to see the target.'],
   ['Armour', 'Tanks have thick front plates and thin rear plates. Hit them from behind. Rifles barely scratch them.'],
-  ['Retreat & reinforce', 'Retreat (R) saves a broken squad: it runs home and takes less fire. Reinforce (E) near the HQ or a supplied point.'],
+  ['Retreat & reinforce', 'Retreat (R) saves a broken squad: it runs home and takes less fire, and it cannot be given other orders until it arrives. Reinforce (E) near the HQ or a supplied point.'],
   ['Theater of War', 'Defense: hold the marked point against every wave. Offensive: take the sectors in order before the clock runs out.'],
   ['About the factions', 'Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.'],
 ];
