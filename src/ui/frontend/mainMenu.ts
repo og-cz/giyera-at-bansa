@@ -20,7 +20,7 @@ const isDesktopApp = navigator.userAgent.includes('Electron');
 export function showMainMenu(layer: HTMLElement, actions: MenuActions): HTMLElement {
   const items: Item[] = [
     { label: 'Campaign', major: true, action: actions.campaign, info: 'Fight through the defence of Luzon in 1941–42 and the return in 1945. Missions unlock in order.' },
-    { label: 'Theater of War', major: true, action: actions.theater, info: 'Standalone scenarios: hold a hilltop, defend a barrio, or assault a fortified highway. Earn medals on each difficulty.' },
+    { label: 'Theater of War', major: true, action: actions.theater, info: 'Four operations: defend the walled city of Intramuros, hold a hilltop, assault a fortified highway, or fight a historical skirmish. Earn medals on each difficulty.' },
     { label: 'Skirmish', major: true, action: actions.skirmish, info: 'A classic match against the AI. Capture victory points and drain the enemy’s tickets.' },
     { label: 'How to Play', major: false, action: actions.howToPlay, info: 'Controls, cover, suppression and the other rules of the battlefield.' },
   ];
