@@ -22,6 +22,9 @@ export interface CommandResult {
 const OK: CommandResult = { ok: true };
 const fail = (reason: string): CommandResult => ({ ok: false, reason });
 
+/** Retreating squads ignore every order until they reach headquarters. */
+const RETREATING = fail('Retreating: orders resume at headquarters');
+
 function commandable(sq: Squad): boolean {
   return !sq.dead && sq.def.kind !== 'structure';
 }
@@ -33,7 +36,7 @@ export function issueMove(world: World, sq: Squad, dest: Vec2, queue = false, fa
     sq.rally = { ...dest };
     return OK;
   }
-  sq.retreating = false;
+  if (sq.retreating) return RETREATING;
   sq.channel = null;
   setOrder(sq, { kind: 'move', dest: clampToMap(world, dest), facing }, queue);
   return OK;
@@ -41,7 +44,7 @@ export function issueMove(world: World, sq: Squad, dest: Vec2, queue = false, fa
 
 export function issueAttackMove(world: World, sq: Squad, dest: Vec2, queue = false): CommandResult {
   if (!commandable(sq)) return fail('Cannot move');
-  sq.retreating = false;
+  if (sq.retreating) return RETREATING;
   sq.channel = null;
   setOrder(sq, { kind: 'attackMove', dest: clampToMap(world, dest) }, queue);
   return OK;
@@ -50,7 +53,7 @@ export function issueAttackMove(world: World, sq: Squad, dest: Vec2, queue = fal
 export function issueAttack(_world: World, sq: Squad, target: Squad): CommandResult {
   if (sq.dead || target.dead || target.team === sq.team) return fail('Invalid target');
   if (sq.def.kind === 'structure') return fail('Structures fire automatically');
-  sq.retreating = false;
+  if (sq.retreating) return RETREATING;
   sq.channel = null;
   setOrder(sq, { kind: 'attack', targetId: target.id });
   sq.targetId = target.id;
@@ -60,7 +63,7 @@ export function issueAttack(_world: World, sq: Squad, target: Squad): CommandRes
 
 export function issueStop(_world: World, sq: Squad): CommandResult {
   if (!commandable(sq)) return fail('Cannot stop');
-  sq.retreating = false;
+  if (sq.retreating) return RETREATING;
   sq.channel = null;
   sq.queue.length = 0;
   sq.order = { kind: 'idle' };
@@ -85,7 +88,7 @@ export function issueRetreat(world: World, sq: Squad): CommandResult {
 export function issueReinforce(world: World, sq: Squad): CommandResult {
   if (!commandable(sq) || sq.def.kind === 'vehicle') return fail('Cannot reinforce vehicles');
   if (aliveCount(sq) >= sq.def.models) return fail('Squad is at full strength');
-  if (sq.retreating) return fail('Squad is retreating');
+  if (sq.retreating) return RETREATING;
   if (!canReinforceHere(world, sq)) return fail('Must be near HQ or a supplied friendly point');
   if (world.teams[sq.team].resources.manpower < reinforceCost(sq.def)) return fail('Not enough manpower');
   sq.reinforcing = true;
@@ -96,6 +99,7 @@ export function issueReinforce(world: World, sq: Squad): CommandResult {
 /** Toggle set up / tear down for crew weapons, facing `toward` if given. */
 export function issueSetup(_world: World, sq: Squad, toward?: Vec2): CommandResult {
   if (!commandable(sq) || sq.def.kind !== 'team') return fail('Only weapon teams set up');
+  if (sq.retreating) return RETREATING;
   if (sq.setup === 'deployed' || sq.setup === 'settingUp') {
     startTeardown(sq);
     return OK;
@@ -111,7 +115,7 @@ export function issueSetup(_world: World, sq: Squad, toward?: Vec2): CommandResu
 export function issueAbility(world: World, sq: Squad, abilityId: string, target: Vec2): CommandResult {
   const ab = ABILITIES[abilityId];
   if (!commandable(sq) || !ab || !sq.def.abilities.includes(abilityId)) return fail('Ability unavailable');
-  if (sq.retreating) return fail('Squad is retreating');
+  if (sq.retreating) return RETREATING;
   if (sq.suppState === 'pinned') return fail('Squad is pinned');
   if ((sq.cooldowns[abilityId] ?? 0) > 0) return fail(`${ab.name} is recharging`);
   if (!canAfford(world.teams[sq.team].resources, ab.cost)) return fail('Not enough munitions');
