@@ -1,6 +1,6 @@
 import { FACTIONS, FACTION_IDS } from '../../data/factions';
 import { MAPS, MAP_IDS } from '../../data/maps';
-import type { Difficulty } from '../../data/types';
+import type { Difficulty, WinCondition } from '../../data/types';
 import type { MatchSetup } from '../../game';
 import { el } from '../dom';
 import { difficultyPicker, screenShell } from './shell';
@@ -16,14 +16,21 @@ function loadLast(): Partial<MatchSetup> {
   }
 }
 
-/** Skirmish setup: faction, battlefield and AI difficulty. */
+const WIN_OPTIONS: [WinCondition, string, string][] = [
+  ['points', 'Capture Points', 'Hold victory points to drain the enemy’s 500 tickets.'],
+  ['annihilation', 'Annihilation', 'Destroy every enemy unit and their headquarters.'],
+  ['none', 'None', 'No victory condition. Fight for as long as you like.'],
+];
+
+/** Skirmish setup: faction, battlefield, win condition and AI difficulty. */
 export function showSkirmish(layer: HTMLElement, onStart: (setup: MatchSetup) => void, onBack: () => void): void {
   const last = loadLast();
   let faction = last.faction && FACTIONS[last.faction] ? last.faction : FACTION_IDS[0];
   let map = last.map && MAPS[last.map] ? last.map : MAP_IDS[0];
   let difficulty: Difficulty = last.difficulty ?? 'normal';
+  let win: WinCondition = last.win ?? 'points';
 
-  const { root, body, close } = screenShell('Skirmish', 'Battle the AI for control of the victory points', onBack);
+  const { root, body, close } = screenShell('Skirmish', 'Battle the AI on your own terms', onBack);
 
   const pick = <T extends string>(items: readonly T[], get: () => T, set: (v: T) => void, render: (v: T) => HTMLElement) => {
     const wrap = el('div', { class: 'choices' });
@@ -52,7 +59,7 @@ export function showSkirmish(layer: HTMLElement, onStart: (setup: MatchSetup) =>
 
   const start = el('button', { class: 'deploy', text: 'Deploy' });
   start.addEventListener('click', () => {
-    const setup: MatchSetup = { faction, enemyFaction: FACTION_IDS.find((f) => f !== faction) ?? faction, map, difficulty };
+    const setup: MatchSetup = { faction, enemyFaction: FACTION_IDS.find((f) => f !== faction) ?? faction, map, difficulty, win };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(setup));
     } catch {
@@ -70,6 +77,16 @@ export function showSkirmish(layer: HTMLElement, onStart: (setup: MatchSetup) =>
       factions,
       el('h2', { text: 'Battlefield' }),
       maps,
+      el('h2', { text: 'Victory condition' }),
+      pick(
+        WIN_OPTIONS.map(([id]) => id),
+        () => win,
+        (v) => (win = v),
+        (id) => {
+          const [, label, text] = WIN_OPTIONS.find(([w]) => w === id)!;
+          return el('button', { class: 'card win-card' }, el('h3', { text: label }), el('p', { text }));
+        },
+      ),
       el('div', { class: 'row' }, el('h2', { text: 'Enemy AI' }), difficultyPicker(difficulty, (d) => (difficulty = d)), start),
     ),
   );
