@@ -1,16 +1,18 @@
-# Giyera at Bansa
+# Taga Komando
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45. Inspired by Company of Heroes 2.
 
-Version 0.2.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
+*Formerly known as Giyera at Bansa (versions 0.1.0 and 0.2.0).*
+
+Version 0.3.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
 ## Where to get things
 
 - **The game (Windows):** [Releases page](https://github.com/og-cz/giyera-at-bansa/releases)
-  - `GiyeraAtBansa-Setup-<version>.exe`: installer (Start menu shortcut, uninstaller)
-  - `GiyeraAtBansa-Portable-<version>.exe`: single file, no install, runs from anywhere
+  - `TagaKomando-Setup-<version>.exe`: installer (Start menu shortcut, uninstaller)
+  - `TagaKomando-Portable-<version>.exe`: single file, no install, runs from anywhere
 - **Source code:** https://github.com/og-cz/giyera-at-bansa
 - **Node.js 22 or newer** (only needed to build from source): https://nodejs.org (choose "LTS")
 - **Git** (only needed to build from source): https://git-scm.com/downloads
@@ -26,13 +28,13 @@ Version 0.2.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ## Install
 
-**Installer:** run `GiyeraAtBansa-Setup-<version>.exe`, choose a folder, finish. Start from the Start menu.
+**Installer:** run `TagaKomando-Setup-<version>.exe`, choose a folder, finish. Start from the Start menu.
 
-**Portable:** put `GiyeraAtBansa-Portable-<version>.exe` anywhere and double-click it.
+**Portable:** put `TagaKomando-Portable-<version>.exe` anywhere and double-click it.
 
 **"Windows protected your PC" warning:** the app isn't code-signed yet. Click **More info → Run anyway**.
 
-**Uninstall:** Settings → Apps → Giyera at Bansa → Uninstall. The portable version: delete the file.
+**Uninstall:** Settings → Apps → Taga Komando → Uninstall. The portable version: delete the file.
 
 ## Game modes
 
@@ -124,6 +126,12 @@ How the mission types work:
 **Maps:** Bataan Crossroads, Barrio San Roque (skirmish), Mount Samat, Route 3 (missions).
 
 ## Changelog
+
+**0.3.0**
+- The game is now called **Taga Komando** (previously Giyera at Bansa). Saved campaign progress and medals carry over.
+- The splash screen now reads **OGCZ presents**.
+- A crash in one frame no longer freezes the match; the game keeps running and shows the error.
+- Desktop app: **F12** opens the developer console for bug reports.
 
 **0.2.0**
 - New main menu with a cinematic startup: studio card, title screen and a live battle in the background.
