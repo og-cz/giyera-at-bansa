@@ -4,7 +4,9 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45. Inspired by Co
 
 *Formerly known as Giyera at Bansa (versions 0.1.0 and 0.2.0).*
 
-Version 0.3.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
+*Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
+
+Version 0.3.1 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -44,7 +46,7 @@ Pick a mode from the main menu.
 
 | # | Mission | Date | Type |
 | --- | --- | --- | --- |
-| 1 | Withdrawal to Bataan | December 1941 | Battle: win the victory points |
+| 1 | Withdrawal to Bataan | December 1941 | Annihilation: destroy the enemy vanguard |
 | 2 | Layac Junction | 6 January 1942 | Defense: hold the stone bridge against 6 waves |
 | 3 | Mount Samat | April 1942 | Defense: hold the summit against 10 waves |
 | 4 | The Road to Manila | January 1945 | Offensive: take Route 3 town by town to the Calumpit bridge |
@@ -55,13 +57,17 @@ Pick a mode from the main menu.
 - **Defend the Barrio**: hold a crossroads village against 7 waves.
 - **Highway 3 Assault**: break 4 fortified positions along a highway before time runs out.
 
-**Skirmish**: a classic match against the AI on a map of your choice.
+**Skirmish**: a match against the AI on a map of your choice, with a victory condition of your choice:
+
+- **Capture Points:** holding more victory points drains the enemy's 500 tickets.
+- **Annihilation:** destroy every enemy unit and their headquarters.
+- **None:** no victory condition; fight as long as you like.
 
 How the mission types work:
 
 - **Defense:** keep the marked **HOLD** point. Waves come on a timer and get stronger. You lose if the point falls.
 - **Offensive:** capture the marked **OBJECTIVE** sectors in order. Each one adds 3 minutes and moves your reinforcement point forward. The enemy counterattacks.
-- **Battle / Skirmish:** holding more victory points drains the enemy's 500 tickets.
+- **Battle / Skirmish:** won by the chosen victory condition (Capture Points, Annihilation or None).
 
 ## How to play
 
@@ -115,7 +121,7 @@ How the mission types work:
 
 ## Units
 
-| Role | USAFFE | Imperial Army |
+| Role | Hukbong Maharlika | Imperial Army |
 | --- | --- | --- |
 | Rifle squad | Rifle Squad: 5 men, grenades | Hohei Rifle Squad: 6 men, grenades |
 | Machine gun | M1917 HMG Team | Type 92 HMG Team |
@@ -126,6 +132,11 @@ How the mission types work:
 **Maps:** Bataan Crossroads, Barrio San Roque (skirmish), Mount Samat, Route 3 (missions).
 
 ## Changelog
+
+**0.3.1**
+- The Filipino faction is now called **Hukbong Maharlika** (Maharlika Army).
+- New victory conditions: **Capture Points**, **Annihilation** and **None**, chosen in Skirmish.
+- Campaign mission 1, *Withdrawal to Bataan*, is now an annihilation battle.
 
 **0.3.0**
 - The game is now called **Taga Komando** (previously Giyera at Bansa). Saved campaign progress and medals carry over.
