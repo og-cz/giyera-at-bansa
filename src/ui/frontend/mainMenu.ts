@@ -69,7 +69,7 @@ export function showMainMenu(layer: HTMLElement, actions: MenuActions): HTMLElem
     el(
       'aside',
       { class: 'menu-side' },
-      el('div', { class: 'menu-logo' }, el('div', { class: 'menu-logo-main', text: 'Giyera at Bansa' }), el('div', { class: 'menu-logo-sub', text: 'Luzon · 1941 – 1945' })),
+      el('div', { class: 'menu-logo' }, el('div', { class: 'menu-logo-main', text: 'Taga Komando' }), el('div', { class: 'menu-logo-sub', text: 'Luzon · 1941 – 1945' })),
       nav,
       el('div', { class: 'menu-version', text: `v${__APP_VERSION__}` }),
     ),
