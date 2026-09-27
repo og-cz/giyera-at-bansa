@@ -45,6 +45,47 @@ const ROUTE3_START: PlacedUnit[] = [
 
 export const THEATER: readonly ScenarioDef[] = [
   {
+    id: 'tow-city',
+    name: 'Defend the City',
+    tagline: 'Hold the Plaza de Roma inside the walls of Intramuros against eight waves.',
+    date: 'Scenario',
+    location: 'Intramuros, Manila',
+    briefing: [
+      'The old walled city of Intramuros guards the heart of Manila. Its stone ramparts have stood for centuries; tonight they must stand again.',
+      'The enemy will storm three gates at once: Puerta Real to the south, Santa Lucia to the west and the Parian gate to the east. Every wave is stronger than the last.',
+      'The streets are narrow and the walls cannot be climbed. Cover the gates with your machine guns, keep a reserve at the plaza, and do not let the Plaza de Roma fall.',
+    ],
+    map: 'intramuros',
+    mode: 'defense',
+    factions: ['usaffe', 'ija'],
+    startResources: { manpower: 560, munitions: 90, fuel: 50 },
+    playerUnits: [
+      at('us_riflemen', 41, 36, 90),
+      at('us_riflemen', 49, 40, 90),
+      at('us_hmg', 45, 45, 90, true),
+    ],
+    owners: { 0: 0, 1: 0, 2: 0, 4: 0, 3: 1 },
+    defense: {
+      hold: [0],
+      prepTime: 75,
+      spawns: [
+        { x: 45, y: 66 },
+        { x: 4, y: 38 },
+        { x: 86, y: 38 },
+      ],
+      waves: [
+        wave(0, R, R),
+        wave(70, R, R, R),
+        wave(70, R, R, MG),
+        wave(75, R, R, R, AT),
+        wave(75, R, R, MO, TK),
+        wave(80, R, R, R, R, MG),
+        wave(80, R, R, R, TK, MO),
+        wave(85, R, R, R, R, TK, AT, MG),
+      ],
+    },
+  },
+  {
     id: 'tow-summit',
     name: 'Hold the Summit',
     tagline: 'Defend a hilltop against eight assault waves.',
@@ -78,46 +119,6 @@ export const THEATER: readonly ScenarioDef[] = [
     },
   },
   {
-    id: 'tow-barrio',
-    name: 'Defend the Barrio',
-    tagline: 'Hold the crossroads village against seven waves.',
-    date: 'Scenario',
-    location: 'Bataan Crossroads',
-    briefing: [
-      'The crossroads barrio controls every road on this front. Lose it and the line folds.',
-      'Enemy waves will push from the east along the road and through the paddies to the north and south.',
-      'You hold the supply barn and the sugar central, so your income is secure — as long as the crossroads stands.',
-    ],
-    map: 'bataan',
-    mode: 'defense',
-    factions: ['usaffe', 'ija'],
-    startResources: { manpower: 500, munitions: 70, fuel: 40 },
-    playerUnits: [
-      at('us_riflemen', 46, 33, 0),
-      at('us_riflemen', 46, 38, 0),
-      at('us_hmg', 48, 35.5, 0, true),
-    ],
-    owners: { 0: 0, 3: 0, 6: 0, 4: 1, 5: 1 },
-    defense: {
-      hold: [0],
-      prepTime: 60,
-      spawns: [
-        { x: 88, y: 20 },
-        { x: 90, y: 35 },
-        { x: 88, y: 50 },
-      ],
-      waves: [
-        wave(0, R, R),
-        wave(70, R, R, MG),
-        wave(70, R, R, R, AT),
-        wave(75, R, R, MO, TK),
-        wave(80, R, R, R, MG, AT),
-        wave(80, R, R, R, R, TK, MO),
-        wave(85, R, R, R, R, TK, TK, MG),
-      ],
-    },
-  },
-  {
     id: 'tow-highway',
     name: 'Highway 3 Assault',
     tagline: 'Break four fortified positions along the highway before time runs out.',
@@ -142,6 +143,21 @@ export const THEATER: readonly ScenarioDef[] = [
       counterattackEvery: 150,
       counterattack: [R, R],
     },
+  },
+  {
+    id: 'tow-luzon',
+    name: 'Battle for Luzon',
+    tagline: 'A full battle on historical ground. Choose how it is won.',
+    date: 'December 1941',
+    location: 'Central Luzon',
+    briefing: [
+      'December 1941. Enemy columns are pushing south from the Lingayen beaches, and every crossroads on the plain is contested.',
+      'Build your company, take the ground and break the enemy on your terms: hold the victory points, annihilate them, or fight with no limit at all.',
+    ],
+    map: 'bataan',
+    mode: 'skirmish',
+    win: 'points',
+    factions: ['usaffe', 'ija'],
   },
 ];
 
