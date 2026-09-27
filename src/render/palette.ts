@@ -20,6 +20,7 @@ export const TERRAIN_BASE: Record<number, string> = {
   [T.Building]: '#6e4b31',
   [T.Jungle]: '#2c4f22',
   [T.Water]: '#3b6e8c',
+  [T.Rampart]: '#7d7668',
 };
 
 export const COVER_COLOR: Record<CoverType, string> = {
