@@ -75,5 +75,5 @@ export const VETERANCY = {
 /** AI income multiplier per difficulty. */
 export const DIFFICULTY: Record<Difficulty, number> = { easy: 0.75, normal: 1, hard: 1.3 };
 
-/** Radians per second a deployed crew weapon can pivot to track a target. */
-export const CREW_PIVOT_RATE = 0.9;
+/** Radians per second a deployed crew weapon can pivot to track a target. Slow, so flanking works. */
+export const CREW_PIVOT_RATE = 0.12;
