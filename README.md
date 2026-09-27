@@ -4,7 +4,7 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.3.4 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.3.5 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -147,15 +147,17 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 ## Changelog
 
+**0.3.5**
+- Retreat is binding: a retreating squad takes no other orders until it reaches headquarters.
+- **Unit counters:** every weapon now hits infantry, weapon teams, vehicles and buildings differently, so each unit has clear strengths and weaknesses (see *Unit roles*). Machine guns turn slowly, mortars cannot fire at close range, bazookas kill tanks faster.
+- **In Progress panel:** units being recruited, queued units and squads reinforcing each show a progress bar, time left and (for purchases) cancel with refund. Roster cards and the unit card show reinforcement progress.
+
 **0.3.4**
 - The Filipino faction is now called **Hukbong Maharlika** (Maharlika Army).
 - New victory conditions: **Capture Points**, **Annihilation** and **None**, chosen in Skirmish and in the Battle for Luzon operation.
 - Campaign mission 1, *Withdrawal to Bataan*, is now an annihilation battle.
 - **Right-click drag** to move and face: machine gun and mortar teams set up aimed that way, and their firing cone shows while you drag. **Set Up (D)** shows the live cone too.
 - New in-game HUD: objective and timer top centre, unit roster top right, minimap, unit portrait card and command card along the bottom, with rich tooltips.
-- Retreat is binding: a retreating squad takes no other orders until it reaches headquarters.
-- **Unit counters:** every weapon now hits infantry, weapon teams, vehicles and buildings differently, so each unit has clear strengths and weaknesses (see *Unit roles*). Machine guns turn slowly, mortars cannot fire at close range, bazookas kill tanks faster.
-- **In Progress panel:** units being recruited, queued units and squads reinforcing each show a progress bar, time left and (for purchases) cancel with refund. Roster cards and the unit card show reinforcement progress.
 - Theater of War redesigned as four operation cards: City Defense, Hill Defense, Highway Assault and Historical Skirmish.
 - New map: **Intramuros**, the walled city of Manila, for the new **Defend the City** operation (replaces Defend the Barrio).
 - New terrain: fortress walls that cannot be climbed or seen through.
