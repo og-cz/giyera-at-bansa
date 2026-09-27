@@ -102,29 +102,47 @@ export class Game {
 
   private readonly frame = (now: number): void => {
     if (!this.running) return;
-    const dt = Math.min(0.1, (now - this.last) / 1000);
+    // Clamp both ways: a stalled tab must not fast-forward, a clock step backwards must not stall.
+    const dt = Math.min(0.1, Math.max(0, (now - this.last) / 1000));
     this.last = now;
-    if (!this.paused && !this.ended) {
-      this.acc += dt;
-      while (this.acc >= SIM_DT) {
-        this.ai?.update(this.world, SIM_DT);
-        this.world.step(SIM_DT);
-        this.acc -= SIM_DT;
+    try {
+      if (!this.paused && !this.ended) {
+        this.acc += dt;
+        while (this.acc >= SIM_DT) {
+          this.ai?.update(this.world, SIM_DT);
+          this.world.step(SIM_DT);
+          this.acc -= SIM_DT;
+        }
       }
+      this.input.update(dt);
+      this.renderer.draw(this.ui, this.paused ? 0 : dt);
+      this.hud.consume(this.world.events);
+      this.world.events.length = 0;
+      this.hud.update(dt);
+      this.minimap.draw();
+      if (!this.ended && this.world.winner !== -1) {
+        this.ended = true;
+        // Let the final moment play out briefly before the result screen.
+        window.setTimeout(() => this.showResult(), 1400);
+      }
+    } catch (err) {
+      this.reportError(err);
+    } finally {
+      // Always schedule the next frame so one error can never freeze the game.
+      requestAnimationFrame(this.frame);
     }
-    this.input.update(dt);
-    this.renderer.draw(this.ui, this.paused ? 0 : dt);
-    this.hud.consume(this.world.events);
-    this.world.events.length = 0;
-    this.hud.update(dt);
-    this.minimap.draw();
-    if (!this.ended && this.world.winner !== -1) {
-      this.ended = true;
-      // Let the final moment play out briefly before the result screen.
-      window.setTimeout(() => this.showResult(), 1400);
-    }
-    requestAnimationFrame(this.frame);
   };
+
+  private errorReported = false;
+
+  private reportError(err: unknown): void {
+    console.error(err);
+    this.world.events.length = 0;
+    if (this.errorReported) return;
+    this.errorReported = true;
+    const message = err instanceof Error ? err.message : String(err);
+    this.hud.toast(`Something went wrong: ${message}. Press F12 and screenshot the Console to report it.`, 'bad');
+  }
 
   private showResult(): void {
     if (!this.running) return;
