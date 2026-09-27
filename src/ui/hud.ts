@@ -209,7 +209,7 @@ export class Hud {
       b.classList.toggle('active', this.ui.mode.kind === 'attackMove');
     });
     add('■', 'Stop', 'S', () => ({ title: 'Stop', body: 'Cancel all orders.', key: 'S' }), () => this.input.stop(), (b, own) => (b.disabled = units(own).length === 0));
-    add('↩', 'Retreat', 'R', () => ({ title: 'Retreat', body: 'Fall back to headquarters. Retreating units run faster, take less fire and cannot be pinned.', key: 'R' }), () => this.input.retreat(), (b, own) => {
+    add('↩', 'Retreat', 'R', () => ({ title: 'Retreat', body: 'Fall back to headquarters. Retreating units run faster, take less fire and cannot be pinned, but they take no other orders until they get there.', key: 'R' }), () => this.input.retreat(), (b, own) => {
       b.disabled = units(own).length === 0;
     });
     add('+', 'Reinforce', 'E', () => {
