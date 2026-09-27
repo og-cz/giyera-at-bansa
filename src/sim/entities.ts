@@ -30,6 +30,8 @@ export interface Order {
   dest?: Vec2;
   targetId?: number;
   abilityId?: string;
+  /** Direction to face on arrival (right-click drag); weapon teams set up this way. */
+  facing?: number;
 }
 
 export type SetupState = 'packed' | 'settingUp' | 'deployed' | 'tearingDown';
