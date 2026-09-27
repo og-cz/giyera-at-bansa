@@ -1,7 +1,7 @@
 import { ECONOMY, TILE, VICTORY } from '../data/balance';
 import { FACTIONS } from '../data/factions';
 import { T } from '../data/terrain';
-import type { Difficulty, MapDef, Owner, PlacedUnit, ScenarioDef, TeamId } from '../data/types';
+import type { Difficulty, MapDef, Owner, PlacedUnit, ScenarioDef, TeamId, WinCondition } from '../data/types';
 import { UNITS } from '../data/units';
 import { Rng } from '../core/rng';
 import { add, angleTo, normalize, scale, sub, type Vec2 } from '../core/vec';
@@ -26,6 +26,8 @@ export interface WorldOptions {
   /** Theater of War / Campaign rules; omitted for a plain skirmish. */
   scenario?: ScenarioDef;
   difficulty?: Difficulty;
+  /** Win condition for open battles; overrides the scenario's own. */
+  win?: WinCondition;
 }
 
 /** Owns all simulation state and runs the systems in a fixed order. No rendering here. */
@@ -47,6 +49,7 @@ export class World {
   ticketTimer = 0;
   readonly scenario: ScenarioDef | null;
   readonly difficulty: Difficulty;
+  readonly win: WinCondition;
   readonly objective: ObjectiveState;
   private readonly byId = new Map<number, Squad>();
   private idCounter = 1;
@@ -55,6 +58,7 @@ export class World {
     this.mapDef = opts.map;
     this.scenario = opts.scenario ?? null;
     this.difficulty = opts.difficulty ?? 'normal';
+    this.win = opts.win ?? opts.scenario?.win ?? 'points';
     const scenario = this.scenario;
     this.rng = new Rng(opts.seed ?? 1);
     this.map = GameMap.fromDef(opts.map);
