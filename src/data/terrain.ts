@@ -11,6 +11,7 @@ export const T = {
   Building: 7,
   Jungle: 8,
   Water: 9,
+  Rampart: 10,
 } as const;
 
 export type TerrainId = (typeof T)[keyof typeof T];
@@ -29,6 +30,8 @@ export const TERRAIN: readonly TerrainDef[] = [
   { id: T.Building, name: 'Building', cover: 'heavy', infantryCost: X, vehicleCost: X, blocksSight: true, sightDensity: 0, crushInto: null },
   { id: T.Jungle, name: 'Jungle', cover: 'light', infantryCost: 1.6, vehicleCost: X, blocksSight: false, sightDensity: 1, crushInto: null },
   { id: T.Water, name: 'River', cover: 'none', infantryCost: X, vehicleCost: X, blocksSight: false, sightDensity: 0, crushInto: null },
+  // Massive fortress walls (Intramuros): nothing climbs over or sees through them.
+  { id: T.Rampart, name: 'Fortress Wall', cover: 'heavy', infantryCost: X, vehicleCost: X, blocksSight: true, sightDensity: 0, crushInto: null },
 ];
 
 /** Lowest per-tile cost of any terrain; keeps the A* heuristic admissible. */
