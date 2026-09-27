@@ -1,9 +1,9 @@
 {
-  "name": "giyera-at-bansa",
-  "productName": "Giyera at Bansa",
+  "name": "taga-komando",
+  "productName": "Taga Komando",
   "private": true,
   "version": "0.2.0",
-  "description": "A 2D squad-based tactical RTS inspired by Company of Heroes 2, set in the 1941-42 Philippine campaign.",
+  "description": "A squad-based real-time tactics game set in Luzon, 1941-45.",
   "author": "og-cz",
   "type": "module",
   "main": "electron/main.cjs",
@@ -18,7 +18,7 @@
   },
   "build": {
     "appId": "com.ogcz.giyeraatbansa",
-    "productName": "Giyera at Bansa",
+    "productName": "Taga Komando",
     "directories": {
       "output": "release"
     },
@@ -36,10 +36,10 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "GiyeraAtBansa-Setup-${version}.${ext}"
+      "artifactName": "TagaKomando-Setup-${version}.${ext}"
     },
     "portable": {
-      "artifactName": "GiyeraAtBansa-Portable-${version}.${ext}"
+      "artifactName": "TagaKomando-Portable-${version}.${ext}"
     }
   },
   "devDependencies": {
