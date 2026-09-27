@@ -14,7 +14,7 @@ function createWindow() {
     minHeight: 650,
     show: false,
     backgroundColor: '#11150f',
-    title: 'Giyera at Bansa',
+    title: 'Taga Komando',
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
