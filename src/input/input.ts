@@ -24,6 +24,8 @@ export interface InputCallbacks {
 }
 
 const EDGE = 14;
+/** Screen pixels the right button must travel before a click becomes a drag-to-face. */
+const FACE_DRAG_MIN = 14;
 const PAN_SPEED = 900;
 
 /** Translates mouse/keyboard into selection changes and simulation commands. */
@@ -55,7 +57,10 @@ export class Input {
     on(canvas, 'mouseenter', () => (this.ui.mouse.onCanvas = true));
     on(window, 'keydown', (e) => this.onKeyDown(e));
     on(window, 'keyup', (e) => this.keys.delete(e.key.toLowerCase()));
-    on(window, 'blur', () => this.keys.clear());
+    on(window, 'blur', () => {
+      this.keys.clear();
+      this.ui.faceDrag = null;
+    });
   }
 
   dispose(): void {
@@ -80,6 +85,22 @@ export class Input {
     m.world = this.camera.screenToWorld(m.x, m.y);
     const hover = this.pick(m.world);
     this.ui.hoverId = hover?.id ?? null;
+    this.updateFaceDrag();
+  }
+
+  /** While the right button is held, work out where each unit will stand and face. */
+  private updateFaceDrag(): void {
+    const fd = this.ui.faceDrag;
+    if (!fd) return;
+    const m = this.ui.mouse;
+    if (Math.hypot(m.x - fd.sx, m.y - fd.sy) < FACE_DRAG_MIN) {
+      fd.preview = null;
+      return;
+    }
+    const facing = angleTo(fd.from, m.world);
+    const units = this.selectedOwn().filter(notStructure);
+    const targets = this.formationTargets(units, fd.from, facing);
+    fd.preview = { facing, targets: units.map((s) => ({ id: s.id, pos: targets.get(s.id)! })) };
   }
 
   // ─── Queries ───────────────────────────────────────────────────
@@ -180,14 +201,15 @@ export class Input {
   }
 
   /** Spread multiple squads across a line perpendicular to the move direction. */
-  private formationTargets(squads: Squad[], dest: Vec2): Map<number, Vec2> {
+  /** Line squads up across the move direction, or across the facing for drag orders. */
+  private formationTargets(squads: Squad[], dest: Vec2, facing?: number): Map<number, Vec2> {
     const out = new Map<number, Vec2>();
     if (squads.length === 1) {
       out.set(squads[0].id, dest);
       return out;
     }
     const c = scale(squads.reduce((acc, s) => add(acc, s.pos), { x: 0, y: 0 }), 1 / squads.length);
-    const a = angleTo(c, dest);
+    const a = facing ?? angleTo(c, dest);
     const perp = { x: -Math.sin(a), y: Math.cos(a) };
     const proj = (p: Vec2) => (p.x - c.x) * perp.x + (p.y - c.y) * perp.y;
     const sorted = [...squads].sort((s1, s2) => proj(s1.pos) - proj(s2.pos));
@@ -197,6 +219,14 @@ export class Input {
       out.set(s.id, this.world.map.nearestPassable(add(dest, scale(perp, off)), mover));
     });
     return out;
+  }
+
+  private commandFacing(p: Vec2, facing: number, shift: boolean): void {
+    const own = this.selectedOwn();
+    const units = own.filter(notStructure);
+    const targets = this.formationTargets(units, p, facing);
+    this.report(units.map((s) => issueMove(this.world, s, targets.get(s.id)!, shift, facing)));
+    for (const hq of own.filter((s) => !notStructure(s))) issueMove(this.world, hq, p);
   }
 
   private commandAt(p: Vec2, shift: boolean): void {
@@ -224,7 +254,7 @@ export class Input {
     }
     if (e.button === 2) {
       if (this.ui.mode.kind !== 'none') this.ui.mode = { kind: 'none' };
-      else this.commandAt(p, e.shiftKey);
+      else this.ui.faceDrag = { from: p, sx: e.offsetX, sy: e.offsetY, shift: e.shiftKey, preview: null };
       return;
     }
     if (e.button !== 0) return;
@@ -266,6 +296,17 @@ export class Input {
   private onMouseUp(e: MouseEvent): void {
     if (e.button === 1) {
       this.middleDrag = null;
+      return;
+    }
+    if (e.button === 2) {
+      const fd = this.ui.faceDrag;
+      if (!fd) return;
+      // Use the exact release point, not the last frame's.
+      this.ui.mouse.world = this.camera.screenToWorld(this.ui.mouse.x, this.ui.mouse.y);
+      this.updateFaceDrag();
+      this.ui.faceDrag = null;
+      if (fd.preview) this.commandFacing(fd.from, fd.preview.facing, fd.shift);
+      else this.commandAt(fd.from, fd.shift);
       return;
     }
     if (e.button !== 0 || !this.ui.drag) return;
