@@ -26,9 +26,9 @@ const unit = (def: Partial<UnitDef> & Pick<UnitDef, 'id' | 'name' | 'description
 });
 
 const LIST: UnitDef[] = [
-  // ─── USAFFE ───────────────────────────────────────────────
+  // ─── Hukbong Maharlika ─────────────────────────────────────
   unit({
-    id: 'us_hq', name: 'USAFFE Headquarters', kind: 'structure', role: 'hq',
+    id: 'us_hq', name: 'Maharlika Headquarters', kind: 'structure', role: 'hq',
     description: 'Produces units, heals and reinforces nearby squads. Lose it and you lose the battle.',
     modelHp: 2800, speed: 0, sight: 260, loadout: [{ weapons: ['hq_mg'], count: 1 }],
     armor: { front: 180, rear: 180 }, radius: 36, receivedAccuracy: 1.5, vetXp: [],
