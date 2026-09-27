@@ -3,11 +3,12 @@ import { el } from './dom';
 export const CONTROLS: [string, string][] = [
   ['Left-click / drag', 'Select units (Shift adds, double-click selects same type)'],
   ['Right-click', 'Move, or attack the enemy under the cursor (Shift queues)'],
+  ['Right-click + drag', 'Move there and face the drag direction; weapon teams set up aimed that way'],
   ['A', 'Attack-move'],
   ['S', 'Stop'],
   ['R', 'Retreat to HQ'],
   ['E', 'Reinforce (near HQ or a supplied point)'],
-  ['D', 'Set up / tear down weapon teams'],
+  ['D', 'Set up / tear down weapon teams (shows the firing cone; click to aim)'],
   ['G / B', 'Grenade / mortar barrage'],
   ['H', 'Select headquarters'],
   ['Ctrl+1–9 / 1–9', 'Assign / recall control group (double-tap to jump)'],
