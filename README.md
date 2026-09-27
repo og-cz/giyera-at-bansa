@@ -1,8 +1,6 @@
 # Taga Komando
 
-Squad-based real-time tactics game for Windows. Luzon, 1941–45. Inspired by Company of Heroes 2.
-
-*Formerly known as Giyera at Bansa (versions 0.1.0 and 0.2.0).*
+Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
@@ -140,13 +138,13 @@ How the mission types work:
 - New victory conditions: **Capture Points**, **Annihilation** and **None**, chosen in Skirmish and in the Battle for Luzon operation.
 - Campaign mission 1, *Withdrawal to Bataan*, is now an annihilation battle.
 - **Right-click drag** to move and face: machine gun and mortar teams set up aimed that way, and their firing cone shows while you drag. **Set Up (D)** shows the live cone too.
-- New in-game HUD in the Company of Heroes 2 layout: objective and timer top centre, unit roster top right, minimap, unit portrait card and command card along the bottom, with rich tooltips.
+- New in-game HUD: objective and timer top centre, unit roster top right, minimap, unit portrait card and command card along the bottom, with rich tooltips.
 - Theater of War redesigned as four operation cards: City Defense, Hill Defense, Highway Assault and Historical Skirmish.
 - New map: **Intramuros**, the walled city of Manila, for the new **Defend the City** operation (replaces Defend the Barrio).
 - New terrain: fortress walls that cannot be climbed or seen through.
 
 **0.3.0**
-- The game is now called **Taga Komando** (previously Giyera at Bansa). Saved campaign progress and medals carry over.
+- The game is now called **Taga Komando**. Saved campaign progress and medals carry over.
 - The splash screen now reads **OGCZ presents**.
 - A crash in one frame no longer freezes the match; the game keeps running and shows the error.
 - Desktop app: **F12** opens the developer console for bug reports.
