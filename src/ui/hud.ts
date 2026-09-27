@@ -29,7 +29,7 @@ interface GridButton {
 }
 
 /**
- * In-game HUD laid out like Company of Heroes 2: objective and timer top
+ * In-game HUD: objective and timer top
  * centre, unit roster top right, minimap / unit portrait / command grid along
  * the bottom, with rich tooltips on every button.
  */
