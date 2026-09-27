@@ -66,7 +66,7 @@ function spotValue(map: GameMap, tx: number, ty: number, facing: Vec2): { cover:
 }
 
 /**
- * CoH-style cover snapping: when a squad stops, each soldier takes the best
+ * Cover snapping: when a squad stops, each soldier takes the best
  * nearby cover facing the direction of travel. Returns one position per
  * soldier, or null for soldiers who should stay in formation.
  */
