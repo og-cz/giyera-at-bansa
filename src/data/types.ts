@@ -153,8 +153,14 @@ export interface MapDef {
   points: readonly MapPointDef[];
 }
 
-/** skirmish = VP tickets; defense = survive enemy waves; offensive = capture sectors in order. */
+/** skirmish = open battle; defense = survive enemy waves; offensive = capture sectors in order. */
 export type GameMode = 'skirmish' | 'defense' | 'offensive';
+
+/**
+ * How an open battle is won. points = victory-point tickets; annihilation =
+ * destroy every enemy unit and the enemy HQ; none = no automatic victory.
+ */
+export type WinCondition = 'points' | 'annihilation' | 'none';
 
 /** A unit placed on the map at the start of a scenario (tile coordinates). */
 export interface PlacedUnit {
@@ -202,6 +208,8 @@ export interface ScenarioDef {
   briefing: readonly string[];
   map: string;
   mode: GameMode;
+  /** Win condition for open battles (mode 'skirmish'); defaults to points. */
+  win?: WinCondition;
   /** [player faction, enemy faction]. */
   factions: readonly [string, string];
   startResources?: Resources;
