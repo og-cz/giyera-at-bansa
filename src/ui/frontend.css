@@ -640,7 +640,7 @@ body.cinematic #game {
   line-height: 1.55;
 }
 
-/* Theater of War: four operation cards, like CoH2's mode select */
+/* Theater of War: four large operation cards */
 
 .tow-cards {
   display: grid;
