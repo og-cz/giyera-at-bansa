@@ -103,11 +103,12 @@ How the mission types work:
 | --- | --- |
 | Left-click / drag | Select units (Shift adds; double-click selects the same unit type) |
 | Right-click | Move, or attack the enemy under the cursor (Shift queues) |
+| Right-click + drag | Move there and face the drag direction. Machine gun and mortar teams set up aimed that way; the firing cone shows while you drag |
 | A | Attack-move |
 | S | Stop |
 | R | Retreat to HQ |
 | E | Reinforce |
-| D | Set up / tear down machine gun and mortar teams |
+| D | Set up / tear down machine gun and mortar teams (shows the firing cone; click to aim) |
 | G | Grenade |
 | B | Mortar barrage |
 | H | Select HQ (right-click then sets the rally point) |
