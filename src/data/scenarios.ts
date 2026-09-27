@@ -151,16 +151,17 @@ export const CAMPAIGN: readonly ScenarioDef[] = [
   {
     id: 'c1-withdrawal',
     name: 'Withdrawal to Bataan',
-    tagline: 'Win the fight for the crossroads while the army falls back.',
+    tagline: 'Destroy the enemy vanguard at the crossroads.',
     date: 'December 1941',
     location: 'Central Luzon',
     briefing: [
       'On 22 December 1941 the Japanese 14th Army landed at Lingayen Gulf and drove south towards Manila.',
       'Command has ordered a fighting withdrawal into the Bataan peninsula. Every day the roads stay open, more men and supplies reach the new line.',
-      'Your company holds a crossroads on the withdrawal route. Take the victory points and bleed the enemy advance.',
+      'An enemy vanguard is racing for the crossroads on the withdrawal route. Destroy it to the last man, and the road stays open.',
     ],
     map: 'bataan',
     mode: 'skirmish',
+    win: 'annihilation',
     factions: ['usaffe', 'ija'],
   },
   {
