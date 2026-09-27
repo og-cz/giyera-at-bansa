@@ -20,7 +20,7 @@ import { finishOrder } from '../orders';
 import { findPath, pathLength } from '../pathfinding';
 import type { World } from '../world';
 import { findCoverSpots } from './cover';
-import { startTeardown, updateSetupTimer } from './setup';
+import { startSetup, startTeardown, updateSetupTimer } from './setup';
 import { suppressionSpeed } from './suppression';
 
 export function updateMovement(world: World, dt: number): void {
@@ -91,8 +91,12 @@ function onArrive(world: World, sq: Squad): void {
     sq.retreating = false;
     finishOrder(sq);
   } else if (k === 'move' || k === 'attackMove') {
+    const facing = sq.order.facing;
     finishOrder(sq);
-    if (sq.order.kind === 'idle' && sq.def.kind === 'infantry') assignCover(world, sq);
+    if (sq.order.kind !== 'idle') return;
+    if (facing !== undefined && !sq.def.vehicle) sq.heading = facing;
+    if (facing !== undefined && sq.def.kind === 'team') startSetup(sq, facing);
+    if (sq.def.kind === 'infantry') assignCover(world, sq);
   } else if (k === 'attack' || k === 'ability') {
     // Path ended without getting in range: the target is unreachable.
     const goal = movementGoal(world, sq);
