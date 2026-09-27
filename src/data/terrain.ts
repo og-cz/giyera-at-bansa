@@ -21,7 +21,7 @@ const X = Infinity;
 export const TERRAIN: readonly TerrainDef[] = [
   { id: T.Open, name: 'Grass', cover: 'none', infantryCost: 1, vehicleCost: 1, blocksSight: false, sightDensity: 0, crushInto: null },
   { id: T.Road, name: 'Road', cover: 'none', infantryCost: 0.85, vehicleCost: 0.7, blocksSight: false, sightDensity: 0, crushInto: null },
-  // Flooded rice paddies leave troops exposed and slow: CoH-style negative cover.
+  // Flooded rice paddies leave troops exposed and slow: negative cover.
   { id: T.Paddy, name: 'Rice Paddy', cover: 'negative', infantryCost: 1.5, vehicleCost: 1.8, blocksSight: false, sightDensity: 0, crushInto: null },
   { id: T.Hedge, name: 'Hedgerow', cover: 'light', infantryCost: 1.3, vehicleCost: 1.4, blocksSight: false, sightDensity: 0.6, crushInto: T.Open },
   { id: T.Crater, name: 'Shell Crater', cover: 'light', infantryCost: 1.2, vehicleCost: 1.3, blocksSight: false, sightDensity: 0, crushInto: null },
