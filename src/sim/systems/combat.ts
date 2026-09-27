@@ -174,8 +174,9 @@ function tryFire(world: World, sq: Squad, m: Model, ws: WeaponState, target: Squ
     applySuppression(world, target, w.suppression * COVER[coverAt(world.map, tm.pos, m.pos)].suppression);
   }
   if (!hit) return;
-  if (target.def.armor) resolveArmorHit(world, sq, w, d, target, tm, m.pos, w.damage);
-  else applyDamage(world, target, tm, w.damage, sq);
+  const damage = w.damage * damageVs(w, target);
+  if (target.def.armor) resolveArmorHit(world, sq, w, d, target, tm, m.pos, damage);
+  else applyDamage(world, target, tm, damage, sq);
 }
 
 export function hitChance(world: World, sq: Squad, w: WeaponDef, d: number, target: Squad, tm: Model, from: Vec2): number {
@@ -187,6 +188,11 @@ export function hitChance(world: World, sq: Squad, w: WeaponDef, d: number, targ
   if (target.retreating) acc *= RETREAT.receivedAccuracy;
   if (isSoft(target)) acc *= w.infantryAccuracy * COVER[coverAt(world.map, tm.pos, from)].accuracy;
   return clamp(acc, 0.02, 0.97);
+}
+
+/** How hard a weapon hits this kind of target (see WeaponDef.vs). */
+export function damageVs(w: WeaponDef, target: Squad): number {
+  return w.vs[target.def.kind] ?? 1;
 }
 
 /** Penetration: guaranteed if pen >= armour, otherwise pen/armour. */
@@ -263,10 +269,10 @@ export function explode(world: World, pos: Vec2, w: WeaponDef, source: Squad | n
       touched = true;
       const falloff = 1 - 0.65 * clamp(d / Math.max(w.aoe, 1), 0, 1);
       if (sq.def.armor) {
-        resolveArmorHit(world, source, w, 0, sq, m, pos, w.damage * falloff);
+        resolveArmorHit(world, source, w, 0, sq, m, pos, w.damage * falloff * damageVs(w, sq));
       } else {
         const c = coverAt(world.map, m.pos, pos);
-        applyDamage(world, sq, m, w.damage * falloff * COVER[c].explosive, source);
+        applyDamage(world, sq, m, w.damage * falloff * COVER[c].explosive * damageVs(w, sq), source);
       }
     }
     if (isSoft(sq) && (touched || dist(sq.pos, pos) < w.aoe * 2)) {
