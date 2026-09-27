@@ -189,7 +189,7 @@ export function hitChance(world: World, sq: Squad, w: WeaponDef, d: number, targ
   return clamp(acc, 0.02, 0.97);
 }
 
-/** CoH-style penetration: guaranteed if pen >= armour, otherwise pen/armour. */
+/** Penetration: guaranteed if pen >= armour, otherwise pen/armour. */
 export function penetrationChance(pen: number, armor: number): number {
   return armor <= 0 ? 1 : Math.min(1, pen / armor);
 }
