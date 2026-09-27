@@ -34,6 +34,11 @@ function createWindow() {
       win.setFullScreen(!win.isFullScreen());
       event.preventDefault();
     }
+    // Developer console, so players can screenshot errors for bug reports.
+    if (input.key === 'F12' || (input.control && input.shift && input.key.toLowerCase() === 'i')) {
+      win.webContents.toggleDevTools();
+      event.preventDefault();
+    }
   });
 
   if (SMOKE) {
