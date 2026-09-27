@@ -6,7 +6,7 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45. Inspired by Co
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.3.1 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.3.4 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -51,11 +51,12 @@ Pick a mode from the main menu.
 | 3 | Mount Samat | April 1942 | Defense: hold the summit against 10 waves |
 | 4 | The Road to Manila | January 1945 | Offensive: take Route 3 town by town to the Calumpit bridge |
 
-**Theater of War**: standalone operations you can replay on any difficulty. Win on Easy, Normal and Hard for Bronze, Silver and Gold medals.
+**Theater of War**: four operations you can replay on any difficulty. Win on Easy, Normal and Hard for Bronze, Silver and Gold medals.
 
-- **Hold the Summit**: defend a hilltop against 8 waves.
-- **Defend the Barrio**: hold a crossroads village against 7 waves.
-- **Highway 3 Assault**: break 4 fortified positions along a highway before time runs out.
+- **Defend the City** (City Defense): hold the Plaza de Roma inside the walls of Intramuros against 8 waves coming through three gates.
+- **Hold the Summit** (Hill Defense): defend a hilltop against 8 waves.
+- **Highway 3 Assault** (Highway Assault): break 4 fortified positions along a highway before time runs out.
+- **Battle for Luzon** (Historical Skirmish): a full battle on historical ground with the victory condition of your choice.
 
 **Skirmish**: a match against the AI on a map of your choice, with a victory condition of your choice:
 
@@ -130,14 +131,19 @@ How the mission types work:
 | Anti-tank | Bazooka Squad | AT Rifle Team |
 | Tank | M3 Stuart | Type 97 Chi-Ha |
 
-**Maps:** Bataan Crossroads, Barrio San Roque (skirmish), Mount Samat, Route 3 (missions).
+**Maps:** Bataan Crossroads, Barrio San Roque (skirmish), Mount Samat, Route 3, Intramuros (missions).
 
 ## Changelog
 
-**0.3.1**
+**0.3.4**
 - The Filipino faction is now called **Hukbong Maharlika** (Maharlika Army).
-- New victory conditions: **Capture Points**, **Annihilation** and **None**, chosen in Skirmish.
+- New victory conditions: **Capture Points**, **Annihilation** and **None**, chosen in Skirmish and in the Battle for Luzon operation.
 - Campaign mission 1, *Withdrawal to Bataan*, is now an annihilation battle.
+- **Right-click drag** to move and face: machine gun and mortar teams set up aimed that way, and their firing cone shows while you drag. **Set Up (D)** shows the live cone too.
+- New in-game HUD in the Company of Heroes 2 layout: objective and timer top centre, unit roster top right, minimap, unit portrait card and command card along the bottom, with rich tooltips.
+- Theater of War redesigned as four operation cards: City Defense, Hill Defense, Highway Assault and Historical Skirmish.
+- New map: **Intramuros**, the walled city of Manila, for the new **Defend the City** operation (replaces Defend the Barrio).
+- New terrain: fortress walls that cannot be climbed or seen through.
 
 **0.3.0**
 - The game is now called **Taga Komando** (previously Giyera at Bansa). Saved campaign progress and medals carry over.
