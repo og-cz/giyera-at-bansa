@@ -526,7 +526,7 @@ export class Renderer {
     }
   }
 
-  /** CoH-style cover preview: where each soldier would stand and how protected they'd be. */
+  /** Cover preview: where each soldier would stand and how protected they'd be. */
   private drawCursorPreview(ui: UIState): void {
     const { ctx, world } = this;
     if (!ui.mouse.onCanvas || ui.drag || ui.faceDrag?.preview) return;
