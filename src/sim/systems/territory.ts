@@ -14,7 +14,7 @@ export interface Sector {
 }
 
 /**
- * CoH territory: the map is split into sectors (one per base and capture point).
+ * Territory: the map is split into sectors (one per base and capture point).
  * A point only pays out while it is connected to its owner's base through a
  * chain of owned sectors — cut the supply line and the income stops.
  */
