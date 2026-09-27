@@ -1,6 +1,6 @@
 import { circle, line, MAPS, rect, scatter } from './maps';
 import { T } from './terrain';
-import type { MapDef } from './types';
+import type { MapDef, MapFeature } from './types';
 
 /**
  * Asymmetric maps for Theater of War and Campaign scenarios. Unlike skirmish
@@ -126,7 +126,97 @@ const ROUTE3: MapDef = {
   ],
 };
 
-export const THEATER_MAPS: Readonly<Record<string, MapDef>> = { [SAMAT.id]: SAMAT, [ROUTE3.id]: ROUTE3 };
+// ─── Intramuros: the walled city of Manila ─────────────────────────
+// Stone ramparts with four gates, a moat, a street grid of dense blocks and
+// the Plaza de Roma at the heart. Defenders hold the north, attackers come
+// through the southern, eastern and western gates.
+
+/** Walls run on these lines; streets cross them only at the gates. */
+const WALL = { west: 16, east: 74, north: 14, south: 60 };
+const STREETS_X = [25, 44, 64];
+const STREETS_Y = [25, 37, 50];
+const PLAZA = { x: 45, y: 38, r: 6 };
+const CHURCH_SQUARE = { x: 49, y: 55, r: 7 };
+
+function cityBlocks(): MapFeature[] {
+  const out: MapFeature[] = [];
+  const xs = [WALL.west + 2, ...STREETS_X.flatMap((s) => [s - 1, s + 2]), WALL.east - 1];
+  const ys = [WALL.north + 2, ...STREETS_Y.flatMap((s) => [s - 1, s + 2]), WALL.south - 1];
+  for (let i = 0; i + 1 < xs.length; i += 2) {
+    for (let j = 0; j + 1 < ys.length; j += 2) {
+      const [x0, x1, y0, y1] = [xs[i], xs[i + 1], ys[j], ys[j + 1]];
+      // Split each block into houses with a one-tile alley between them.
+      const w = x1 - x0;
+      const cols = w > 10 ? 2 : 1;
+      const colW = Math.floor((w - (cols - 1)) / cols);
+      for (let c = 0; c < cols; c++) {
+        const bx = x0 + c * (colW + 1);
+        const cx = bx + colW / 2;
+        const cy = (y0 + y1) / 2;
+        // Keep the plaza, Fort Santiago and San Agustin's square open.
+        if (Math.hypot(cx - PLAZA.x, cy - PLAZA.y) < PLAZA.r + 4) continue;
+        if (cx < 25 && cy < 25) continue;
+        if (Math.hypot(cx - CHURCH_SQUARE.x, cy - CHURCH_SQUARE.y) < CHURCH_SQUARE.r) continue;
+        out.push(rect(T.Building, bx + 0.5, y0 + 0.5, colW - 1, y1 - y0 - 1));
+      }
+    }
+  }
+  return out;
+}
+
+const INTRAMUROS: MapDef = {
+  id: 'intramuros',
+  name: 'Intramuros',
+  description: 'The walled city of Manila. Stone ramparts, four gates, narrow streets and the Plaza de Roma at its heart.',
+  width: 90,
+  height: 72,
+  bases: [
+    { x: 45, y: 4 },
+    { x: 45, y: 69 },
+  ],
+  points: [
+    { x: 45, y: 38, kind: 'victory', name: 'Plaza de Roma' },
+    { x: 21, y: 20, kind: 'munitions', name: 'Fort Santiago' },
+    { x: CHURCH_SQUARE.x, y: CHURCH_SQUARE.y, kind: 'fuel', name: 'San Agustin' },
+    { x: 45, y: 62, kind: 'manpower', name: 'Puerta Real' },
+    { x: 70, y: 38, kind: 'manpower', name: 'Puerta del Parian' },
+  ],
+  features: [
+    // Parks and fields outside the walls
+    circle(T.Jungle, 5, 22, 5),
+    circle(T.Jungle, 85, 22, 5),
+    circle(T.Jungle, 5, 56, 4),
+    circle(T.Jungle, 85, 56, 4),
+    scatter(T.Crater, 18, 64, 54, 6, 14, 12),
+    // Moat around the walls
+    line(T.Water, 2, [12, 11], [78, 11], [78, 64], [12, 64], [12, 11]),
+    // Ramparts with corner bastions
+    line(T.Rampart, 2, [WALL.west, WALL.north], [WALL.east, WALL.north], [WALL.east, WALL.south], [WALL.west, WALL.south], [WALL.west, WALL.north]),
+    circle(T.Rampart, WALL.west, WALL.north, 2.6),
+    circle(T.Rampart, WALL.east, WALL.north, 2.6),
+    circle(T.Rampart, WALL.west, WALL.south, 2.6),
+    circle(T.Rampart, WALL.east, WALL.south, 2.6),
+    // Fort Santiago's inner walls and San Agustin church
+    line(T.Wall, 1, [18, 17], [24, 17]),
+    line(T.Sandbag, 1, [18, 23], [23, 23]),
+    ...cityBlocks(),
+    rect(T.Building, 55, 53, 6, 5),
+    // Barricades around the plaza
+    line(T.Sandbag, 1, [40, 33], [43, 33]),
+    line(T.Sandbag, 1, [47, 33], [50, 33]),
+    line(T.Sandbag, 1, [40, 43], [43, 43]),
+    line(T.Sandbag, 1, [47, 43], [50, 43]),
+    line(T.Sandbag, 1, [39, 34], [39, 36.5]),
+    line(T.Sandbag, 1, [51, 34], [51, 36.5]),
+    // Streets: the two main roads pass through the four gates
+    rect(T.Road, 44, 0, 2, 72),
+    rect(T.Road, 0, 37, 90, 2),
+    ...STREETS_X.filter((x) => x !== 44).map((x) => rect(T.Road, x, WALL.north + 2, 2, WALL.south - WALL.north - 3)),
+    ...STREETS_Y.filter((y) => y !== 37).map((y) => rect(T.Road, WALL.west + 2, y, WALL.east - WALL.west - 3, 2)),
+  ],
+};
+
+export const THEATER_MAPS: Readonly<Record<string, MapDef>> = { [SAMAT.id]: SAMAT, [ROUTE3.id]: ROUTE3, [INTRAMUROS.id]: INTRAMUROS };
 
 /** Every map, skirmish and scenario, by id. */
 export const ALL_MAPS: Readonly<Record<string, MapDef>> = { ...MAPS, ...THEATER_MAPS };
