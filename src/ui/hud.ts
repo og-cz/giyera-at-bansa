@@ -1,39 +1,61 @@
 import { ABILITIES } from '../data/abilities';
 import { ECONOMY } from '../data/balance';
-import type { TeamId } from '../data/types';
+import type { Resources, TeamId } from '../data/types';
 import { UNITS } from '../data/units';
 import { cancelProduction, queueProduction } from '../sim/commands';
 import { aliveCount, healthFraction, type SimEvent, type Squad, type Tone } from '../sim/entities';
 import { canAfford } from '../sim/systems/economy';
-import { forcesRemaining } from '../sim/systems/victory';
 import { reinforceCost } from '../sim/systems/logistics';
+import { forcesRemaining } from '../sim/systems/victory';
 import type { World } from '../sim/world';
 import type { Input } from '../input/input';
 import type { UIState } from '../input/uiState';
-import { el, formatCost, formatTime } from './dom';
+import { el, formatTime } from './dom';
 import type { Minimap } from './minimap';
 
 const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T' };
 
-interface CommandButton {
+interface Tip {
+  title: string;
+  body?: string;
+  cost?: Resources;
+  key?: string;
+  warn?: string;
+}
+
+interface GridButton {
   node: HTMLButtonElement;
   refresh(own: Squad[]): void;
 }
 
-/** DOM heads-up display: resources, victory points, selection, commands and production. */
+/**
+ * In-game HUD laid out like Company of Heroes 2: objective and timer top
+ * centre, unit roster top right, minimap / unit portrait / command grid along
+ * the bottom, with rich tooltips on every button.
+ */
 export class Hud {
   readonly root: HTMLElement;
+  onMenu: () => void = () => {};
+  onHelp: () => void = () => {};
+
   private readonly res: Record<'manpower' | 'munitions' | 'fuel' | 'pop', HTMLElement>;
   private readonly tickets: [HTMLElement, HTMLElement];
   private readonly ticketBars: [HTMLElement, HTMLElement];
   private readonly pointIcons: HTMLElement;
   private readonly objective: { box: HTMLElement; title: HTMLElement; detail: HTMLElement } | null;
   private readonly clock: HTMLElement;
-  private readonly selection: HTMLElement;
-  private readonly commands: CommandButton[] = [];
-  private readonly prodButtons: { id: string; node: HTMLButtonElement }[] = [];
+  private readonly roster: HTMLElement;
+  private readonly rosterCards = new Map<number, HTMLElement>();
+  private readonly unitPanel: HTMLElement;
+  private readonly cardTitle: HTMLElement;
+  private readonly orderGrid: HTMLElement;
+  private readonly buildGrid: HTMLElement;
+  private readonly orders: GridButton[] = [];
+  private readonly builds: { id: string; node: HTMLButtonElement }[] = [];
   private readonly queue: HTMLElement;
   private readonly toasts: HTMLElement;
+  private readonly tooltip: HTMLElement;
+  private tipSource: { node: HTMLElement; get: () => Tip } | null = null;
   private selectionKey = '';
   private timer = 0;
 
@@ -46,16 +68,8 @@ export class Hud {
     minimap: Minimap,
   ) {
     const team = world.teams[player];
-    const stat = (cls: string, label: string) => {
-      const v = el('span', { class: 'val' });
-      return [el('div', { class: `res ${cls}`, title: label }, el('span', { class: 'icon', text: label.slice(0, 2).toUpperCase() }), v), v] as const;
-    };
-    const [mpBox, mp] = stat('mp', 'Manpower');
-    const [muBox, mu] = stat('mu', 'Munitions');
-    const [fuBox, fu] = stat('fu', 'Fuel');
-    const [popBox, pop] = stat('pop', 'Population');
-    this.res = { manpower: mp, munitions: mu, fuel: fu, pop };
 
+    // ─── Top centre: objective or VP bar, clock beneath ───
     const ticketBox = (t: TeamId) => {
       const bar = el('div', { class: 'fill' });
       const num = el('span', { class: 'num' });
@@ -75,111 +89,179 @@ export class Hud {
       const detail = el('div', { class: 'obj-detail' });
       this.objective = { box: el('div', { class: `objective-panel mode-${world.objective.mode}` }, title, detail), title, detail };
     }
+    const top = el('div', { class: 'hud-top' }, this.objective ? this.objective.box : el('div', { class: 'score' }, t0, this.pointIcons, t1), this.clock);
 
-    const top = el(
-      'div',
-      { class: 'topbar' },
-      el('div', { class: 'resources' }, mpBox, muBox, fuBox, popBox),
-      this.objective ? this.objective.box : el('div', { class: 'score' }, t0, this.pointIcons, t1),
-      el('div', { class: 'meta' }, this.clock, this.menuButton()),
-    );
+    // ─── Top right: menu buttons and unit roster ───
+    const menu = el('button', { class: 'corner-btn', text: 'Menu' });
+    const help = el('button', { class: 'corner-btn', text: '?' });
+    menu.addEventListener('click', () => this.onMenu());
+    help.addEventListener('click', () => this.onHelp());
+    this.tip(menu, () => ({ title: 'Menu', body: 'Pause the battle, see the controls, or leave.', key: 'Esc' }));
+    this.tip(help, () => ({ title: 'Controls', body: 'Show every key binding.', key: 'F1' }));
+    this.roster = el('div', { class: 'roster' });
+    const corner = el('div', { class: 'hud-corner' }, el('div', { class: 'corner-btns' }, help, menu), this.roster);
 
-    this.selection = el('div', { class: 'selection' });
-    const cmdGrid = el('div', { class: 'cmd-grid' });
-    this.buildCommands(cmdGrid);
+    // ─── Bottom: minimap · unit card · resources + command grid ───
+    const stat = (cls: string, label: string, icon: string) => {
+      const v = el('span', { class: 'val' });
+      const node = el('div', { class: `res ${cls}` }, el('span', { class: 'icon', text: icon }), v);
+      this.tip(node, () => ({ title: label, body: RESOURCE_HELP[cls] }));
+      return [node, v] as const;
+    };
+    const [mpBox, mp] = stat('mp', 'Manpower', 'MP');
+    const [muBox, mu] = stat('mu', 'Munitions', 'MU');
+    const [fuBox, fu] = stat('fu', 'Fuel', 'FU');
+    const [popBox, pop] = stat('pop', 'Population', 'POP');
+    this.res = { manpower: mp, munitions: mu, fuel: fu, pop };
 
-    const prodGrid = el('div', { class: 'prod-grid' });
-    for (const id of team.faction.roster) {
-      const def = UNITS[id];
-      const node = el(
-        'button',
-        { class: 'prod', title: `${def.name}\n${def.description}\n\nCost: ${formatCost(def.cost)} · Pop ${def.pop} · ${def.buildTime}s` },
-        el('span', { class: 'glyph', text: ROLE_ICON[def.role] }),
-        el('span', { class: 'name', text: def.name }),
-        el('span', { class: 'cost', text: formatCost(def.cost) }),
-      );
-      node.addEventListener('click', () => {
-        const r = queueProduction(world, player, id);
-        if (!r.ok) this.toast(r.reason ?? 'Cannot build', 'bad');
-      });
-      prodGrid.append(node);
-      this.prodButtons.push({ id, node });
-    }
+    this.unitPanel = el('div', { class: 'unit-panel' });
+    this.orderGrid = el('div', { class: 'cmd-grid' });
+    this.buildGrid = el('div', { class: 'cmd-grid build' });
+    this.buildOrders();
+    for (const id of team.faction.roster) this.buildButton(id);
     this.queue = el('div', { class: 'queue' });
+    this.cardTitle = el('div', { class: 'panel-title' });
 
     const bottom = el(
       'div',
       { class: 'bottombar' },
       el('div', { class: 'panel minimap-panel' }, minimap.canvas),
-      el('div', { class: 'panel selection-panel' }, this.selection),
-      el('div', { class: 'panel command-panel' }, el('div', { class: 'panel-title', text: 'Orders' }), cmdGrid),
+      el('div', { class: 'panel unit-card' }, this.unitPanel),
       el(
         'div',
-        { class: 'panel production-panel' },
-        el('div', { class: 'panel-title', text: `${team.faction.name} Headquarters` }),
-        prodGrid,
+        { class: 'panel command-card' },
+        el('div', { class: 'resources' }, mpBox, muBox, fuBox, popBox),
+        this.cardTitle,
+        this.orderGrid,
+        this.buildGrid,
         this.queue,
       ),
     );
+
     this.toasts = el('div', { class: 'toasts' });
-    this.root = el('div', { class: 'hud' }, top, this.toasts, bottom);
+    this.tooltip = el('div', { class: 'tooltip' });
+    this.root = el('div', { class: 'hud' }, top, corner, this.toasts, bottom, this.tooltip);
     parent.append(this.root);
     this.update(0, true);
   }
 
-  onMenu: () => void = () => {};
+  // ─── Tooltips ──────────────────────────────────────────────────
 
-  private menuButton(): HTMLButtonElement {
-    const b = el('button', { class: 'menu-btn', text: 'Menu', title: 'Pause menu (Esc / P)' });
-    b.addEventListener('click', () => this.onMenu());
-    return b;
+  /** Attach a rich tooltip; `get` is re-read while shown so cooldowns stay live. */
+  private tip(node: HTMLElement, get: () => Tip): void {
+    node.addEventListener('mouseenter', () => {
+      this.tipSource = { node, get };
+      this.renderTip();
+    });
+    node.addEventListener('mouseleave', () => {
+      if (this.tipSource?.node === node) this.tipSource = null;
+      this.tooltip.classList.remove('show');
+    });
   }
 
-  private buildCommands(grid: HTMLElement): void {
-    const add = (label: string, key: string, tip: string, action: () => void, refresh: (b: HTMLButtonElement, own: Squad[]) => void) => {
-      const node = el('button', { class: 'cmd', title: tip }, el('span', { class: 'key', text: key }), el('span', { text: label }));
-      node.addEventListener('click', action);
-      grid.append(node);
-      this.commands.push({ node, refresh: (own) => refresh(node, own) });
-    };
-    const units = (own: Squad[]) => own.filter((s) => s.def.kind !== 'structure');
+  private renderTip(): void {
+    const src = this.tipSource;
+    if (!src || !src.node.isConnected) {
+      this.tipSource = null;
+      this.tooltip.classList.remove('show');
+      return;
+    }
+    const t = src.get();
+    const res = this.world.teams[this.player].resources;
+    const parts: HTMLElement[] = [el('div', { class: 'tip-head' }, el('span', { class: 'tip-title', text: t.title }), ...(t.key ? [el('span', { class: 'tip-key', text: t.key })] : []))];
+    if (t.body) parts.push(el('p', { class: 'tip-body', text: t.body }));
+    if (t.cost) {
+      const row = el('div', { class: 'tip-cost' });
+      for (const [k, label] of [['manpower', 'MP'], ['munitions', 'MU'], ['fuel', 'FU']] as const) {
+        if (!t.cost[k]) continue;
+        row.append(el('span', { class: `c ${res[k] < t.cost[k] ? 'short' : ''}`, text: `${t.cost[k]} ${label}` }));
+      }
+      parts.push(row);
+    }
+    if (t.warn) parts.push(el('div', { class: 'tip-warn', text: t.warn }));
+    this.tooltip.replaceChildren(...parts);
+    const r = src.node.getBoundingClientRect();
+    const w = this.tooltip.offsetWidth || 260;
+    this.tooltip.style.left = `${Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2))}px`;
+    this.tooltip.style.bottom = `${window.innerHeight - r.top + 8}px`;
+    this.tooltip.classList.add('show');
+  }
 
-    add('Attack-Move', 'A', 'Move and engage anything on the way (A, then left-click)', () => this.input.attackMoveMode(), (b, own) => {
+  // ─── Command grid ──────────────────────────────────────────────
+
+  private gridButton(grid: HTMLElement, icon: string, label: string, key: string, action: () => void): HTMLButtonElement {
+    const node = el('button', { class: 'cmd' }, el('span', { class: 'cmd-icon', text: icon }), el('span', { class: 'cmd-label', text: label }), el('span', { class: 'key', text: key }));
+    node.addEventListener('click', action);
+    grid.append(node);
+    return node;
+  }
+
+  private buildOrders(): void {
+    const units = (own: Squad[]) => own.filter((s) => s.def.kind !== 'structure');
+    const add = (icon: string, label: string, key: string, tip: () => Tip, action: () => void, refresh: (b: HTMLButtonElement, own: Squad[]) => void) => {
+      const node = this.gridButton(this.orderGrid, icon, label, key, action);
+      this.tip(node, tip);
+      this.orders.push({ node, refresh: (own) => refresh(node, own) });
+    };
+
+    add('⤳', 'Attack-Move', 'A', () => ({ title: 'Attack-Move', body: 'Move and engage anything on the way. Press A, then left-click the destination.', key: 'A' }), () => this.input.attackMoveMode(), (b, own) => {
       b.disabled = units(own).length === 0;
       b.classList.toggle('active', this.ui.mode.kind === 'attackMove');
     });
-    add('Stop', 'S', 'Cancel all orders', () => this.input.stop(), (b, own) => (b.disabled = units(own).length === 0));
-    add('Retreat', 'R', 'Fall back to HQ. Retreating units take less damage and cannot be pinned.', () => this.input.retreat(), (b, own) => {
+    add('■', 'Stop', 'S', () => ({ title: 'Stop', body: 'Cancel all orders.', key: 'S' }), () => this.input.stop(), (b, own) => (b.disabled = units(own).length === 0));
+    add('↩', 'Retreat', 'R', () => ({ title: 'Retreat', body: 'Fall back to headquarters. Retreating units run faster, take less fire and cannot be pinned.', key: 'R' }), () => this.input.retreat(), (b, own) => {
       b.disabled = units(own).length === 0;
     });
-    add('Reinforce', 'E', 'Replace casualties. Must be near HQ or a supplied friendly point.', () => this.input.reinforce(), (b, own) => {
-      const soft = own.filter((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) < s.def.models);
-      b.disabled = soft.length === 0;
-      const label = b.lastElementChild as HTMLElement;
-      label.textContent = soft.length === 1 ? `Reinforce (${reinforceCost(soft[0].def)} MP)` : 'Reinforce';
+    add('+', 'Reinforce', 'E', () => {
+      const soft = this.input.selectedOwn().filter((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) < s.def.models);
+      const cost = soft.length === 1 ? { manpower: reinforceCost(soft[0].def), munitions: 0, fuel: 0 } : undefined;
+      return { title: 'Reinforce', body: 'Replace casualties one soldier at a time. Must be near headquarters or a supplied friendly point.', key: 'E', cost };
+    }, () => this.input.reinforce(), (b, own) => {
+      b.disabled = !own.some((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) < s.def.models);
     });
-    add('Set Up', 'D', 'Set up a weapon team facing the cursor, or tear it down', () => this.input.setupMode(), (b, own) => {
+    add('◭', 'Set Up', 'D', () => ({
+      title: 'Set Up / Tear Down',
+      body: 'Set a weapon team up to fire, aimed at the cursor (the firing cone shows as you aim), or pack it up to move. Tip: right-click drag to move and set up in one order.',
+      key: 'D',
+    }), () => this.input.setupMode(), (b, own) => {
       const teams = own.filter((s) => s.def.kind === 'team');
       b.disabled = teams.length === 0;
       const deployed = teams.some((s) => s.setup === 'deployed' || s.setup === 'settingUp');
-      (b.lastElementChild as HTMLElement).textContent = deployed ? 'Tear Down' : 'Set Up';
+      (b.querySelector('.cmd-label') as HTMLElement).textContent = deployed ? 'Tear Down' : 'Set Up';
       b.classList.toggle('active', this.ui.mode.kind === 'setup');
     });
     for (const hotkey of ['G', 'B']) {
-      add('—', hotkey, '', () => this.input.abilityMode(hotkey), (b, own) => {
-        const holder = own.find((s) => s.def.abilities.some((a) => ABILITIES[a].hotkey === hotkey));
+      const holderOf = (own: Squad[]) => own.find((s) => s.def.abilities.some((a) => ABILITIES[a].hotkey === hotkey));
+      add(hotkey === 'G' ? '✹' : '☄', '—', hotkey, () => {
+        const holder = holderOf(this.input.selectedOwn());
+        if (!holder) return { title: '—' };
+        const ab = ABILITIES[holder.def.abilities.find((a) => ABILITIES[a].hotkey === hotkey)!];
+        const cd = Math.max(0, holder.cooldowns[ab.id] ?? 0);
+        return { title: ab.name, body: ab.description, key: hotkey, cost: ab.cost, warn: cd > 0 ? `Recharging: ${Math.ceil(cd)}s` : undefined };
+      }, () => this.input.abilityMode(hotkey), (b, own) => {
+        const holder = holderOf(own);
         b.style.display = holder ? '' : 'none';
         if (!holder) return;
-        const id = holder.def.abilities.find((a) => ABILITIES[a].hotkey === hotkey)!;
-        const ab = ABILITIES[id];
-        const cd = Math.max(0, holder.cooldowns[id] ?? 0);
-        (b.lastElementChild as HTMLElement).textContent = cd > 0 ? `${ab.name} (${Math.ceil(cd)}s)` : `${ab.name} · ${formatCost(ab.cost)}`;
-        b.title = ab.description;
+        const ab = ABILITIES[holder.def.abilities.find((a) => ABILITIES[a].hotkey === hotkey)!];
+        const cd = Math.max(0, holder.cooldowns[ab.id] ?? 0);
+        (b.querySelector('.cmd-label') as HTMLElement).textContent = cd > 0 ? `${Math.ceil(cd)}s` : ab.name;
         b.disabled = cd > 0 || !canAfford(this.world.teams[this.player].resources, ab.cost);
-        b.classList.toggle('active', this.ui.mode.kind === 'ability' && this.ui.mode.abilityId === id);
+        b.classList.toggle('active', this.ui.mode.kind === 'ability' && this.ui.mode.abilityId === ab.id);
       });
     }
   }
+
+  private buildButton(id: string): void {
+    const def = UNITS[id];
+    const node = this.gridButton(this.buildGrid, ROLE_ICON[def.role], def.name, '', () => {
+      const r = queueProduction(this.world, this.player, id);
+      if (!r.ok) this.toast(r.reason ?? 'Cannot build', 'bad');
+    });
+    this.tip(node, () => ({ title: def.name, body: `${def.description}\n\nPopulation ${def.pop} · Build time ${def.buildTime}s`, cost: def.cost }));
+    this.builds.push({ id, node });
+  }
+
+  // ─── Notifications ─────────────────────────────────────────────
 
   toast(text: string, tone: Tone = 'info'): void {
     const t = el('div', { class: `toast ${tone}`, text });
@@ -195,6 +277,8 @@ export class Hud {
     }
   }
 
+  // ─── Per-tick refresh ──────────────────────────────────────────
+
   update(dt: number, force = false): void {
     this.timer -= dt;
     if (this.timer > 0 && !force) return;
@@ -203,27 +287,34 @@ export class Hud {
     const team = world.teams[this.player];
     const r = team.resources;
     const inc = team.income;
-    this.res.manpower.textContent = `${Math.floor(r.manpower)} (+${Math.round(inc.manpower)})`;
-    this.res.munitions.textContent = `${Math.floor(r.munitions)} (+${Math.round(inc.munitions)})`;
-    this.res.fuel.textContent = `${Math.floor(r.fuel)} (+${Math.round(inc.fuel)})`;
+    this.res.manpower.textContent = `${Math.floor(r.manpower)} +${Math.round(inc.manpower)}`;
+    this.res.munitions.textContent = `${Math.floor(r.munitions)} +${Math.round(inc.munitions)}`;
+    this.res.fuel.textContent = `${Math.floor(r.fuel)} +${Math.round(inc.fuel)}`;
     this.res.pop.textContent = `${team.pop}/${ECONOMY.popCap}`;
     for (const t of [0, 1] as const) {
       this.tickets[t].textContent = String(world.teams[t].tickets);
       this.ticketBars[t].style.width = `${(world.teams[t].tickets / 500) * 100}%`;
     }
     this.pointIcons.replaceChildren(
-      ...world.points
-        .filter((p) => p.kind === 'victory')
-        .map((p) => el('span', { class: `vp o${p.owner}`, title: p.name, text: 'V' })),
+      ...world.points.filter((p) => p.kind === 'victory').map((p) => el('span', { class: `vp o${p.owner}`, title: p.name, text: 'V' })),
     );
     this.clock.textContent = formatTime(world.time);
     if (this.objective) this.renderObjective();
 
     const own = this.input.selectedOwn();
-    for (const c of this.commands) c.refresh(own);
-    for (const b of this.prodButtons) b.node.disabled = !canAfford(r, UNITS[b.id].cost);
+    const units = own.filter((s) => s.def.kind !== 'structure');
+    // Units selected → their orders; HQ or nothing selected → the build menu.
+    const building = units.length === 0;
+    this.orderGrid.style.display = building ? 'none' : '';
+    this.buildGrid.style.display = building ? '' : 'none';
+    this.queue.style.display = building ? '' : 'none';
+    this.cardTitle.textContent = building ? `${team.faction.name} Headquarters` : 'Orders';
+    for (const c of this.orders) c.refresh(own);
+    for (const b of this.builds) b.node.disabled = !canAfford(r, UNITS[b.id].cost);
     this.renderQueue();
-    this.renderSelection();
+    this.renderRoster();
+    this.renderUnitPanel();
+    if (this.tipSource) this.renderTip();
   }
 
   private renderObjective(): void {
@@ -265,56 +356,110 @@ export class Hud {
       ...items.map((item, i) => {
         const def = UNITS[item.unitId];
         const pct = i === 0 ? (1 - item.remaining / def.buildTime) * 100 : 0;
-        const chip = el(
-          'button',
-          { class: 'chip', title: `${def.name} — click to cancel (refund)` },
-          el('span', { text: ROLE_ICON[def.role] }),
-          el('div', { class: 'progress' }, el('div', { class: 'fill' })),
-        );
-        (chip.querySelector('.fill') as HTMLElement).style.width = `${pct}%`;
+        const fill = el('div', { class: 'fill' });
+        fill.style.width = `${pct}%`;
+        const chip = el('button', { class: 'chip', title: `${def.name} — click to cancel (refund)` }, el('span', { text: ROLE_ICON[def.role] }), el('div', { class: 'progress' }, fill));
         chip.addEventListener('mousedown', () => cancelProduction(this.world, this.player, i));
         return chip;
       }),
     );
   }
 
-  private renderSelection(): void {
-    const squads = [...this.ui.selected].map((id) => this.world.get(id)).filter((s): s is Squad => !!s && !s.dead);
-    const key = squads.map((s) => s.id).join(',');
-    if (squads.length === 0) {
-      if (this.selectionKey !== '') {
-        this.selectionKey = '';
-        this.selection.replaceChildren(el('div', { class: 'hint', html: 'Drag to select units · Right-click to move or attack · <b>F1</b> for controls' }));
-      } else if (!this.selection.firstChild) {
-        this.selection.replaceChildren(el('div', { class: 'hint', html: 'Drag to select units · Right-click to move or attack · <b>F1</b> for controls' }));
+  // ─── Unit roster (top right) ───────────────────────────────────
+
+  private renderRoster(): void {
+    const squads = this.world.squads.filter((s) => s.team === this.player && !s.dead && s.def.kind !== 'structure');
+    const alive = new Set(squads.map((s) => s.id));
+    for (const [id, card] of this.rosterCards) {
+      if (alive.has(id)) continue;
+      card.remove();
+      this.rosterCards.delete(id);
+    }
+    for (const sq of squads) {
+      let card = this.rosterCards.get(sq.id);
+      if (!card) {
+        card = this.rosterCard(sq);
+        this.rosterCards.set(sq.id, card);
+        this.roster.append(card);
       }
-      return;
+      this.refreshRosterCard(card, sq);
     }
-    if (squads.length === 1) {
-      this.selectionKey = key;
-      this.selection.replaceChildren(this.detailCard(squads[0]));
-      return;
-    }
-    this.selectionKey = key;
-    this.selection.replaceChildren(
-      el('div', { class: 'multi' }, ...squads.map((s) => this.miniCard(s))),
-    );
   }
 
-  private miniCard(sq: Squad): HTMLElement {
+  private rosterCard(sq: Squad): HTMLElement {
     const card = el(
       'button',
-      { class: `mini t${sq.team}`, title: sq.def.name },
+      { class: 'roster-card' },
       el('span', { class: 'glyph', text: ROLE_ICON[sq.def.role] }),
-      el('div', { class: 'hp' }, el('div', { class: 'fill' })),
+      el('div', { class: 'rc-body' }, el('div', { class: 'rc-name', text: sq.def.name }), el('div', { class: 'rc-bar' }, el('div', { class: 'fill' }))),
+      el('div', { class: 'rc-badges' }),
     );
-    (card.querySelector('.fill') as HTMLElement).style.width = `${healthFraction(sq) * 100}%`;
-    if (sq.suppState !== 'normal') card.classList.add(sq.suppState);
-    card.addEventListener('mousedown', (e) => this.input.select([sq.id], e.shiftKey));
+    // mousedown, not click: the card is refreshed often and a click can get lost between frames.
+    card.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      this.input.select([sq.id], e.shiftKey);
+    });
+    card.addEventListener('dblclick', () => this.input.centerOnSelection());
+    this.tip(card, () => ({ title: sq.def.name, body: this.statusLine(sq) }));
     return card;
   }
 
-  private detailCard(sq: Squad): HTMLElement {
+  private refreshRosterCard(card: HTMLElement, sq: Squad): void {
+    card.classList.toggle('selected', this.ui.selected.has(sq.id));
+    card.classList.toggle('pinned', sq.suppState === 'pinned');
+    card.classList.toggle('retreating', sq.retreating);
+    const fill = card.querySelector('.rc-bar .fill') as HTMLElement;
+    fill.style.width = `${healthFraction(sq) * 100}%`;
+    const group = [...this.ui.groups].find(([, ids]) => ids.includes(sq.id))?.[0];
+    const badges: string[] = [];
+    if (group !== undefined) badges.push(String(group));
+    if (sq.def.kind !== 'vehicle') badges.push(`${aliveCount(sq)}/${sq.def.models}`);
+    if (sq.vet > 0) badges.push('★'.repeat(sq.vet));
+    if (sq.retreating) badges.push('↩');
+    else if (sq.suppState === 'pinned') badges.push('PIN');
+    (card.querySelector('.rc-badges') as HTMLElement).textContent = badges.join(' ');
+  }
+
+  private statusLine(sq: Squad): string {
+    const parts = [`${Math.round(healthFraction(sq) * 100)}% health`];
+    if (sq.def.kind !== 'vehicle') parts.push(`${aliveCount(sq)} of ${sq.def.models} men`);
+    if (sq.retreating) parts.push('retreating');
+    else if (sq.suppState !== 'normal') parts.push(sq.suppState);
+    if (sq.def.kind === 'team') parts.push(sq.setup === 'deployed' ? 'set up' : 'packed');
+    return parts.join(' · ') + '\nClick to select, double-click to jump there.';
+  }
+
+  // ─── Unit card (bottom centre) ─────────────────────────────────
+
+  private renderUnitPanel(): void {
+    const squads = [...this.ui.selected].map((id) => this.world.get(id)).filter((s): s is Squad => !!s && !s.dead);
+    const key = squads.map((s) => s.id).join(',');
+    if (squads.length === 0) {
+      if (this.selectionKey !== 'none') {
+        this.selectionKey = 'none';
+        this.unitPanel.replaceChildren(el('div', { class: 'hint', html: 'Select a unit, or pick one from the roster at the top right.<br>Right-click to move · right-click drag to move and face · <b>F1</b> for controls' }));
+      }
+      return;
+    }
+    this.selectionKey = key;
+    if (squads.length === 1) {
+      this.unitPanel.replaceChildren(this.portraitCard(squads[0]));
+      return;
+    }
+    this.unitPanel.replaceChildren(el('div', { class: 'multi' }, ...squads.map((s) => this.miniCard(s))));
+  }
+
+  private miniCard(sq: Squad): HTMLElement {
+    const fill = el('div', { class: 'fill' });
+    fill.style.width = `${healthFraction(sq) * 100}%`;
+    const card = el('button', { class: `mini t${sq.team}` }, el('span', { class: 'glyph', text: ROLE_ICON[sq.def.role] }), el('div', { class: 'hp' }, fill));
+    if (sq.suppState !== 'normal') card.classList.add(sq.suppState);
+    card.addEventListener('mousedown', (e) => this.input.select([sq.id], e.shiftKey));
+    this.tip(card, () => ({ title: sq.def.name, body: this.statusLine(sq) }));
+    return card;
+  }
+
+  private portraitCard(sq: Squad): HTMLElement {
     const weapons = new Map<string, number>();
     for (const m of sq.models) if (m.alive) for (const w of m.weapons) weapons.set(w.def.name, (weapons.get(w.def.name) ?? 0) + 1);
     const lines: [string, string][] = [];
@@ -329,15 +474,34 @@ export class Hud {
     if (sq.def.vetXp.length) lines.push(['Veterancy', sq.vet > 0 ? '★'.repeat(sq.vet) : `${Math.floor(sq.xp)} / ${sq.def.vetXp[0]} xp`]);
     lines.push(['Weapons', [...weapons].map(([n, c]) => (c > 1 ? `${c}× ${n}` : n)).join(', ') || '—']);
 
-    const owner = sq.team === this.player ? '' : ' (enemy)';
+    const enemy = sq.team !== this.player;
     const fill = el('div', { class: 'fill' });
     fill.style.width = `${hp * 100}%`;
     return el(
       'div',
-      { class: `detail t${sq.team}` },
-      el('div', { class: 'title' }, el('span', { class: 'glyph', text: ROLE_ICON[sq.def.role] }), el('span', { text: sq.def.name + owner })),
-      el('div', { class: 'hpbar' }, fill),
-      el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
+      { class: `portrait-card t${sq.team}` },
+      el(
+        'div',
+        { class: 'portrait' },
+        el('span', { class: 'portrait-glyph', text: ROLE_ICON[sq.def.role] }),
+        el('span', { class: 'portrait-vet', text: '★'.repeat(sq.vet) }),
+        el('div', { class: 'hpbar' }, fill),
+      ),
+      el(
+        'div',
+        { class: 'portrait-text' },
+        el('div', { class: 'portrait-faction', text: this.world.teams[sq.team].faction.name + (enemy ? ' · enemy' : '') }),
+        el('div', { class: 'portrait-name', text: sq.def.name }),
+        el('p', { class: 'portrait-desc', text: sq.def.description }),
+        el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
+      ),
     );
   }
 }
+
+const RESOURCE_HELP: Record<string, string> = {
+  mp: 'Recruits and reinforces soldiers. Income comes from your base; a larger army costs more upkeep.',
+  mu: 'Pays for grenades, barrages and anti-tank weapons. Earned from munitions points (M).',
+  fu: 'Pays for tanks. Earned from fuel points (F).',
+  pop: 'Army size. Every unit takes population; you cannot exceed the cap.',
+};
