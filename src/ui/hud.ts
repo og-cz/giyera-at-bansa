@@ -5,6 +5,7 @@ import { UNITS } from '../data/units';
 import { cancelProduction, queueProduction } from '../sim/commands';
 import { aliveCount, healthFraction, type SimEvent, type Squad, type Tone } from '../sim/entities';
 import { canAfford } from '../sim/systems/economy';
+import { forcesRemaining } from '../sim/systems/victory';
 import { reinforceCost } from '../sim/systems/logistics';
 import type { World } from '../sim/world';
 import type { Input } from '../input/input';
@@ -66,7 +67,8 @@ export class Hud {
     this.ticketBars = [b0, b1];
     this.pointIcons = el('div', { class: 'vp-icons' });
     this.clock = el('div', { class: 'clock' });
-    if (world.objective.mode === 'skirmish') {
+    // Ticket bars only make sense for capture-point battles; everything else gets an objective panel.
+    if (world.objective.mode === 'skirmish' && world.win === 'points') {
       this.objective = null;
     } else {
       const title = el('div', { class: 'obj-title' });
@@ -227,8 +229,19 @@ export class Hud {
   private renderObjective(): void {
     const { world } = this;
     const o = world.objective;
-    const s = world.scenario!;
+    const s = world.scenario;
     const { title, detail, box } = this.objective!;
+    if (!s?.defense && !s?.offensive) {
+      if (world.win === 'annihilation') {
+        const [mine, theirs] = forcesRemaining(world);
+        title.textContent = 'Annihilation';
+        detail.textContent = `Destroy every enemy unit and their HQ · Enemy forces: ${theirs} · Yours: ${mine}`;
+      } else {
+        title.textContent = 'Free battle';
+        detail.textContent = 'No victory condition · Leave from the Menu when you are done';
+      }
+      return;
+    }
     if (s.defense) {
       const hold = s.defense.hold.map((i) => world.points[i]);
       const threatened = hold.some((p) => p.contested || p.control < 1);
