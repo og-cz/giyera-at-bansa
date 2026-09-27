@@ -8,7 +8,7 @@ export function playIntro(layer: HTMLElement, onDone: () => void): void {
   const splash = el(
     'div',
     { class: 'splash' },
-    el('div', { class: 'splash-card' }, el('div', { class: 'splash-studio', text: 'og-cz' }), el('div', { class: 'splash-presents', text: 'presents' })),
+    el('div', { class: 'splash-card' }, el('div', { class: 'splash-studio', text: 'OGCZ' }), el('div', { class: 'splash-presents', text: 'presents' })),
   );
   layer.append(splash);
 
