@@ -1,6 +1,6 @@
 import { ABILITIES } from '../data/abilities';
 import { CAPTURE, TILE } from '../data/balance';
-import type { TeamId } from '../data/types';
+import type { TeamId, WeaponDef } from '../data/types';
 import { WEAPONS } from '../data/weapons';
 import { add, angleTo, fromAngle, rotate, type Vec2 } from '../core/vec';
 import { aliveCount, formationOffset, healthFraction, maxRange, type Squad } from '../sim/entities';
@@ -95,6 +95,7 @@ export class Renderer {
     this.effects.drawAir(ctx);
     if (!this.spectator) this.drawFog();
     this.drawOrders(ui);
+    this.drawFaceDrag(ui);
     this.drawCursorPreview(ui);
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -528,7 +529,7 @@ export class Renderer {
   /** CoH-style cover preview: where each soldier would stand and how protected they'd be. */
   private drawCursorPreview(ui: UIState): void {
     const { ctx, world } = this;
-    if (!ui.mouse.onCanvas || ui.drag) return;
+    if (!ui.mouse.onCanvas || ui.drag || ui.faceDrag?.preview) return;
     const own = this.selectedOwn(ui);
     const cursor = ui.mouse.world;
 
@@ -552,13 +553,10 @@ export class Renderer {
       return;
     }
     if (ui.mode.kind === 'setup') {
+      // Live preview of where the gun will cover once it is set up.
       for (const sq of own.filter((s) => s.def.kind === 'team')) {
-        const a = angleTo(sq.pos, cursor);
-        ctx.strokeStyle = 'rgba(255,230,120,0.8)';
-        ctx.beginPath();
-        ctx.moveTo(sq.pos.x, sq.pos.y);
-        ctx.lineTo(sq.pos.x + Math.cos(a) * 80, sq.pos.y + Math.sin(a) * 80);
-        ctx.stroke();
+        const w = crewWeapon(sq);
+        if (w) this.drawReach(sq.pos, angleTo(sq.pos, cursor), w, 1);
       }
       return;
     }
@@ -581,6 +579,86 @@ export class Renderer {
       ctx.fill();
       ctx.stroke();
     });
+  }
+
+  /**
+   * Right-click drag preview: an arrow for the facing, and at each unit's
+   * destination the ground its weapon will cover once it arrives.
+   */
+  private drawFaceDrag(ui: UIState): void {
+    const preview = ui.faceDrag?.preview;
+    if (!ui.faceDrag || !preview) return;
+    const { ctx } = this;
+    const from = ui.faceDrag.from;
+    const tip = add(from, fromAngle(preview.facing, 60));
+    ctx.strokeStyle = '#9be29b';
+    ctx.fillStyle = '#9be29b';
+    ctx.lineWidth = 2.5 / Math.max(0.6, this.camera.zoom);
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(tip.x, tip.y);
+    ctx.stroke();
+    const head = [add(tip, fromAngle(preview.facing + 2.6, 12)), add(tip, fromAngle(preview.facing - 2.6, 12))];
+    ctx.beginPath();
+    ctx.moveTo(tip.x, tip.y);
+    ctx.lineTo(head[0].x, head[0].y);
+    ctx.lineTo(head[1].x, head[1].y);
+    ctx.closePath();
+    ctx.fill();
+
+    for (const t of preview.targets) {
+      const sq = this.world.get(t.id);
+      if (!sq) continue;
+      const w = crewWeapon(sq);
+      if (w) this.drawReach(t.pos, preview.facing, w, 1);
+      else this.drawFacingMarker(t.pos, preview.facing);
+    }
+  }
+
+  /** A weapon's coverage: a firing cone for arc-limited guns, a range ring (with dead zone) otherwise. */
+  private drawReach(pos: Vec2, facing: number, w: WeaponDef, alpha: number): void {
+    const { ctx } = this;
+    ctx.lineWidth = 1.5 / Math.max(0.6, this.camera.zoom);
+    if (w.arc < 360) {
+      const half = (w.arc * Math.PI) / 360;
+      ctx.fillStyle = `rgba(255,220,110,${0.16 * alpha})`;
+      ctx.strokeStyle = `rgba(255,220,110,${0.85 * alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      ctx.arc(pos.x, pos.y, w.range, facing - half, facing + half);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      return;
+    }
+    ctx.strokeStyle = `rgba(255,220,110,${0.75 * alpha})`;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, w.range, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (w.minRange > 0) {
+      ctx.fillStyle = `rgba(255,90,60,${0.12 * alpha})`;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, w.minRange, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    this.drawFacingMarker(pos, facing);
+  }
+
+  private drawFacingMarker(pos: Vec2, facing: number): void {
+    const { ctx } = this;
+    const tip = add(pos, fromAngle(facing, 16));
+    ctx.fillStyle = 'rgba(155,226,155,0.9)';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(155,226,155,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    ctx.lineTo(tip.x, tip.y);
+    ctx.stroke();
   }
 
   // ─── Screen-space unit HUD ────────────────────────────────────
@@ -661,4 +739,10 @@ export class Renderer {
       ctx.fillText(status, x, y - 20);
     }
   }
+}
+
+/** The crew-served weapon a team fires once set up, if any. */
+function crewWeapon(sq: Squad): WeaponDef | null {
+  for (const m of sq.models) for (const w of m.weapons) if (w.def.crew) return w.def;
+  return null;
 }
