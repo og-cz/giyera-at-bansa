@@ -129,6 +129,20 @@ How the mission types work:
 | Anti-tank | Bazooka Squad | AT Rifle Team |
 | Tank | M3 Stuart | Type 97 Chi-Ha |
 
+### Unit roles
+
+No unit is simply the strongest. Each one has a job and a threat:
+
+| Unit | Strong against | Weak against |
+| --- | --- | --- |
+| Rifle squad | Weapon teams from the flank, other infantry (grenades flush dug-in crews) | Machine guns from the front, tanks |
+| Machine gun team | Infantry inside its firing cone | Mortars, flanking infantry, tanks |
+| Mortar team | Set-up weapon teams, infantry in cover | Infantry rushes (it cannot fire at close range), tanks; needs a spotter |
+| Anti-tank squad | Tanks, especially from the side or rear | Infantry and machine guns |
+| Tank | Infantry and weapon teams | Anti-tank squads, shots to its thin rear armour |
+
+Machine guns turn slowly once set up, so attacking them from the side works. The unit card and every build button show these strengths and weaknesses.
+
 **Maps:** Bataan Crossroads, Barrio San Roque (skirmish), Mount Samat, Route 3, Intramuros (missions).
 
 ## Changelog
@@ -140,6 +154,8 @@ How the mission types work:
 - **Right-click drag** to move and face: machine gun and mortar teams set up aimed that way, and their firing cone shows while you drag. **Set Up (D)** shows the live cone too.
 - New in-game HUD: objective and timer top centre, unit roster top right, minimap, unit portrait card and command card along the bottom, with rich tooltips.
 - Retreat is binding: a retreating squad takes no other orders until it reaches headquarters.
+- **Unit counters:** every weapon now hits infantry, weapon teams, vehicles and buildings differently, so each unit has clear strengths and weaknesses (see *Unit roles*). Machine guns turn slowly, mortars cannot fire at close range, bazookas kill tanks faster.
+- **In Progress panel:** units being recruited, queued units and squads reinforcing each show a progress bar, time left and (for purchases) cancel with refund. Roster cards and the unit card show reinforcement progress.
 - Theater of War redesigned as four operation cards: City Defense, Hill Defense, Highway Assault and Historical Skirmish.
 - New map: **Intramuros**, the walled city of Manila, for the new **Defend the City** operation (replaces Defend the Barrio).
 - New terrain: fortress walls that cannot be climbed or seen through.
