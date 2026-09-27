@@ -3,7 +3,7 @@ import { controlsTable } from '../menu';
 import { screenShell } from './shell';
 
 const RULES: [string, string][] = [
-  ['Victory points', 'In skirmish each side has 500 tickets. Holding more victory points (V) than the enemy drains theirs.'],
+  ['Victory conditions', 'Capture Points: each side has 500 tickets, and holding more victory points (V) than the enemy drains theirs. Annihilation: destroy every enemy unit and their HQ. None: no victory condition, fight as long as you like.'],
   ['Supply', 'Munitions (M) and fuel (F) points only pay out while connected to your HQ through territory you own. A struck-through point is cut off.'],
   ['Cover', 'Green dots are heavy cover (sandbags, walls, buildings), yellow is light (hedges, craters, jungle), red is exposed (rice paddies). Cover only protects from the far side.'],
   ['Suppression', 'Machine guns suppress and then pin infantry. Pinned squads can only crawl or retreat. Flank the gun or throw a grenade.'],
@@ -11,6 +11,7 @@ const RULES: [string, string][] = [
   ['Armour', 'Tanks have thick front plates and thin rear plates. Hit them from behind. Rifles barely scratch them.'],
   ['Retreat & reinforce', 'Retreat (R) saves a broken squad: it runs home and takes less fire. Reinforce (E) near the HQ or a supplied point.'],
   ['Theater of War', 'Defense: hold the marked point against every wave. Offensive: take the sectors in order before the clock runs out.'],
+  ['About the factions', 'Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.'],
 ];
 
 export function showHowToPlay(layer: HTMLElement, onBack: () => void): void {
