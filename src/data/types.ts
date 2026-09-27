@@ -58,6 +58,12 @@ export interface WeaponDef {
   turret: boolean;
   prefers: 'infantry' | 'vehicle' | 'any';
   projectile: ProjectileKind;
+  /**
+   * Damage multiplier by target type. This is what makes the roster a web of
+   * counters rather than a ladder: mortars wreck weapon teams, rifles bully
+   * crews, anti-tank weapons are wasted on infantry, and so on.
+   */
+  vs: Readonly<Partial<Record<UnitKind, number>>>;
 }
 
 export interface LoadoutEntry {
@@ -101,6 +107,9 @@ export interface UnitDef {
   vehicle: VehicleDef | null;
   radius: number;
   vetXp: readonly number[];
+  /** Plain-language counters, shown in tooltips and on the unit card. */
+  strongVs: string;
+  weakVs: string;
 }
 
 export interface AbilityDef {
