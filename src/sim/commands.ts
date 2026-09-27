@@ -26,7 +26,8 @@ function commandable(sq: Squad): boolean {
   return !sq.dead && sq.def.kind !== 'structure';
 }
 
-export function issueMove(world: World, sq: Squad, dest: Vec2, queue = false): CommandResult {
+/** Move to `dest`; with `facing`, face that way on arrival (weapon teams also set up). */
+export function issueMove(world: World, sq: Squad, dest: Vec2, queue = false, facing?: number): CommandResult {
   if (sq.dead) return fail('Unit is dead');
   if (sq.def.kind === 'structure') {
     sq.rally = { ...dest };
@@ -34,7 +35,7 @@ export function issueMove(world: World, sq: Squad, dest: Vec2, queue = false): C
   }
   sq.retreating = false;
   sq.channel = null;
-  setOrder(sq, { kind: 'move', dest: clampToMap(world, dest) }, queue);
+  setOrder(sq, { kind: 'move', dest: clampToMap(world, dest), facing }, queue);
   return OK;
 }
 
