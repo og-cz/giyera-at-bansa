@@ -37,7 +37,7 @@ function medal(id: string): HTMLElement {
   return m ? el('span', { class: `medal medal-${m}`, text: `${MEDAL_NAME[m]} medal` }) : el('span', { class: 'medal none', text: 'No medal yet' });
 }
 
-/** Theater of War: four operation cards, CoH-style, and a briefing for the chosen one. */
+/** Theater of War: four operation cards and a briefing for the chosen one. */
 export function showTheater(layer: HTMLElement, onStart: (setup: MatchSetup) => void, onBack: () => void): void {
   let selected = THEATER[0];
   let difficulty: Difficulty = 'normal';
