@@ -62,7 +62,7 @@ export class TerrainLayer {
 
     c.fillStyle = shade(TERRAIN_BASE[t] ?? '#5f7b3c', (h - 0.5) * 0.05);
     c.fillRect(x, y, PX, PX);
-    if (t !== T.Water && t !== T.Building && t !== T.Road) this.grassSpecks(x, y, tx, ty, t);
+    if (t !== T.Water && t !== T.Building && t !== T.Road && t !== T.Rampart) this.grassSpecks(x, y, tx, ty, t);
 
     const same = (dx: number, dy: number) => this.map.get(tx + dx, ty + dy) === t;
     switch (t) {
@@ -153,6 +153,30 @@ export class TerrainLayer {
           c.fill();
         }
         break;
+      case T.Rampart: {
+        // Dressed stone blocks, with a shadowed parapet on outer faces.
+        c.strokeStyle = 'rgba(40,36,30,0.45)';
+        c.lineWidth = 1;
+        for (let row = 0; row < 4; row++) {
+          const by = y + row * (PX / 4);
+          c.beginPath();
+          c.moveTo(x, by);
+          c.lineTo(x + PX, by);
+          c.stroke();
+          const shift = row % 2 === 0 ? 0 : PX / 4;
+          for (let bx = x + shift; bx < x + PX; bx += PX / 2) {
+            c.beginPath();
+            c.moveTo(bx, by);
+            c.lineTo(bx, by + PX / 4);
+            c.stroke();
+          }
+        }
+        if (!same(-1, 0)) this.edge(x, y, 4, PX, '#4a453c');
+        if (!same(1, 0)) this.edge(x + PX - 4, y, 4, PX, '#4a453c');
+        if (!same(0, -1)) this.edge(x, y, PX, 4, '#4a453c');
+        if (!same(0, 1)) this.edge(x, y + PX - 5, PX, 5, '#2e2a24');
+        break;
+      }
       case T.Water:
         c.strokeStyle = 'rgba(200,230,255,0.18)';
         c.lineWidth = 1.5;
