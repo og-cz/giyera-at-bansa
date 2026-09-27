@@ -33,9 +33,9 @@ export function playIntro(layer: HTMLElement, onDone: () => void): void {
       'div',
       { class: 'title-wrap' },
       el('div', { class: 'title-kicker', text: 'Luzon · 1941 – 1945' }),
-      el('h1', { class: 'title-main', text: 'Giyera at Bansa' }),
+      el('h1', { class: 'title-main', text: 'Taga Komando' }),
       el('div', { class: 'title-rule' }),
-      el('div', { class: 'title-sub', text: 'War and Nation' }),
+      el('div', { class: 'title-sub', text: 'Real-time squad tactics' }),
     ),
     el('div', { class: 'press-key', text: 'Press any key to continue' }),
   );
