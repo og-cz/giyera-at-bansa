@@ -94,7 +94,7 @@ How the mission types work:
 - Machine guns pin infantry inside their firing cone. Flank them or throw a grenade.
 - Mortars need a friendly unit to see the target.
 - Tanks have thin rear armour. Hit them from behind.
-- Retreat (**R**) damaged squads before they're wiped out, then reinforce (**E**) at the HQ.
+- Retreat (**R**) damaged squads before they're wiped out, then reinforce (**E**) at the HQ. A retreat can't be cancelled: the squad takes no other orders until it gets home.
 
 ## Controls
 
@@ -139,6 +139,7 @@ How the mission types work:
 - Campaign mission 1, *Withdrawal to Bataan*, is now an annihilation battle.
 - **Right-click drag** to move and face: machine gun and mortar teams set up aimed that way, and their firing cone shows while you drag. **Set Up (D)** shows the live cone too.
 - New in-game HUD: objective and timer top centre, unit roster top right, minimap, unit portrait card and command card along the bottom, with rich tooltips.
+- Retreat is binding: a retreating squad takes no other orders until it reaches headquarters.
 - Theater of War redesigned as four operation cards: City Defense, Hill Defense, Highway Assault and Historical Skirmish.
 - New map: **Intramuros**, the walled city of Manila, for the new **Defend the City** operation (replaces Defend the Barrio).
 - New terrain: fortress walls that cannot be climbed or seen through.
