@@ -3,10 +3,10 @@ import type { FactionDef } from './types';
 const LIST: FactionDef[] = [
   {
     id: 'usaffe',
-    name: 'USAFFE',
-    longName: 'U.S. Army Forces in the Far East',
+    name: 'Hukbong Maharlika',
+    longName: 'Maharlika Army',
     description:
-      'Filipino and American defenders of Luzon. Fewer but tougher riflemen, a fast Stuart light tank and bazooka teams to hunt armour.',
+      'Filipino defenders of Luzon. Fewer but tougher riflemen, a fast Stuart light tank and bazooka teams to hunt armour.',
     hq: 'us_hq',
     roster: ['us_riflemen', 'us_hmg', 'us_mortar', 'us_bazooka', 'us_stuart'],
     starting: ['us_riflemen', 'us_riflemen'],
