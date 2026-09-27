@@ -1,5 +1,5 @@
 import { ABILITIES } from '../data/abilities';
-import { ECONOMY } from '../data/balance';
+import { ECONOMY, LOGISTICS } from '../data/balance';
 import type { Resources, TeamId } from '../data/types';
 import { UNITS } from '../data/units';
 import { cancelProduction, queueProduction } from '../sim/commands';
@@ -18,6 +18,8 @@ const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', morta
 interface Tip {
   title: string;
   body?: string;
+  strong?: string;
+  weak?: string;
   cost?: Resources;
   key?: string;
   warn?: string;
@@ -52,7 +54,9 @@ export class Hud {
   private readonly buildGrid: HTMLElement;
   private readonly orders: GridButton[] = [];
   private readonly builds: { id: string; node: HTMLButtonElement }[] = [];
-  private readonly queue: HTMLElement;
+  private readonly jobs: HTMLElement;
+  private readonly jobList: HTMLElement;
+  private readonly jobRows = new Map<string, HTMLElement>();
   private readonly toasts: HTMLElement;
   private readonly tooltip: HTMLElement;
   private tipSource: { node: HTMLElement; get: () => Tip } | null = null;
@@ -119,7 +123,8 @@ export class Hud {
     this.buildGrid = el('div', { class: 'cmd-grid build' });
     this.buildOrders();
     for (const id of team.faction.roster) this.buildButton(id);
-    this.queue = el('div', { class: 'queue' });
+    this.jobList = el('div', { class: 'job-list' });
+    this.jobs = el('div', { class: 'jobs' }, el('div', { class: 'jobs-title', text: 'In progress' }), this.jobList);
     this.cardTitle = el('div', { class: 'panel-title' });
 
     const bottom = el(
@@ -134,13 +139,12 @@ export class Hud {
         this.cardTitle,
         this.orderGrid,
         this.buildGrid,
-        this.queue,
       ),
     );
 
     this.toasts = el('div', { class: 'toasts' });
     this.tooltip = el('div', { class: 'tooltip' });
-    this.root = el('div', { class: 'hud' }, top, corner, this.toasts, bottom, this.tooltip);
+    this.root = el('div', { class: 'hud' }, top, corner, this.toasts, this.jobs, bottom, this.tooltip);
     parent.append(this.root);
     this.update(0, true);
   }
@@ -178,6 +182,8 @@ export class Hud {
       }
       parts.push(row);
     }
+    if (t.strong) parts.push(el('div', { class: 'tip-vs strong' }, el('b', { text: 'Strong vs ' }), t.strong));
+    if (t.weak) parts.push(el('div', { class: 'tip-vs weak' }, el('b', { text: 'Weak vs ' }), t.weak));
     if (t.warn) parts.push(el('div', { class: 'tip-warn', text: t.warn }));
     this.tooltip.replaceChildren(...parts);
     const r = src.node.getBoundingClientRect();
@@ -257,7 +263,7 @@ export class Hud {
       const r = queueProduction(this.world, this.player, id);
       if (!r.ok) this.toast(r.reason ?? 'Cannot build', 'bad');
     });
-    this.tip(node, () => ({ title: def.name, body: `${def.description}\n\nPopulation ${def.pop} · Build time ${def.buildTime}s`, cost: def.cost }));
+    this.tip(node, () => ({ title: def.name, body: `${def.description}\n\nPopulation ${def.pop} · Build time ${def.buildTime}s`, cost: def.cost, strong: def.strongVs, weak: def.weakVs }));
     this.builds.push({ id, node });
   }
 
@@ -307,11 +313,10 @@ export class Hud {
     const building = units.length === 0;
     this.orderGrid.style.display = building ? 'none' : '';
     this.buildGrid.style.display = building ? '' : 'none';
-    this.queue.style.display = building ? '' : 'none';
     this.cardTitle.textContent = building ? `${team.faction.name} Headquarters` : 'Orders';
     for (const c of this.orders) c.refresh(own);
     for (const b of this.builds) b.node.disabled = !canAfford(r, UNITS[b.id].cost);
-    this.renderQueue();
+    this.renderJobs();
     this.renderRoster();
     this.renderUnitPanel();
     if (this.tipSource) this.renderTip();
@@ -349,20 +354,95 @@ export class Hud {
     }
   }
 
-  private renderQueue(): void {
+  // ─── Jobs: production and reinforcement (upgrades later) ──────
+
+  /** Everything the player is waiting on, as uniform progress rows. */
+  private collectJobs(): Job[] {
+    const jobs: Job[] = [];
     const hq = this.world.hqOf(this.player);
-    const items = hq?.production ?? [];
-    this.queue.replaceChildren(
-      ...items.map((item, i) => {
-        const def = UNITS[item.unitId];
-        const pct = i === 0 ? (1 - item.remaining / def.buildTime) * 100 : 0;
-        const fill = el('div', { class: 'fill' });
-        fill.style.width = `${pct}%`;
-        const chip = el('button', { class: 'chip', title: `${def.name} — click to cancel (refund)` }, el('span', { text: ROLE_ICON[def.role] }), el('div', { class: 'progress' }, fill));
-        chip.addEventListener('mousedown', () => cancelProduction(this.world, this.player, i));
-        return chip;
-      }),
-    );
+    (hq?.production ?? []).forEach((item, i) => {
+      const def = UNITS[item.unitId];
+      jobs.push({
+        key: `unit:${i}:${item.unitId}`,
+        kind: 'unit',
+        icon: ROLE_ICON[def.role],
+        title: def.name,
+        detail: i === 0 ? 'Recruiting' : `Queued (${ordinal(i + 1)})`,
+        progress: i === 0 ? 1 - item.remaining / def.buildTime : 0,
+        remaining: i === 0 ? item.remaining : null,
+        cancel: () => cancelProduction(this.world, this.player, i),
+      });
+    });
+    for (const sq of this.world.squads) {
+      if (sq.team !== this.player || sq.dead || !sq.reinforcing) continue;
+      jobs.push({
+        key: `reinforce:${sq.id}`,
+        kind: 'reinforce',
+        icon: ROLE_ICON[sq.def.role],
+        title: `Reinforcing ${sq.def.name}`,
+        detail: `${aliveCount(sq)}/${sq.def.models} men · next soldier arriving`,
+        progress: reinforceProgress(sq),
+        remaining: Math.max(0, sq.reinforceTimer),
+        focus: sq.id,
+      });
+    }
+    return jobs;
+  }
+
+  private renderJobs(): void {
+    const jobs = this.collectJobs();
+    this.jobs.classList.toggle('show', jobs.length > 0);
+    const keys = new Set(jobs.map((j) => j.key));
+    for (const [key, row] of this.jobRows) {
+      if (keys.has(key)) continue;
+      row.remove();
+      this.jobRows.delete(key);
+    }
+    jobs.forEach((job, i) => {
+      let row = this.jobRows.get(job.key);
+      if (!row) {
+        row = this.jobRow(job);
+        this.jobRows.set(job.key, row);
+      }
+      if (this.jobList.children[i] !== row) this.jobList.insertBefore(row, this.jobList.children[i] ?? null);
+      (row.querySelector('.job-detail') as HTMLElement).textContent = job.detail;
+      (row.querySelector('.job-time') as HTMLElement).textContent = job.remaining === null ? '' : `${Math.ceil(job.remaining)}s`;
+      (row.querySelector('.job-bar .fill') as HTMLElement).style.width = `${Math.round(job.progress * 100)}%`;
+    });
+  }
+
+  private jobRow(job: Job): HTMLElement {
+    const parts: HTMLElement[] = [
+      el('span', { class: 'glyph', text: job.icon }),
+      el(
+        'div',
+        { class: 'job-body' },
+        el('div', { class: 'job-head' }, el('span', { class: 'job-title', text: job.title }), el('span', { class: 'job-time' })),
+        el('div', { class: 'job-bar' }, el('div', { class: 'fill' })),
+        el('div', { class: 'job-detail' }),
+      ),
+    ];
+    if (job.cancel) {
+      const cancel = job.cancel;
+      const b = el('button', { class: 'job-cancel', text: '✕' });
+      // mousedown: rows refresh every tick and a click could fall between two frames.
+      b.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        cancel();
+      });
+      this.tip(b, () => ({ title: 'Cancel', body: 'Stop and get the full cost back.' }));
+      parts.push(b);
+    }
+    const row = el('div', { class: `job ${job.kind}` }, ...parts);
+    if (job.focus !== undefined) {
+      const id = job.focus;
+      row.addEventListener('mousedown', () => {
+        this.input.select([id]);
+        this.input.centerOnSelection();
+      });
+      this.tip(row, () => ({ title: job.title, body: 'Click to select the squad and jump to it.' }));
+    }
+    return row;
   }
 
   // ─── Unit roster (top right) ───────────────────────────────────
@@ -391,7 +471,13 @@ export class Hud {
       'button',
       { class: 'roster-card' },
       el('span', { class: 'glyph', text: ROLE_ICON[sq.def.role] }),
-      el('div', { class: 'rc-body' }, el('div', { class: 'rc-name', text: sq.def.name }), el('div', { class: 'rc-bar' }, el('div', { class: 'fill' }))),
+      el(
+        'div',
+        { class: 'rc-body' },
+        el('div', { class: 'rc-name', text: sq.def.name }),
+        el('div', { class: 'rc-bar' }, el('div', { class: 'fill' })),
+        el('div', { class: 'rc-reinforce' }, el('div', { class: 'fill' })),
+      ),
       el('div', { class: 'rc-badges' }),
     );
     // mousedown, not click: the card is refreshed often and a click can get lost between frames.
@@ -417,6 +503,9 @@ export class Hud {
     if (sq.vet > 0) badges.push('★'.repeat(sq.vet));
     if (sq.retreating) badges.push('↩');
     else if (sq.suppState === 'pinned') badges.push('PIN');
+    else if (sq.reinforcing) badges.push('+');
+    card.classList.toggle('reinforcing', sq.reinforcing);
+    (card.querySelector('.rc-reinforce .fill') as HTMLElement).style.width = `${Math.round(reinforceProgress(sq) * 100)}%`;
     (card.querySelector('.rc-badges') as HTMLElement).textContent = badges.join(' ');
   }
 
@@ -459,6 +548,17 @@ export class Hud {
     return card;
   }
 
+  private reinforceBar(sq: Squad): HTMLElement {
+    const fill = el('div', { class: 'fill' });
+    fill.style.width = `${Math.round(reinforceProgress(sq) * 100)}%`;
+    return el(
+      'div',
+      { class: 'portrait-reinforce' },
+      el('span', { text: `Reinforcing · ${aliveCount(sq)}/${sq.def.models} men` }),
+      el('div', { class: 'job-bar' }, fill),
+    );
+  }
+
   private portraitCard(sq: Squad): HTMLElement {
     const weapons = new Map<string, number>();
     for (const m of sq.models) if (m.alive) for (const w of m.weapons) weapons.set(w.def.name, (weapons.get(w.def.name) ?? 0) + 1);
@@ -473,6 +573,8 @@ export class Hud {
     if (sq.def.kind === 'team') lines.push(['Weapon', { packed: 'Packed', settingUp: 'Setting up…', deployed: 'Deployed', tearingDown: 'Packing up…' }[sq.setup]]);
     if (sq.def.vetXp.length) lines.push(['Veterancy', sq.vet > 0 ? '★'.repeat(sq.vet) : `${Math.floor(sq.xp)} / ${sq.def.vetXp[0]} xp`]);
     lines.push(['Weapons', [...weapons].map(([n, c]) => (c > 1 ? `${c}× ${n}` : n)).join(', ') || '—']);
+    if (sq.def.strongVs) lines.push(['Strong vs', sq.def.strongVs]);
+    if (sq.def.weakVs) lines.push(['Weak vs', sq.def.weakVs]);
 
     const enemy = sq.team !== this.player;
     const fill = el('div', { class: 'fill' });
@@ -493,11 +595,36 @@ export class Hud {
         el('div', { class: 'portrait-faction', text: this.world.teams[sq.team].faction.name + (enemy ? ' · enemy' : '') }),
         el('div', { class: 'portrait-name', text: sq.def.name }),
         el('p', { class: 'portrait-desc', text: sq.def.description }),
-        el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
+        ...(sq.reinforcing ? [this.reinforceBar(sq)] : []),
+        el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k, class: VS_CLASS[k] ?? '' }), el('dd', { text: v, class: WIDE_ROWS.has(k) ? 'wide' : '' })])),
       ),
     );
   }
 }
+
+interface Job {
+  key: string;
+  /** 'upgrade' is reserved for squad upgrades (e.g. extra bazookas) once they exist. */
+  kind: 'unit' | 'reinforce' | 'upgrade';
+  icon: string;
+  title: string;
+  detail: string;
+  progress: number;
+  remaining: number | null;
+  cancel?: () => void;
+  focus?: number;
+}
+
+const ordinal = (n: number): string => `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
+
+/** How far the next reinforcement is, 0..1. */
+const reinforceProgress = (sq: Squad): number =>
+  sq.reinforcing ? 1 - Math.max(0, sq.reinforceTimer) / LOGISTICS.reinforceTime : 0;
+
+const VS_CLASS: Record<string, string> = { 'Strong vs': 'strong', 'Weak vs': 'weak' };
+
+/** Unit card rows long enough to need the full width. */
+const WIDE_ROWS = new Set(['Weapons', 'Strong vs', 'Weak vs']);
 
 const RESOURCE_HELP: Record<string, string> = {
   mp: 'Recruits and reinforces soldiers. Income comes from your base; a larger army costs more upkeep.',
