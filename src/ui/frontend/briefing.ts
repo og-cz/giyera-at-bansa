@@ -21,6 +21,8 @@ export function objectiveLines(s: ScenarioDef): string[] {
       'Your reinforcement point moves forward with the front.',
     ];
   }
+  if (s.win === 'annihilation') return ['Destroy every enemy unit and the enemy headquarters.', 'Capture points still pay out resources, but they do not decide the battle.'];
+  if (s.win === 'none') return ['There is no victory condition. Fight for as long as you like.'];
   return ['Hold more victory points than the enemy to drain their 500 tickets.', 'Destroying the enemy headquarters also wins.'];
 }
 
