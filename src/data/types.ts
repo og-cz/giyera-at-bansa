@@ -2,7 +2,7 @@ export type TeamId = 0 | 1;
 export type Owner = TeamId | -1;
 export type CoverType = 'negative' | 'none' | 'light' | 'heavy';
 export type UnitKind = 'infantry' | 'team' | 'vehicle' | 'structure';
-export type UnitRole = 'hq' | 'line' | 'mg' | 'mortar' | 'at' | 'tank';
+export type UnitRole = 'hq' | 'line' | 'mg' | 'mortar' | 'at' | 'tank' | 'engineer';
 export type PointKind = 'victory' | 'munitions' | 'fuel' | 'manpower';
 export type Mover = 'infantry' | 'vehicle';
 export type Difficulty = 'easy' | 'normal' | 'hard';
@@ -110,6 +110,26 @@ export interface UnitDef {
   /** Plain-language counters, shown in tooltips and on the unit card. */
   strongVs: string;
   weakVs: string;
+  /** Defenses this unit can construct (engineers). */
+  builds: readonly string[];
+  /** Can repair vehicles and structures (engineers). */
+  canRepair: boolean;
+}
+
+/** Something engineers can build: a line of fortification tiles, or a single item such as a mine. */
+export interface BuildableDef {
+  id: string;
+  name: string;
+  hotkey: string;
+  description: string;
+  /** Cost per tile (lines) or per item. */
+  cost: Resources;
+  /** Seconds of work for a full squad, per tile or item. */
+  buildTime: number;
+  shape: 'line' | 'point';
+  /** Terrain laid down when a tile is finished; null for mines. */
+  terrain: number | null;
+  maxLength: number;
 }
 
 export interface AbilityDef {
