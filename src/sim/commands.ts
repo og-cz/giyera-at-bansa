@@ -1,4 +1,5 @@
 import { ABILITIES } from '../data/abilities';
+import { BUILDABLES } from '../data/buildables';
 import { ECONOMY, LOGISTICS } from '../data/balance';
 import type { TeamId } from '../data/types';
 import { UNITS } from '../data/units';
@@ -6,6 +7,7 @@ import { angleTo, type Vec2 } from '../core/vec';
 import { aliveCount, type Squad } from './entities';
 import { resetMovement, setOrder } from './orders';
 import { canAfford, pay, popUsed, refund } from './systems/economy';
+import { planBuild } from './systems/engineering';
 import { canReinforceHere, reinforceCost } from './systems/logistics';
 import { startSetup, startTeardown } from './systems/setup';
 import type { World } from './world';
@@ -121,6 +123,43 @@ export function issueAbility(world: World, sq: Squad, abilityId: string, target:
   if (!canAfford(world.teams[sq.team].resources, ab.cost)) return fail('Not enough munitions');
   sq.channel = null;
   setOrder(sq, { kind: 'ability', abilityId, dest: clampToMap(world, target) });
+  return OK;
+}
+
+/** Engineers: build a line of defenses (or one mine) from `from` to `to`. Cost is paid up front. */
+export function issueBuild(world: World, sq: Squad, buildId: string, from: Vec2, to: Vec2): CommandResult {
+  const def = BUILDABLES[buildId];
+  if (!commandable(sq) || !def || !sq.def.builds.includes(buildId)) return fail('Only engineers can build that');
+  if (sq.retreating) return RETREATING;
+  const plan = planBuild(world, buildId, from, to);
+  const tiles = plan.tiles.filter((t) => t.valid);
+  if (tiles.length === 0) return fail('Cannot build there');
+  if (!canAfford(world.teams[sq.team].resources, plan.cost)) {
+    return fail(plan.cost.munitions > world.teams[sq.team].resources.munitions ? 'Not enough munitions' : 'Not enough manpower');
+  }
+  pay(world.teams[sq.team].resources, plan.cost);
+  const construction = {
+    id: world.nextId(),
+    team: sq.team,
+    buildId,
+    ownerId: sq.id,
+    tiles: tiles.map((t) => ({ tx: t.tx, ty: t.ty, progress: 0, done: false })),
+  };
+  world.constructions.push(construction);
+  sq.channel = null;
+  setOrder(sq, { kind: 'build', targetId: construction.id });
+  return OK;
+}
+
+/** Engineers: repair a friendly vehicle or structure. */
+export function issueRepair(_world: World, sq: Squad, target: Squad): CommandResult {
+  if (!commandable(sq) || !sq.def.canRepair) return fail('Only engineers can repair');
+  if (sq.retreating) return RETREATING;
+  if (target.team !== sq.team || target.dead || !target.def.armor) return fail('Nothing to repair');
+  const hull = target.models.find((m) => m.alive);
+  if (!hull || hull.hp >= hull.maxHp) return fail('Already at full strength');
+  sq.channel = null;
+  setOrder(sq, { kind: 'repair', targetId: target.id });
   return OK;
 }
 
