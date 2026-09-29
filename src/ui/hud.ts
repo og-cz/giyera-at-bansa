@@ -13,7 +13,7 @@ import type { UIState } from '../input/uiState';
 import { el, formatTime } from './dom';
 import type { Minimap } from './minimap';
 
-const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T' };
+const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN' };
 
 interface Tip {
   title: string;
