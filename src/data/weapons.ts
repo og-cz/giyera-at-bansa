@@ -48,6 +48,16 @@ const LIST: WeaponDef[] = [
     range: 150, accuracy: [0.55, 0.3], damage: 12, cooldown: 0.95, clip: 15, reload: 2.4,
     suppression: 0.004, moveAccuracy: 0.65,
   }),
+  weapon('bar', 'Browning Automatic Rifle', {
+    vs: { team: 1.0, structure: 0.2 },
+    range: 170, accuracy: [0.5, 0.3], damage: 10, cooldown: 0.33, clip: 20, reload: 3,
+    suppression: 0.012, moveAccuracy: 0.45,
+  }),
+  weapon('type99_lmg', 'Type 99 Light MG', {
+    vs: { team: 1.0, structure: 0.2 },
+    range: 185, accuracy: [0.5, 0.3], damage: 11, cooldown: 0.35, clip: 30, reload: 3.5,
+    suppression: 0.014, moveAccuracy: 0.35,
+  }),
   weapon('type38_carbine', 'Type 38 Carbine', {
     vs: { team: 1.1, structure: 0.2 },
     range: 160, accuracy: [0.55, 0.32], damage: 16, cooldown: 1.4, clip: 5, reload: 2.4,
