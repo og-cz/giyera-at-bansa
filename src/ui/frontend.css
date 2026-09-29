@@ -87,16 +87,15 @@ body.cinematic #game {
   100% { opacity: 0; transform: scale(1.02); }
 }
 
-.splash-studio {
-  font: 600 46px/1 var(--fe-font);
-  letter-spacing: 0.55em;
-  text-transform: uppercase;
-  color: #e8e8e8;
-  padding-left: 0.55em;
+.splash-studio svg {
+  display: block;
+  width: min(300px, 70vw);
+  height: auto;
+  margin: 0 auto;
 }
 
 .splash-presents {
-  margin-top: 14px;
+  margin-top: 22px;
   font: 400 14px var(--fe-font-body);
   letter-spacing: 0.6em;
   text-transform: uppercase;
