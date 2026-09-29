@@ -20,6 +20,8 @@ const DEFAULTS: Omit<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'> =
   vetXp: [400, 1100, 2200],
   strongVs: '',
   weakVs: '',
+  builds: [],
+  canRepair: false,
 };
 
 const unit = (def: Partial<UnitDef> & Pick<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'>): UnitDef => ({
@@ -45,6 +47,15 @@ const LIST: UnitDef[] = [
     models: 5, modelHp: 80, cost: { manpower: 280, munitions: 0, fuel: 0 }, pop: 6, buildTime: 22,
     speed: 22, sight: 210, loadout: [{ weapons: ['m1_garand'], count: 5 }], canCapture: true,
     abilities: ['grenade_us'],
+  }),
+  unit({
+    id: 'us_engineers', name: 'Combat Engineers', kind: 'infantry', role: 'engineer',
+    description: 'Four engineers with carbines. Build sandbags, barbed wire, tank traps and mines, and repair tanks and the HQ.',
+    strongVs: 'Fortifying ground, keeping tanks in the fight',
+    weakVs: 'Any real firefight',
+    models: 4, modelHp: 75, cost: { manpower: 200, munitions: 0, fuel: 0 }, pop: 4, buildTime: 18,
+    speed: 22, sight: 200, loadout: [{ weapons: ['m1_carbine'], count: 4 }], canCapture: true,
+    builds: ['sandbags', 'wire', 'tanktrap', 'mine'], canRepair: true,
   }),
   unit({
     id: 'us_hmg', name: 'M1917 HMG Team', kind: 'team', role: 'mg',
@@ -101,6 +112,15 @@ const LIST: UnitDef[] = [
     models: 6, modelHp: 70, cost: { manpower: 260, munitions: 0, fuel: 0 }, pop: 6, buildTime: 22,
     speed: 23, sight: 215, loadout: [{ weapons: ['arisaka'], count: 6 }], canCapture: true,
     abilities: ['grenade_ija'],
+  }),
+  unit({
+    id: 'ija_engineers', name: 'Kohei Engineers', kind: 'infantry', role: 'engineer',
+    description: 'Four engineers with carbines. Build sandbags, barbed wire, tank traps and mines, and repair tanks and the HQ.',
+    strongVs: 'Fortifying ground, keeping tanks in the fight',
+    weakVs: 'Any real firefight',
+    models: 4, modelHp: 70, cost: { manpower: 190, munitions: 0, fuel: 0 }, pop: 4, buildTime: 18,
+    speed: 23, sight: 200, loadout: [{ weapons: ['type38_carbine'], count: 4 }], canCapture: true,
+    builds: ['sandbags', 'wire', 'tanktrap', 'mine'], canRepair: true,
   }),
   unit({
     id: 'ija_hmg', name: 'Type 92 HMG Team', kind: 'team', role: 'mg',
