@@ -136,13 +136,23 @@ body.cinematic #game {
   animation: fadeUp 1s 0.4s ease both;
 }
 
+.game-logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .title-main {
-  margin: 14px 0 0;
-  font: 400 clamp(60px, 11vw, 160px) / 0.95 var(--fe-display);
-  letter-spacing: 0.01em;
-  color: #f2ecdc;
-  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
-  animation: titleIn 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  width: min(640px, 62vw);
+  margin: 22px auto 0;
+  color: #c0231f;
+  filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.7)) drop-shadow(0 8px 28px rgba(0, 0, 0, 0.8));
+  animation: logoIn 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes logoIn {
+  from { opacity: 0; transform: scale(1.08); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes titleIn {
@@ -204,8 +214,9 @@ body.cinematic #game {
 }
 
 .menu-logo-main {
-  font: 400 40px/1 var(--fe-display);
-  color: var(--fe-ink);
+  width: 170px;
+  color: #c0231f;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.7));
 }
 
 .menu-logo-sub {
