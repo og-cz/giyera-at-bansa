@@ -1,5 +1,5 @@
 import { WEAPONS } from '../data/weapons';
-import type { FactionDef, Owner, PointKind, ProjectileKind, Resources, TeamId, UnitDef, WeaponDef } from '../data/types';
+import type { FactionDef, LoadoutEntry, Owner, PointKind, ProjectileKind, Resources, TeamId, UnitDef, WeaponDef } from '../data/types';
 import { add, rotate, type Vec2 } from '../core/vec';
 
 export interface WeaponState {
@@ -88,6 +88,12 @@ export interface Squad {
   lastHurt: number;
   lastFired: number;
   dead: boolean;
+  /** This squad's own loadout: the unit's, changed by any upgrade it bought. */
+  loadout: LoadoutEntry[];
+  /** Upgrades already bought. */
+  upgrades: string[];
+  /** Upgrade on its way, if any. */
+  upgrading: { id: string; remaining: number } | null;
 }
 
 export interface CapturePoint {
@@ -180,13 +186,13 @@ export function loadoutIndexFor(def: UnitDef, modelIndex: number): number {
   return Math.max(0, def.loadout.length - 1);
 }
 
-export function createModel(id: number, def: UnitDef, loadoutIndex: number, pos: Vec2): Model {
-  const entry = def.loadout[loadoutIndex];
+export function createModel(id: number, loadout: readonly LoadoutEntry[], loadoutIndex: number, hp: number, pos: Vec2): Model {
+  const entry = loadout[loadoutIndex];
   return {
     id,
     pos: { x: pos.x, y: pos.y },
-    hp: def.modelHp,
-    maxHp: def.modelHp,
+    hp,
+    maxHp: hp,
     alive: true,
     facing: 0,
     loadoutIndex,
@@ -215,7 +221,7 @@ export function createSquad(nextId: () => number, team: TeamId, def: UnitDef, po
   const models: Model[] = [];
   for (let i = 0; i < def.models; i++) {
     const p = add(pos, rotate(formationOffset(i, def.models), heading));
-    const m = createModel(nextId(), def, loadoutIndexFor(def, i), def.kind === 'infantry' || def.kind === 'team' ? p : pos);
+    const m = createModel(nextId(), def.loadout, loadoutIndexFor(def, i), def.modelHp, def.kind === 'infantry' || def.kind === 'team' ? p : pos);
     m.facing = heading;
     models.push(m);
   }
@@ -257,6 +263,9 @@ export function createSquad(nextId: () => number, team: TeamId, def: UnitDef, po
     lastHurt: -Infinity,
     lastFired: -Infinity,
     dead: false,
+    loadout: def.loadout.map((e) => ({ weapons: e.weapons, count: e.count })),
+    upgrades: [],
+    upgrading: null,
   };
 }
 
