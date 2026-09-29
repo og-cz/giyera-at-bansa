@@ -1,10 +1,12 @@
 import { ABILITIES } from '../data/abilities';
+import { BUILDABLES } from '../data/buildables';
 import { CAPTURE, TILE } from '../data/balance';
 import type { TeamId, WeaponDef } from '../data/types';
 import { WEAPONS } from '../data/weapons';
 import { add, angleTo, fromAngle, rotate, type Vec2 } from '../core/vec';
 import { aliveCount, formationOffset, healthFraction, maxRange, type Squad } from '../sim/entities';
 import { coverAt, findCoverSpots } from '../sim/systems/cover';
+import { planBuild } from '../sim/systems/engineering';
 import type { World } from '../sim/world';
 import type { UIState } from '../input/uiState';
 import type { Camera } from './camera';
@@ -96,12 +98,14 @@ export class Renderer {
     if (!this.spectator) this.drawFog();
     this.drawOrders(ui);
     this.drawFaceDrag(ui);
+    this.drawEngineering(ui);
     this.drawCursorPreview(ui);
 
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     for (const sq of visible) this.drawSquadHud(sq, ui);
     this.drawPointLabels();
     this.effects.drawText(ctx, camera);
+    this.drawBuildCost(ui);
     if (ui.drag) {
       const { x0, y0, x1, y1 } = ui.drag;
       ctx.strokeStyle = 'rgba(160,255,160,0.9)';
@@ -613,6 +617,70 @@ export class Renderer {
       if (w) this.drawReach(t.pos, preview.facing, w, 1);
       else this.drawFacingMarker(t.pos, preview.facing);
     }
+  }
+
+  /** Your construction sites and mines (never the enemy's), plus the placement preview. */
+  private drawEngineering(ui: UIState): void {
+    const { ctx, world } = this;
+    const lw = 1.5 / Math.max(0.6, this.camera.zoom);
+    for (const c of world.constructions) {
+      if (c.team !== this.player && !this.spectator) continue;
+      const current = c.tiles.find((t) => !t.done);
+      for (const t of c.tiles) {
+        if (t.done) continue;
+        const x = t.tx * TILE;
+        const y = t.ty * TILE;
+        ctx.strokeStyle = 'rgba(240,210,120,0.85)';
+        ctx.lineWidth = lw;
+        ctx.setLineDash([3, 3]);
+        ctx.strokeRect(x + 1, y + 1, TILE - 2, TILE - 2);
+        ctx.setLineDash([]);
+        if (t === current && t.progress > 0) {
+          ctx.fillStyle = 'rgba(240,210,120,0.45)';
+          ctx.fillRect(x + 1, y + TILE - 1 - (TILE - 2) * t.progress, TILE - 2, (TILE - 2) * t.progress);
+        }
+      }
+    }
+    for (const m of world.mines) {
+      if (m.team !== this.player && !this.spectator) continue;
+      ctx.fillStyle = 'rgba(20,20,18,0.85)';
+      ctx.strokeStyle = TEAM[m.team].main;
+      ctx.lineWidth = lw;
+      ctx.beginPath();
+      ctx.arc(m.pos.x, m.pos.y, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    if (ui.mode.kind !== 'build' || !ui.mouse.onCanvas) return;
+    const plan = planBuild(world, ui.mode.buildId, ui.buildFrom ?? ui.mouse.world, ui.mouse.world);
+    for (const t of plan.tiles) {
+      ctx.fillStyle = t.valid ? 'rgba(120,230,120,0.35)' : 'rgba(240,80,60,0.35)';
+      ctx.strokeStyle = t.valid ? 'rgba(120,230,120,0.9)' : 'rgba(240,80,60,0.9)';
+      ctx.lineWidth = lw;
+      ctx.fillRect(t.tx * TILE, t.ty * TILE, TILE, TILE);
+      ctx.strokeRect(t.tx * TILE + 0.5, t.ty * TILE + 0.5, TILE - 1, TILE - 1);
+    }
+  }
+
+  /** Cost of the defense being placed, next to the cursor. */
+  private drawBuildCost(ui: UIState): void {
+    if (ui.mode.kind !== 'build' || !ui.mouse.onCanvas) return;
+    const def = BUILDABLES[ui.mode.buildId];
+    const plan = planBuild(this.world, ui.mode.buildId, ui.buildFrom ?? ui.mouse.world, ui.mouse.world);
+    const n = plan.tiles.filter((t) => t.valid).length;
+    const parts = [];
+    if (plan.cost.manpower) parts.push(`${plan.cost.manpower} MP`);
+    if (plan.cost.munitions) parts.push(`${plan.cost.munitions} MU`);
+    const text = `${def.name}${def.shape === 'line' ? ` ×${n}` : ''} · ${parts.join(' ') || 'free'}`;
+    const { ctx } = this;
+    ctx.font = '600 12px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    const x = ui.mouse.x + 16;
+    const y = ui.mouse.y + 26;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(x - 4, y - 13, ctx.measureText(text).width + 8, 18);
+    ctx.fillStyle = n > 0 ? '#e9f5d0' : '#ff9a8a';
+    ctx.fillText(text, x, y);
   }
 
   /** A weapon's coverage: a firing cone for arc-limited guns, a range ring (with dead zone) otherwise. */
