@@ -12,6 +12,8 @@ export const T = {
   Jungle: 8,
   Water: 9,
   Rampart: 10,
+  Wire: 11,
+  TankTrap: 12,
 } as const;
 
 export type TerrainId = (typeof T)[keyof typeof T];
@@ -32,6 +34,9 @@ export const TERRAIN: readonly TerrainDef[] = [
   { id: T.Water, name: 'River', cover: 'none', infantryCost: X, vehicleCost: X, blocksSight: false, sightDensity: 0, crushInto: null },
   // Massive fortress walls (Intramuros): nothing climbs over or sees through them.
   { id: T.Rampart, name: 'Fortress Wall', cover: 'heavy', infantryCost: X, vehicleCost: X, blocksSight: true, sightDensity: 0, crushInto: null },
+  // Built by engineers. Wire stops infantry but tanks roll over it; tank traps are the reverse.
+  { id: T.Wire, name: 'Barbed Wire', cover: 'none', infantryCost: X, vehicleCost: 1.2, blocksSight: false, sightDensity: 0, crushInto: T.Open },
+  { id: T.TankTrap, name: 'Tank Traps', cover: 'light', infantryCost: 1.3, vehicleCost: X, blocksSight: false, sightDensity: 0, crushInto: null },
 ];
 
 /** Lowest per-tile cost of any terrain; keeps the A* heuristic admissible. */
