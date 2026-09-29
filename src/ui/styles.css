@@ -656,11 +656,15 @@ button:disabled {
   border-radius: 2px;
 }
 
-.job.reinforce {
+.job.reinforce,
+.job.build,
+.job.repair {
   cursor: pointer;
 }
 
-.job.reinforce:hover {
+.job.reinforce:hover,
+.job.build:hover,
+.job.repair:hover {
   border-color: rgba(217, 180, 90, 0.6);
 }
 
@@ -696,6 +700,10 @@ button:disabled {
   height: 100%;
   background: linear-gradient(90deg, #b8912f, var(--accent));
   transition: width 0.1s linear;
+}
+
+.job.repair .job-bar .fill {
+  background: linear-gradient(90deg, #4a7fb8, #7fb2e8);
 }
 
 .job.reinforce .job-bar .fill {
