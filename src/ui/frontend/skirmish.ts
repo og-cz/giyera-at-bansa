@@ -18,8 +18,8 @@ function loadLast(): Partial<MatchSetup> {
 
 const WIN_OPTIONS: [WinCondition, string, string][] = [
   ['points', 'Capture Points', 'Hold victory points to drain the enemy’s 500 tickets.'],
-  ['annihilation', 'Annihilation', 'Destroy every enemy unit and their headquarters.'],
-  ['none', 'None', 'No victory condition. Fight for as long as you like.'],
+  ['annihilation', 'Annihilation', 'Wipe out the enemy army.'],
+  ['none', 'None', 'No tickets, no time limit.'],
 ];
 
 /** Skirmish setup: faction, battlefield, win condition and AI difficulty. */
