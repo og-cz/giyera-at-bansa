@@ -21,16 +21,16 @@ export function canReinforceHere(world: World, sq: Squad): boolean {
 
 /** Which loadout slot a new recruit should fill (e.g. replace the lost bazooka first). */
 function missingLoadout(sq: Squad): number {
-  const have = sq.def.loadout.map(() => 0);
+  const have = sq.loadout.map(() => 0);
   for (const m of sq.models) if (m.alive) have[m.loadoutIndex]++;
-  const i = sq.def.loadout.findIndex((e, idx) => have[idx] < e.count);
-  return i < 0 ? sq.def.loadout.length - 1 : i;
+  const i = sq.loadout.findIndex((e, idx) => have[idx] < e.count);
+  return i < 0 ? sq.loadout.length - 1 : i;
 }
 
 export function addRecruit(world: World, sq: Squad): void {
   const n = aliveCount(sq);
   const pos = add(sq.pos, rotate(formationOffset(n, n + 1), sq.heading));
-  const m = createModel(world.nextId(), sq.def, missingLoadout(sq), world.map.nearestPassable(pos, 'infantry'));
+  const m = createModel(world.nextId(), sq.loadout, missingLoadout(sq), sq.def.modelHp, world.map.nearestPassable(pos, 'infantry'));
   m.facing = sq.heading;
   sq.models.push(m);
 }
