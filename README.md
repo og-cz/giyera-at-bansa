@@ -119,7 +119,7 @@ How the mission types work:
 | T / Y | Weapon upgrade for the selected rifle squad (near HQ or a supplied point) |
 | H | Select HQ (right-click then sets the rally point) |
 | Ctrl + 1–9 / 1–9 | Assign / select control group (double-tap to jump) |
-| Space | Centre on selection |
+| Space | Tap: centre on selection. Hold + left-drag: grab and move the map |
 | Arrow keys, screen edge, middle-drag | Scroll |
 | Mouse wheel | Zoom |
 | F11 or Alt+Enter | Fullscreen |
