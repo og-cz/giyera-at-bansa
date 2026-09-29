@@ -196,6 +196,10 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 **0.1.0**
 - First playable release: skirmish vs. AI, 2 factions, 10 unit types, 2 maps.
 
+## Credits
+
+- Display font: **Quiapo Free** by Aaron Amar (http://be.net/aaronamar), used under the SIL Open Font License 1.1. The licence text ships with the game in `licenses/Quiapo-OFL.txt`.
+
 ## Troubleshooting
 
 - **Window opens blank:** update your graphics driver, then restart the game.
