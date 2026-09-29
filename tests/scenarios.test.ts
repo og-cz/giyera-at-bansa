@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { SIM_DT, TILE } from '../src/data/balance';
 import { CAMPAIGN, SCENARIOS, THEATER } from '../src/data/scenarios';
 import { ALL_MAPS } from '../src/data/theaterMaps';
+import { dist } from '../src/core/vec';
+import { issueAttackMove } from '../src/sim/commands';
 import { findPath } from '../src/sim/pathfinding';
 import { scaleWave } from '../src/sim/systems/objectives';
 import { World } from '../src/sim/world';
@@ -93,6 +95,27 @@ describe('defense mode', () => {
     world.points[0].control = -1;
     run(world, 1);
     expect(world.winner).toBe(1);
+  });
+
+  it('attackers push forward instead of trading fire from maximum range', () => {
+    const world = worldFor('tow-city');
+    world.objective.nextWaveIn = Infinity;
+    killTeam(world, 0);
+    const plaza = world.points[0].pos;
+    const defender = world.spawn(0, 'us_riflemen', plaza, 0);
+    for (const m of defender.models) m.hp = m.maxHp = 1e6;
+    const attacker = world.spawn(1, 'ija_riflemen', { x: plaza.x, y: plaza.y + 20 * TILE }, -Math.PI / 2);
+    for (const m of attacker.models) m.hp = m.maxHp = 1e6;
+    world.objective.waveSquads.push(attacker.id);
+    issueAttackMove(world, attacker, plaza);
+    let closest = Infinity;
+    for (let t = 0; t < 60; t += SIM_DT) {
+      world.step(SIM_DT);
+      world.events.length = 0;
+      closest = Math.min(closest, dist(attacker.pos, defender.pos));
+    }
+    // Rifles open fire at 180; without pushing the attacker would stay out there.
+    expect(closest).toBeLessThan(120);
   });
 
   it('is won when every wave is destroyed', () => {
