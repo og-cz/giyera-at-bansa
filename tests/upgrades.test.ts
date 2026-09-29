@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { SIM_DT, TILE } from '../src/data/balance';
 import { MAPS } from '../src/data/maps';
+import { UNITS } from '../src/data/units';
+import { UPGRADES } from '../src/data/upgrades';
+import { WEAPONS } from '../src/data/weapons';
 import { issueMove, issueUpgrade } from '../src/sim/commands';
 import { addRecruit } from '../src/sim/systems/logistics';
 import { World } from '../src/sim/world';
@@ -64,6 +67,16 @@ describe('squad upgrades', () => {
     expect(weaponsOf(rifles).filter((id) => id === 'bazooka')).toHaveLength(1);
     addRecruit(w, rifles);
     expect(weaponsOf(rifles).filter((id) => id === 'm1_garand')).toHaveLength(5);
+  });
+
+  it('upgrade weapons reach at least as far as the rifles they replace', () => {
+    // Squads stop at their rifles' range; a shorter-ranged gun would sit out the fight.
+    for (const unit of Object.values(UNITS)) {
+      for (const id of unit.upgrades) {
+        const base = WEAPONS[unit.loadout[unit.loadout.length - 1].weapons[0]];
+        for (const w of UPGRADES[id].weapons) expect(WEAPONS[w].range, `${id} on ${unit.id}`).toBeGreaterThanOrEqual(base.range);
+      }
+    }
   });
 
   it('keeps going while the squad moves off', () => {
