@@ -2,6 +2,8 @@ import { ABILITIES } from '../data/abilities';
 import { LOGISTICS } from '../data/balance';
 import type { TeamId, UnitRole } from '../data/types';
 import { UNITS } from '../data/units';
+import { UPGRADES } from '../data/upgrades';
+import { WEAPONS } from '../data/weapons';
 import { dist, lerpVec, type Vec2 } from '../core/vec';
 import {
   issueAbility,
@@ -10,6 +12,7 @@ import {
   issueRepair,
   issueRetreat,
   issueSetup,
+  issueUpgrade,
   queueProduction,
 } from '../sim/commands';
 import { aliveCount, healthFraction, isSoft, type CapturePoint, type Squad } from '../sim/entities';
@@ -105,6 +108,7 @@ export class AICommander {
     ) {
       if (issueReinforce(world, sq).ok) return;
     }
+    this.upgrade(world, sq);
     if (atBase && healthFraction(sq) < 0.8 && sq.order.kind === 'idle' && world.time - sq.lastHurt > 5) return;
 
     if (sq.def.canRepair && this.repair(world, sq, own)) return;
@@ -121,6 +125,17 @@ export class AICommander {
       if (!this.stale(world, sq)) return;
     }
     this.assignObjective(world, sq, own);
+  }
+
+  /** Buy a weapon upgrade when supplied and munitions allow: anti-tank once enemy armour has been seen, otherwise more firepower. */
+  private upgrade(world: World, sq: Squad): void {
+    if (sq.def.upgrades.length === 0 || sq.upgrades.length > 0 || sq.upgrading || !canReinforceHere(world, sq)) return;
+    const antiTank = (id: string) => UPGRADES[id].weapons.some((w) => WEAPONS[w].prefers === 'vehicle');
+    const wantAt = this.seenVehicles.size > 0;
+    const id = sq.def.upgrades.find((u) => antiTank(u) === wantAt) ?? sq.def.upgrades[0];
+    // Keep some munitions back for grenades and barrages.
+    if (world.teams[this.team].resources.munitions < UPGRADES[id].cost.munitions + 25) return;
+    issueUpgrade(world, sq, id);
   }
 
   /** Engineers keep the armour and the HQ running: repair the most damaged one that is not under fire. */
