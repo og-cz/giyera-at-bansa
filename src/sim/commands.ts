@@ -3,6 +3,7 @@ import { BUILDABLES } from '../data/buildables';
 import { ECONOMY, LOGISTICS } from '../data/balance';
 import type { TeamId } from '../data/types';
 import { UNITS } from '../data/units';
+import { UPGRADES } from '../data/upgrades';
 import { angleTo, type Vec2 } from '../core/vec';
 import { aliveCount, type Squad } from './entities';
 import { resetMovement, setOrder } from './orders';
@@ -160,6 +161,20 @@ export function issueRepair(_world: World, sq: Squad, target: Squad): CommandRes
   if (!hull || hull.hp >= hull.maxHp) return fail('Already at full strength');
   sq.channel = null;
   setOrder(sq, { kind: 'repair', targetId: target.id });
+  return OK;
+}
+
+/** Buy a weapon upgrade. Squads pick up the new weapons at the HQ or a supplied point; one upgrade per squad. */
+export function issueUpgrade(world: World, sq: Squad, upgradeId: string): CommandResult {
+  const def = UPGRADES[upgradeId];
+  if (!commandable(sq) || !def || !sq.def.upgrades.includes(upgradeId)) return fail('This squad cannot take that upgrade');
+  if (sq.upgrades.length > 0 || sq.upgrading) return fail('Squad is already upgraded');
+  if (sq.retreating) return RETREATING;
+  if (!canReinforceHere(world, sq)) return fail('Must be near HQ or a supplied friendly point');
+  const res = world.teams[sq.team].resources;
+  if (!canAfford(res, def.cost)) return fail('Not enough munitions');
+  pay(res, def.cost);
+  sq.upgrading = { id: upgradeId, remaining: def.time };
   return OK;
 }
 
