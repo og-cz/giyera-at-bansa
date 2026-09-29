@@ -20,6 +20,7 @@ import { updateAbilities } from './systems/abilities';
 import { updateCombat, updateProjectiles } from './systems/combat';
 import { updateEconomy } from './systems/economy';
 import { updateEngineering } from './systems/engineering';
+import { updateUpgrades } from './systems/upgrades';
 import { updateLogistics } from './systems/logistics';
 import { updateMovement } from './systems/movement';
 import { updateProduction } from './systems/production';
@@ -192,6 +193,7 @@ export class World {
     updateProduction(this, dt);
     updateEconomy(this, dt);
     updateLogistics(this, dt);
+    updateUpgrades(this, dt);
     updateAbilities(this, dt);
     updateMovement(this, dt);
     updateEngineering(this, dt);
