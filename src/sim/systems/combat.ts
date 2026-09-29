@@ -283,7 +283,7 @@ export function explode(world: World, pos: Vec2, w: WeaponDef, source: Squad | n
     const tx = Math.floor(pos.x / TILE);
     const ty = Math.floor(pos.y / TILE);
     const t = world.map.get(tx, ty);
-    if (t === T.Open || t === T.Road || t === T.Paddy || t === T.Hedge || t === T.Sandbag) world.map.set(tx, ty, T.Crater);
+    if (t === T.Open || t === T.Road || t === T.Paddy || t === T.Hedge || t === T.Sandbag || t === T.Wire) world.map.set(tx, ty, T.Crater);
   }
 }
 
