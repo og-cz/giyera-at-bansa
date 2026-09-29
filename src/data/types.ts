@@ -114,6 +114,22 @@ export interface UnitDef {
   builds: readonly string[];
   /** Can repair vehicles and structures (engineers). */
   canRepair: boolean;
+  /** Weapon upgrades this squad can buy; it may own one of them. */
+  upgrades: readonly string[];
+}
+
+/** A weapon upgrade: some of the squad's basic soldiers swap their rifles for something heavier. */
+export interface UpgradeDef {
+  id: string;
+  name: string;
+  hotkey: string;
+  description: string;
+  cost: Resources;
+  /** Seconds before the new weapons arrive. */
+  time: number;
+  weapons: readonly string[];
+  /** How many soldiers take the new weapons. */
+  count: number;
 }
 
 /** Something engineers can build: a line of fortification tiles, or a single item such as a mine. */
