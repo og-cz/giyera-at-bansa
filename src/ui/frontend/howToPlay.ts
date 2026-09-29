@@ -10,6 +10,8 @@ const RULES: [string, string][] = [
   ['Weapon teams', 'Machine guns and mortars must set up to fire and tear down to move. Mortars need a friendly unit to see the target.'],
   ['Armour', 'Tanks have thick front plates and thin rear plates. Hit them from behind. Rifles barely scratch them.'],
   ['Retreat & reinforce', 'Retreat (R) saves a broken squad: it runs home and takes less fire, and it cannot be given other orders until it arrives. Reinforce (E) near the HQ or a supplied point.'],
+  ['Engineers', 'Engineers build sandbags (cover), barbed wire (stops infantry, tanks crush it), tank traps (stop tanks) and mines. They also repair tanks and the HQ: right-click the damaged one. A job is refunded if the engineers leave it.'],
+  ['Upgrades', 'Rifle squads can buy one weapon upgrade (T / Y), such as a bazooka or a light machine gun, near the HQ or a supplied point. Reinforcements replace the upgraded weapon first.'],
   ['Theater of War', 'Defense: hold the marked point against every wave. Offensive: take the sectors in order before the clock runs out.'],
   ['Counters', 'No unit is simply the strongest. Machine guns beat infantry from the front but turn slowly, so flank them. Mortars break set-up guns but cannot hit close targets. Anti-tank squads kill tanks but lose to infantry. Check Strong vs / Weak vs on each unit.'],
   ['About the factions', 'Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.'],
