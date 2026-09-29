@@ -21,6 +21,8 @@ export const TERRAIN_BASE: Record<number, string> = {
   [T.Jungle]: '#2c4f22',
   [T.Water]: '#3b6e8c',
   [T.Rampart]: '#7d7668',
+  [T.Wire]: '#5f7b3c',
+  [T.TankTrap]: '#5f7b3c',
 };
 
 export const COVER_COLOR: Record<CoverType, string> = {
