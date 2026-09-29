@@ -688,8 +688,6 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     if (sq.def.vetXp.length) lines.push(['Veterancy', sq.vet > 0 ? '★'.repeat(sq.vet) : `${Math.floor(sq.xp)} / ${sq.def.vetXp[0]} xp`]);
     if (sq.upgrading) lines.push(['Upgrade', `${UPGRADES[sq.upgrading.id].name} in ${Math.ceil(sq.upgrading.remaining)}s`]);
     lines.push(['Weapons', [...weapons].map(([n, c]) => (c > 1 ? `${c}× ${n}` : n)).join(', ') || '—']);
-    if (sq.def.strongVs) lines.push(['Strong vs', sq.def.strongVs]);
-    if (sq.def.weakVs) lines.push(['Weak vs', sq.def.weakVs]);
 
     const enemy = sq.team !== this.player;
     const fill = el('div', { class: 'fill' });
@@ -711,7 +709,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         el('div', { class: 'portrait-name', text: sq.def.name }),
         el('p', { class: 'portrait-desc', text: sq.def.description }),
         ...(sq.reinforcing ? [this.reinforceBar(sq)] : []),
-        el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k, class: VS_CLASS[k] ?? '' }), el('dd', { text: v, class: WIDE_ROWS.has(k) ? 'wide' : '' })])),
+        el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v, class: WIDE_ROWS.has(k) ? 'wide' : '' })])),
       ),
     );
   }
@@ -735,10 +733,8 @@ const ordinal = (n: number): string => `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 
 const reinforceProgress = (sq: Squad): number =>
   sq.reinforcing ? 1 - Math.max(0, sq.reinforceTimer) / LOGISTICS.reinforceTime : 0;
 
-const VS_CLASS: Record<string, string> = { 'Strong vs': 'strong', 'Weak vs': 'weak' };
-
 /** Unit card rows long enough to need the full width. */
-const WIDE_ROWS = new Set(['Weapons', 'Strong vs', 'Weak vs']);
+const WIDE_ROWS = new Set(['Weapons']);
 
 const RESOURCE_HELP: Record<string, string> = {
   mp: 'Recruits and reinforces soldiers. Income comes from your base; a larger army costs more upkeep.',
