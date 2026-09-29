@@ -36,7 +36,10 @@ const PAN_SPEED = 900;
 /** Translates mouse/keyboard into selection changes and simulation commands. */
 export class Input {
   private readonly keys = new Set<string>();
-  private middleDrag: { x: number; y: number } | null = null;
+  /** Grabbing the map: middle button, or left button while Space is held. */
+  private middleDrag: { x: number; y: number; button: number } | null = null;
+  /** Space was used to grab the map this press, so releasing it should not centre the camera. */
+  private spaceGrabbed = false;
   private lastClick = { time: 0, id: -1 };
   private lastGroupTap = { time: 0, group: -1 };
   private readonly off: (() => void)[] = [];
@@ -61,10 +64,12 @@ export class Input {
     on(canvas, 'mouseleave', () => (this.ui.mouse.onCanvas = false));
     on(canvas, 'mouseenter', () => (this.ui.mouse.onCanvas = true));
     on(window, 'keydown', (e) => this.onKeyDown(e));
-    on(window, 'keyup', (e) => this.keys.delete(e.key.toLowerCase()));
+    on(window, 'keyup', (e) => this.onKeyUp(e));
     on(window, 'blur', () => {
       this.keys.clear();
       this.ui.faceDrag = null;
+      this.middleDrag = null;
+      this.canvas.style.cursor = '';
     });
   }
 
@@ -297,9 +302,13 @@ export class Input {
 
   private onMouseDown(e: MouseEvent): void {
     const p = this.camera.screenToWorld(e.offsetX, e.offsetY);
-    if (e.button === 1) {
+    if (e.button === 1 || (e.button === 0 && this.keys.has(' '))) {
       e.preventDefault();
-      this.middleDrag = { x: e.clientX, y: e.clientY };
+      this.middleDrag = { x: e.clientX, y: e.clientY, button: e.button };
+      if (e.button === 0) {
+        this.spaceGrabbed = true;
+        this.canvas.style.cursor = 'grabbing';
+      }
       return;
     }
     if (e.button === 2) {
@@ -339,7 +348,7 @@ export class Input {
     this.ui.mouse.y = e.clientY - rect.top;
     if (this.middleDrag) {
       this.camera.pan(this.middleDrag.x - e.clientX, this.middleDrag.y - e.clientY);
-      this.middleDrag = { x: e.clientX, y: e.clientY };
+      this.middleDrag = { ...this.middleDrag, x: e.clientX, y: e.clientY };
     }
     if (this.ui.drag) {
       this.ui.drag.x1 = this.ui.mouse.x;
@@ -348,8 +357,9 @@ export class Input {
   }
 
   private onMouseUp(e: MouseEvent): void {
-    if (e.button === 1) {
+    if (this.middleDrag && e.button === this.middleDrag.button) {
       this.middleDrag = null;
+      if (e.button === 0) this.canvas.style.cursor = this.keys.has(' ') ? 'grab' : '';
       return;
     }
     if (e.button === 2) {
@@ -417,6 +427,14 @@ export class Input {
     this.camera.zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.offsetX, e.offsetY);
   }
 
+  private onKeyUp(e: KeyboardEvent): void {
+    const key = e.key.toLowerCase();
+    this.keys.delete(key);
+    if (key !== ' ') return;
+    if (!this.middleDrag) this.canvas.style.cursor = '';
+    if (!this.spaceGrabbed) this.centerOnSelection();
+  }
+
   private onKeyDown(e: KeyboardEvent): void {
     if ((e.target as HTMLElement | null)?.tagName === 'INPUT') return;
     const key = e.key.toLowerCase();
@@ -477,8 +495,12 @@ export class Input {
         this.selectHq();
         break;
       case ' ':
+        // Tap to centre on the selection (on release); hold and left-drag to grab the map.
         e.preventDefault();
-        this.centerOnSelection();
+        if (!e.repeat) {
+          this.spaceGrabbed = false;
+          if (!this.middleDrag) this.canvas.style.cursor = 'grab';
+        }
         break;
       case 'p':
         this.cb.togglePause();
