@@ -7,6 +7,7 @@ import {
   issueAbility,
   issueAttackMove,
   issueReinforce,
+  issueRepair,
   issueRetreat,
   issueSetup,
   queueProduction,
@@ -65,6 +66,7 @@ export class AICommander {
       [counts.tank < 1, 'tank', true],
       [counts.line < 4, 'line', false],
       [counts.mortar < 1, 'mortar', false],
+      [counts.engineer < 1 && counts.tank > 0, 'engineer', false],
       [counts.tank < 2, 'tank', true],
       [counts.at < 1, 'at', false],
       [counts.line < 6, 'line', false],
@@ -105,6 +107,7 @@ export class AICommander {
     }
     if (atBase && healthFraction(sq) < 0.8 && sq.order.kind === 'idle' && world.time - sq.lastHurt > 5) return;
 
+    if (sq.def.canRepair && this.repair(world, sq, own)) return;
     this.useAbilities(world, sq);
     if (sq.order.kind === 'ability') return;
 
@@ -118,6 +121,19 @@ export class AICommander {
       if (!this.stale(world, sq)) return;
     }
     this.assignObjective(world, sq, own);
+  }
+
+  /** Engineers keep the armour and the HQ running: repair the most damaged one that is not under fire. */
+  private repair(world: World, sq: Squad, own: Squad[]): boolean {
+    if (sq.order.kind === 'repair') return true;
+    const hq = world.hqOf(this.team);
+    const candidates = [...own.filter((s) => s.def.kind === 'vehicle'), ...(hq ? [hq] : [])].filter((s) => {
+      const hull = s.models.find((m) => m.alive);
+      return hull && hull.hp < hull.maxHp * 0.75 && world.time - s.lastHurt > 5 && dist(s.pos, sq.pos) < 900;
+    });
+    if (candidates.length === 0) return false;
+    candidates.sort((a, b) => healthFraction(a) - healthFraction(b));
+    return issueRepair(world, sq, candidates[0]).ok;
   }
 
   private shouldRetreat(sq: Squad): boolean {
