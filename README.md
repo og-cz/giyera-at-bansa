@@ -162,7 +162,10 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - **Weapon upgrades** for rifle squads (T / Y): Bazooka or BAR for the Maharlika, Type 99 light MG or Type 97 AT rifle for the Imperial Army. One per squad; reinforcements replace the upgraded weapon first.
 - Construction, repairs and upgrades show in the **In Progress** panel.
 - The AI builds engineers to repair its tanks, and buys upgrades.
-- New OGCZ logo on the startup screen.
+- New Taga Komando logo on the title screen and main menu, a new app icon, and the OGCZ logo on the startup screen.
+- Attacking waves in Theater of War push forward instead of trading fire from long range.
+- Destroying the enemy headquarters now wins in every mode.
+- Hold **Space** and drag with the left mouse button to grab and move the map.
 
 **0.3.5**
 - Retreat is binding: a retreating squad takes no other orders until it reaches headquarters.
