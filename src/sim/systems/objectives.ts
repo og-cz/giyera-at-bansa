@@ -2,7 +2,8 @@ import { TILE } from '../../data/balance';
 import type { DefenseRules, Difficulty, GameMode, OffensiveRules, ScenarioDef, TeamId } from '../../data/types';
 import { UNITS } from '../../data/units';
 import { add, angleTo, dist, normalize, scale, sub, type Vec2 } from '../../core/vec';
-import { issueAttackMove } from '../commands';
+import { issueAttackMove, issueMove } from '../commands';
+import type { Squad } from '../entities';
 import type { World } from '../world';
 import { updateVictory } from './victory';
 
@@ -18,6 +19,11 @@ export interface ObjectiveState {
   nextWaveIn: number;
   waveSquads: number[];
   orderTimer: number;
+  /** Seconds each attacking squad has stood still while it could still move. */
+  stalled: Record<number, number>;
+  /** Counterattacking squads (offensive) and where they are headed. */
+  counterSquads: number[];
+  counterTarget: Vec2 | null;
   // Offensive
   sector: number;
   totalSectors: number;
@@ -33,6 +39,9 @@ export function createObjective(s: ScenarioDef | null): ObjectiveState {
     nextWaveIn: s?.defense?.prepTime ?? 0,
     waveSquads: [],
     orderTimer: 0,
+    stalled: {},
+    counterSquads: [],
+    counterTarget: null,
     sector: 0,
     totalSectors: s?.offensive?.sectors.length ?? 0,
     timeLeft: s?.offensive?.timeLimit ?? 0,
@@ -96,6 +105,44 @@ function spawnGroup(world: World, units: readonly string[], origins: Vec2[], tar
   return ids;
 }
 
+const ORDER_INTERVAL = 1.5;
+/** How long an attacker may trade fire from one spot before it pushes forward. */
+const STALL_LIMIT = 9;
+/** How far each push goes. */
+const PUSH_STEP = TILE * 4;
+
+/**
+ * Attackers never give up. Idle squads are sent back at the objective, and a
+ * squad that has been trading fire from the same spot too long moves up a few
+ * tiles (still shooting as it goes) instead of sitting at maximum range forever.
+ * Pinned squads cannot push; set-up weapon teams hold their ground.
+ */
+function pressAttack(world: World, ids: readonly number[], targetOf: (sq: Squad) => Vec2): void {
+  const o = world.objective;
+  const live = new Set(ids);
+  for (const key of Object.keys(o.stalled)) if (!live.has(Number(key))) delete o.stalled[Number(key)];
+  for (const id of ids) {
+    const sq = world.get(id)!;
+    const mover = sq.def.vehicle ? 'vehicle' : 'infantry';
+    const target = targetOf(sq);
+    const far = dist(sq.pos, target) > 40;
+    if (sq.order.kind === 'idle' && sq.setup === 'packed') {
+      o.stalled[id] = 0;
+      if (far) issueAttackMove(world, sq, world.map.nearestPassable(target, mover));
+      continue;
+    }
+    const canPush = sq.order.kind === 'attackMove' && !sq.moving && sq.suppState !== 'pinned' && sq.setup === 'packed' && far;
+    o.stalled[id] = canPush ? (o.stalled[id] ?? 0) + ORDER_INTERVAL : 0;
+    if (o.stalled[id] < STALL_LIMIT) continue;
+    o.stalled[id] = 0;
+    const d = dist(sq.pos, target);
+    const step = Math.min(PUSH_STEP, d - 20) / d;
+    const dest = { x: sq.pos.x + (target.x - sq.pos.x) * step, y: sq.pos.y + (target.y - sq.pos.y) * step };
+    // A plain move: the squad keeps firing on the way but does not stop for targets.
+    issueMove(world, sq, world.map.nearestPassable(dest, mover));
+  }
+}
+
 function updateDefense(world: World, d: DefenseRules, dt: number): void {
   const o = world.objective;
   const holdPoints = d.hold.map((i) => world.points[i]);
@@ -112,16 +159,10 @@ function updateDefense(world: World, d: DefenseRules, dt: number): void {
   }
   o.waveSquads = o.waveSquads.filter((id) => alive(world, id));
 
-  // Attackers never give up: idle wave units are sent back at the objective.
   o.orderTimer -= dt;
   if (o.orderTimer <= 0) {
-    o.orderTimer = 1.5;
-    for (const id of o.waveSquads) {
-      const sq = world.get(id)!;
-      if (sq.order.kind !== 'idle' || (sq.def.kind === 'team' && sq.setup !== 'packed')) continue;
-      const target = holdPoints.reduce((a, b) => (dist(sq.pos, a.pos) <= dist(sq.pos, b.pos) ? a : b));
-      if (dist(sq.pos, target.pos) > 40) issueAttackMove(world, sq, world.map.nearestPassable(target.pos, sq.def.vehicle ? 'vehicle' : 'infantry'));
-    }
+    o.orderTimer = ORDER_INTERVAL;
+    pressAttack(world, o.waveSquads, (sq) => holdPoints.reduce((a, b) => (dist(sq.pos, a.pos) <= dist(sq.pos, b.pos) ? a : b)).pos);
   }
 
   const lost = holdPoints.find((p) => p.owner === ENEMY);
@@ -154,9 +195,18 @@ function updateOffensive(world: World, off: OffensiveRules, dt: number): void {
     if (o.counterIn <= 0) {
       o.counterIn = off.counterattackEvery;
       const target = world.points[off.sectors[o.sector - 1]].pos;
-      spawnGroup(world, off.counterattack, [world.teams[ENEMY].spawn], target);
+      o.counterSquads.push(...spawnGroup(world, off.counterattack, [world.teams[ENEMY].spawn], target));
+      o.counterTarget = target;
       world.emit({ type: 'notify', team: PLAYER, text: 'Enemy counterattack!', tone: 'bad' });
     }
+  }
+
+  o.counterSquads = o.counterSquads.filter((id) => alive(world, id));
+  o.orderTimer -= dt;
+  if (o.orderTimer <= 0 && o.counterTarget) {
+    o.orderTimer = ORDER_INTERVAL;
+    const target = o.counterTarget;
+    pressAttack(world, o.counterSquads, () => target);
   }
 
   if (o.timeLeft <= 0) end(world, ENEMY, 'Out of time — the advance has stalled');
