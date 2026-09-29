@@ -3,7 +3,7 @@ import { controlsTable } from '../menu';
 import { screenShell } from './shell';
 
 const RULES: [string, string][] = [
-  ['Victory conditions', 'Capture Points: each side has 500 tickets, and holding more victory points (V) than the enemy drains theirs. Annihilation: destroy every enemy unit and their HQ. None: no victory condition, fight as long as you like.'],
+  ['Victory conditions', 'Destroying the enemy headquarters always wins, in every mode. Capture Points: each side has 500 tickets, and holding more victory points (V) than the enemy drains theirs. Annihilation: wiping out the enemy army also wins. None: only the headquarters decides it.'],
   ['Supply', 'Munitions (M) and fuel (F) points only pay out while connected to your HQ through territory you own. A struck-through point is cut off.'],
   ['Cover', 'Green dots are heavy cover (sandbags, walls, buildings), yellow is light (hedges, craters, jungle), red is exposed (rice paddies). Cover only protects from the far side.'],
   ['Suppression', 'Machine guns suppress and then pin infantry. Pinned squads can only crawl or retreat. Flank the gun or throw a grenade.'],
