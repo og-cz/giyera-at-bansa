@@ -397,8 +397,7 @@ button:disabled {
 
 .portrait-text {
   min-width: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
+  overflow: hidden;
 }
 
 .portrait-faction {
@@ -764,12 +763,10 @@ button:disabled {
 }
 
 /* Strengths and weaknesses */
-.portrait-card dt.strong,
 .tip-vs.strong b {
   color: #8ed36f;
 }
 
-.portrait-card dt.weak,
 .tip-vs.weak b {
   color: #ff8a70;
 }
