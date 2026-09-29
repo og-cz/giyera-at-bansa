@@ -1,6 +1,17 @@
 /* Front end: startup, main menu, mode screens, briefing and end screens. */
 
+/* Quiapo Free by Aaron Amar, SIL Open Font License 1.1 (licence text ships as licenses/Quiapo-OFL.txt). */
+@font-face {
+  font-family: 'Quiapo';
+  src: url('./fonts/Quiapo_Free.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
 :root {
+  /* The logo's typeface, for the big display titles only. */
+  --fe-display: 'Quiapo', Georgia, 'Times New Roman', serif;
   --fe-font: 'Bahnschrift SemiBold Condensed', 'Bahnschrift', 'Arial Narrow', 'Segoe UI', sans-serif;
   --fe-font-body: 'Bahnschrift', 'Segoe UI', system-ui, sans-serif;
   --fe-ink: #ece7d8;
@@ -127,9 +138,8 @@ body.cinematic #game {
 
 .title-main {
   margin: 14px 0 0;
-  font: 700 clamp(56px, 10vw, 150px) / 0.95 var(--fe-font);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font: 400 clamp(60px, 11vw, 160px) / 0.95 var(--fe-display);
+  letter-spacing: 0.01em;
   color: #f2ecdc;
   text-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
   animation: titleIn 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
@@ -194,9 +204,7 @@ body.cinematic #game {
 }
 
 .menu-logo-main {
-  font: 700 38px/1 var(--fe-font);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font: 400 40px/1 var(--fe-display);
   color: var(--fe-ink);
 }
 
@@ -327,9 +335,7 @@ body.cinematic #game {
 
 .screen-title {
   margin: 0;
-  font: 700 44px/1 var(--fe-font);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font: 400 46px/1 var(--fe-display);
   color: var(--fe-ink);
 }
 
@@ -799,9 +805,7 @@ body.cinematic #game {
 
 .briefing-title {
   margin: 12px 0 0;
-  font: 700 clamp(44px, 7vw, 84px) / 1 var(--fe-font);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font: 400 clamp(46px, 7vw, 88px) / 1 var(--fe-display);
   color: var(--fe-ink);
   animation: titleIn 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
@@ -890,10 +894,10 @@ body.cinematic #game {
   margin: 10px 0 0;
   display: inline-block;
   padding: 0 0.12em;
-  font: 700 clamp(72px, 11vw, 150px) / 1 var(--fe-font);
+  font: 400 clamp(72px, 11vw, 150px) / 1 var(--fe-display);
   white-space: nowrap;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.04em;
   animation: endTitle 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
