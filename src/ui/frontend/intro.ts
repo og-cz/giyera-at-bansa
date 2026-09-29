@@ -1,15 +1,16 @@
 import { el } from '../dom';
+import studioLogo from './ogcz.svg?raw';
 
 /**
  * Startup sequence: a black studio card, then the title over the live battle.
  * Any key or click skips ahead.
  */
 export function playIntro(layer: HTMLElement, onDone: () => void): void {
-  const splash = el(
-    'div',
-    { class: 'splash' },
-    el('div', { class: 'splash-card' }, el('div', { class: 'splash-studio', text: 'OGCZ' }), el('div', { class: 'splash-presents', text: 'presents' })),
-  );
+  const logo = el('div', { class: 'splash-studio' });
+  logo.innerHTML = studioLogo;
+  logo.setAttribute('role', 'img');
+  logo.setAttribute('aria-label', 'OGCZ');
+  const splash = el('div', { class: 'splash' }, el('div', { class: 'splash-card' }, logo, el('div', { class: 'splash-presents', text: 'presents' })));
   layer.append(splash);
 
   let stage = 0;
