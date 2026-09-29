@@ -23,7 +23,7 @@ export interface Model {
   coverSlot: Vec2 | null;
 }
 
-export type OrderKind = 'idle' | 'move' | 'attackMove' | 'attack' | 'retreat' | 'ability';
+export type OrderKind = 'idle' | 'move' | 'attackMove' | 'attack' | 'retreat' | 'ability' | 'build' | 'repair';
 
 export interface Order {
   kind: OrderKind;
@@ -102,6 +102,22 @@ export interface CapturePoint {
   sector: number;
   /** Locked points cannot change hands (offensive mode: future and already-taken sectors). */
   locked: boolean;
+}
+
+/** Engineers' work in progress: a line of tiles (or one mine) built one after another. */
+export interface Construction {
+  id: number;
+  team: TeamId;
+  buildId: string;
+  /** The engineer squad doing the work; if it takes another order the job is cancelled. */
+  ownerId: number;
+  tiles: { tx: number; ty: number; progress: number; done: boolean }[];
+}
+
+export interface Mine {
+  id: number;
+  team: TeamId;
+  pos: Vec2;
 }
 
 export interface Projectile {
