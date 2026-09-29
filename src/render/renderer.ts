@@ -12,7 +12,7 @@ import { Effects } from './effects';
 import { COVER_COLOR, NEUTRAL, TEAM } from './palette';
 import { TerrainLayer } from './terrainLayer';
 
-const ROLE_GLYPH: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T' };
+const ROLE_GLYPH: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN' };
 const POINT_GLYPH: Record<string, string> = { victory: 'V', munitions: 'M', fuel: 'F', manpower: 'P' };
 const ORDER_COLOR: Record<string, string> = {
   move: '#9be29b',
