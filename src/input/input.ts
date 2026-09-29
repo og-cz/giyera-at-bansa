@@ -1,12 +1,15 @@
 import { ABILITIES } from '../data/abilities';
+import { BUILDABLES } from '../data/buildables';
 import type { TeamId } from '../data/types';
 import { add, angleTo, dist, scale, type Vec2 } from '../core/vec';
 import {
   issueAbility,
   issueAttack,
   issueAttackMove,
+  issueBuild,
   issueMove,
   issueReinforce,
+  issueRepair,
   issueRetreat,
   issueSetup,
   issueStop,
@@ -180,6 +183,32 @@ export class Input {
     if (this.selectedOwn().some(notStructure)) this.ui.mode = { kind: 'attackMove' };
   }
 
+  /** Enter placement mode for a defense, if an engineer that can build it is selected. */
+  buildMode(buildId: string): void {
+    if (!this.selectedOwn().some((s) => s.def.builds.includes(buildId))) return;
+    this.ui.mode = { kind: 'build', buildId };
+    this.ui.buildFrom = null;
+  }
+
+  private buildHotkey(key: string): boolean {
+    for (const sq of this.selectedOwn()) {
+      const id = sq.def.builds.find((b) => BUILDABLES[b].hotkey.toLowerCase() === key);
+      if (id) {
+        this.buildMode(id);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Give the job to the selected engineer nearest the start of the line. */
+  private placeBuild(buildId: string, from: Vec2, to: Vec2): void {
+    const builders = this.selectedOwn().filter((s) => s.def.builds.includes(buildId));
+    if (builders.length === 0) return;
+    builders.sort((a, b) => dist(a.pos, from) - dist(b.pos, from));
+    this.report([issueBuild(this.world, builders[0], buildId, from, to)]);
+  }
+
   abilityMode(hotkey: string): void {
     const own = this.selectedOwn();
     for (const sq of own) {
@@ -237,6 +266,15 @@ export class Input {
       this.report(own.filter(notStructure).map((s) => issueAttack(this.world, s, target)));
       return;
     }
+    const hull = target?.models.find((m) => m.alive);
+    const repairers = own.filter((s) => s.def.canRepair);
+    if (target && target.def.armor && hull && hull.hp < hull.maxHp && repairers.length > 0) {
+      this.report(repairers.map((s) => issueRepair(this.world, s, target)));
+      const others = own.filter((s) => notStructure(s) && !s.def.canRepair);
+      const spots = this.formationTargets(others, p);
+      for (const s of others) issueMove(this.world, s, spots.get(s.id)!, shift);
+      return;
+    }
     const units = own.filter(notStructure);
     const targets = this.formationTargets(units, p);
     this.report(units.map((s) => issueMove(this.world, s, targets.get(s.id)!, shift)));
@@ -269,6 +307,10 @@ export class Input {
     if (mode.kind === 'ability') {
       this.castAbility(mode.abilityId, p);
       if (!e.shiftKey) this.ui.mode = { kind: 'none' };
+      return;
+    }
+    if (mode.kind === 'build') {
+      this.ui.buildFrom = p;
       return;
     }
     if (mode.kind === 'setup') {
@@ -307,6 +349,14 @@ export class Input {
       this.ui.faceDrag = null;
       if (fd.preview) this.commandFacing(fd.from, fd.preview.facing, fd.shift);
       else this.commandAt(fd.from, fd.shift);
+      return;
+    }
+    if (e.button === 0 && this.ui.mode.kind === 'build' && this.ui.buildFrom) {
+      const buildId = this.ui.mode.buildId;
+      const from = this.ui.buildFrom;
+      this.ui.buildFrom = null;
+      this.placeBuild(buildId, from, this.camera.screenToWorld(this.ui.mouse.x, this.ui.mouse.y));
+      if (!e.shiftKey) this.ui.mode = { kind: 'none' };
       return;
     }
     if (e.button !== 0 || !this.ui.drag) return;
@@ -400,6 +450,12 @@ export class Input {
       case 'g':
       case 'b':
         this.abilityMode(key);
+        break;
+      case 'z':
+      case 'x':
+      case 'c':
+      case 'v':
+        this.buildHotkey(key);
         break;
       case 'h':
         this.selectHq();
