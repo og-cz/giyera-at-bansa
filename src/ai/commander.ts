@@ -52,7 +52,7 @@ export class AICommander {
     const hq = world.hqOf(this.team);
     if (!hq || hq.production.length > 0) return;
     const t = world.teams[this.team];
-    const counts: Record<UnitRole, number> = { hq: 0, line: 0, mg: 0, mortar: 0, at: 0, tank: 0 };
+    const counts: Record<UnitRole, number> = { hq: 0, line: 0, mg: 0, mortar: 0, at: 0, tank: 0, engineer: 0 };
     for (const sq of own) counts[sq.def.role]++;
     const unitFor = (role: UnitRole) => t.faction.roster.find((id) => UNITS[id].role === role);
     const threats = this.seenVehicles.size;
