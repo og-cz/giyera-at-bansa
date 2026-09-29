@@ -1,4 +1,5 @@
 import { el } from '../dom';
+import { gameLogo } from './logo';
 import studioLogo from './ogcz.svg?raw';
 
 /**
@@ -34,7 +35,7 @@ export function playIntro(layer: HTMLElement, onDone: () => void): void {
       'div',
       { class: 'title-wrap' },
       el('div', { class: 'title-kicker', text: 'Luzon · 1941 – 1945' }),
-      el('h1', { class: 'title-main', text: 'Taga Komando' }),
+      gameLogo('h1', 'title-main'),
       el('div', { class: 'title-rule' }),
       el('div', { class: 'title-sub', text: 'Real-time squad tactics' }),
     ),
