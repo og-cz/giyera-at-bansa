@@ -4,19 +4,19 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.3.5 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.4.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
 ## Where to get things
 
-- **The game (Windows):** [Releases page](https://github.com/og-cz/giyera-at-bansa/releases)
+- **The game (Windows):** [Releases page](https://github.com/og-cz/taga-komando/releases)
   - `TagaKomando-Setup-<version>.exe`: installer (Start menu shortcut, uninstaller)
   - `TagaKomando-Portable-<version>.exe`: single file, no install, runs from anywhere
-- **Source code:** https://github.com/og-cz/giyera-at-bansa
+- **Source code:** https://github.com/og-cz/taga-komando
 - **Node.js 22 or newer** (only needed to build from source): https://nodejs.org (choose "LTS")
 - **Git** (only needed to build from source): https://git-scm.com/downloads
-- **Bug reports / suggestions:** https://github.com/og-cz/giyera-at-bansa/issues
+- **Bug reports / suggestions:** https://github.com/og-cz/taga-komando/issues
 
 ## System requirements
 
@@ -95,6 +95,8 @@ How the mission types work:
 - Mortars need a friendly unit to see the target.
 - Tanks have thin rear armour. Hit them from behind.
 - Retreat (**R**) damaged squads before they're wiped out, then reinforce (**E**) at the HQ. A retreat can't be cancelled: the squad takes no other orders until it gets home.
+- Engineers fortify ground: sandbags give heavy cover, barbed wire stops infantry (tanks crush it), tank traps stop tanks, mines wreck whatever steps on them. They also repair tanks and the HQ.
+- Give a rifle squad one weapon upgrade (**T / Y**) near the HQ: a bazooka or AT rifle against tanks, a BAR or light MG against infantry.
 
 ## Controls
 
@@ -110,6 +112,9 @@ How the mission types work:
 | D | Set up / tear down machine gun and mortar teams (shows the firing cone; click to aim) |
 | G | Grenade |
 | B | Mortar barrage |
+| Z / X / C / V | Engineers: sandbags / barbed wire / tank traps / mine (drag to lay a line; Shift keeps placing) |
+| Right-click a damaged tank or HQ | Engineers repair it |
+| T / Y | Weapon upgrade for the selected rifle squad (near HQ or a supplied point) |
 | H | Select HQ (right-click then sets the rally point) |
 | Ctrl + 1–9 / 1–9 | Assign / select control group (double-tap to jump) |
 | Space | Centre on selection |
@@ -123,7 +128,8 @@ How the mission types work:
 
 | Role | Hukbong Maharlika | Imperial Army |
 | --- | --- | --- |
-| Rifle squad | Rifle Squad: 5 men, grenades | Hohei Rifle Squad: 6 men, grenades |
+| Rifle squad | Rifle Squad: 5 men, grenades; upgrade Bazooka or BAR | Hohei Rifle Squad: 6 men, grenades; upgrade Type 99 LMG or AT rifle |
+| Engineers | Combat Engineers | Kohei Engineers |
 | Machine gun | M1917 HMG Team | Type 92 HMG Team |
 | Mortar | 60mm Mortar Team | Type 97 81mm Mortar Team |
 | Anti-tank | Bazooka Squad | AT Rifle Team |
@@ -140,12 +146,21 @@ No unit is simply the strongest. Each one has a job and a threat:
 | Mortar team | Set-up weapon teams, infantry in cover | Infantry rushes (it cannot fire at close range), tanks; needs a spotter |
 | Anti-tank squad | Tanks, especially from the side or rear | Infantry and machine guns |
 | Tank | Infantry and weapon teams | Anti-tank squads, shots to its thin rear armour |
+| Engineers | Fortifying ground, keeping tanks in the fight | Any real firefight |
 
 Machine guns turn slowly once set up, so attacking them from the side works. The unit card and every build button show these strengths and weaknesses.
 
 **Maps:** Bataan Crossroads, Barrio San Roque (skirmish), Mount Samat, Route 3, Intramuros (missions).
 
 ## Changelog
+
+**0.4.0**
+- **Engineers** (Combat Engineers / Kohei Engineers) build **sandbags**, **barbed wire**, **tank traps** and **mines** (Z / X / C / V; drag to lay a line). An abandoned job is refunded.
+- Engineers **repair** tanks and the HQ: right-click the damaged one.
+- **Weapon upgrades** for rifle squads (T / Y): Bazooka or BAR for the Maharlika, Type 99 light MG or Type 97 AT rifle for the Imperial Army. One per squad; reinforcements replace the upgraded weapon first.
+- Construction, repairs and upgrades show in the **In Progress** panel.
+- The AI builds engineers to repair its tanks, and buys upgrades.
+- New OGCZ logo on the startup screen.
 
 **0.3.5**
 - Retreat is binding: a retreating squad takes no other orders until it reaches headquarters.
@@ -193,7 +208,7 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 Needs Node.js and Git (see [Where to get things](#where-to-get-things)).
 
 ```bash
-git clone https://github.com/og-cz/giyera-at-bansa.git
+git clone https://github.com/og-cz/taga-komando.git
 cd giyera-at-bansa
 npm install
 ```
