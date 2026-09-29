@@ -1,4 +1,5 @@
 import { ABILITIES } from '../data/abilities';
+import { BUILDABLES, BUILDABLE_IDS } from '../data/buildables';
 import { ECONOMY, LOGISTICS } from '../data/balance';
 import type { Resources, TeamId } from '../data/types';
 import { UNITS } from '../data/units';
@@ -122,6 +123,7 @@ export class Hud {
     this.orderGrid = el('div', { class: 'cmd-grid' });
     this.buildGrid = el('div', { class: 'cmd-grid build' });
     this.buildOrders();
+    this.buildDefenseButtons();
     for (const id of team.faction.roster) this.buildButton(id);
     this.jobList = el('div', { class: 'job-list' });
     this.jobs = el('div', { class: 'jobs' }, el('div', { class: 'jobs-title', text: 'In progress' }), this.jobList);
@@ -231,7 +233,8 @@ export class Hud {
       key: 'D',
     }), () => this.input.setupMode(), (b, own) => {
       const teams = own.filter((s) => s.def.kind === 'team');
-      b.disabled = teams.length === 0;
+      // Only weapon teams set up; hide the button otherwise so engineers' build buttons fit.
+      b.style.display = teams.length === 0 ? 'none' : '';
       const deployed = teams.some((s) => s.setup === 'deployed' || s.setup === 'settingUp');
       (b.querySelector('.cmd-label') as HTMLElement).textContent = deployed ? 'Tear Down' : 'Set Up';
       b.classList.toggle('active', this.ui.mode.kind === 'setup');
@@ -253,6 +256,29 @@ export class Hud {
         (b.querySelector('.cmd-label') as HTMLElement).textContent = cd > 0 ? `${Math.ceil(cd)}s` : ab.name;
         b.disabled = cd > 0 || !canAfford(this.world.teams[this.player].resources, ab.cost);
         b.classList.toggle('active', this.ui.mode.kind === 'ability' && this.ui.mode.abilityId === ab.id);
+      });
+    }
+  }
+
+  /** Engineer construction buttons, shown only when a selected squad can build them. */
+  private buildDefenseButtons(): void {
+    const icons: Record<string, string> = { sandbags: '▤', wire: '⌇', tanktrap: '✕', mine: '●' };
+    for (const id of BUILDABLE_IDS) {
+      const def = BUILDABLES[id];
+      const node = this.gridButton(this.orderGrid, icons[id] ?? '◆', def.name, def.hotkey, () => this.input.buildMode(id));
+      this.tip(node, () => ({
+        title: def.name,
+        body: `${def.description}\n\n${def.shape === 'line' ? `Click and drag to lay a line of up to ${def.maxLength} tiles. Cost is per tile.` : 'Click to place.'} ${def.buildTime}s of work each.`,
+        key: def.hotkey,
+        cost: def.cost,
+      }));
+      this.orders.push({
+        node,
+        refresh: (own) => {
+          const can = own.some((s) => s.def.builds.includes(id));
+          node.style.display = can ? '' : 'none';
+          node.classList.toggle('active', this.ui.mode.kind === 'build' && this.ui.mode.buildId === id);
+        },
       });
     }
   }
@@ -373,6 +399,38 @@ export class Hud {
         cancel: () => cancelProduction(this.world, this.player, i),
       });
     });
+    for (const c of this.world.constructions) {
+      if (c.team !== this.player) continue;
+      const def = BUILDABLES[c.buildId];
+      const done = c.tiles.filter((t) => t.done).length;
+      const current = c.tiles.find((t) => !t.done);
+      jobs.push({
+        key: `build:${c.id}`,
+        kind: 'build',
+        icon: 'EN',
+        title: `Building ${def.name}`,
+        detail: def.shape === 'line' ? `${done}/${c.tiles.length} tiles` : 'Digging in',
+        progress: (done + (current?.progress ?? 0)) / c.tiles.length,
+        remaining: null,
+        focus: c.ownerId,
+      });
+    }
+    for (const sq of this.world.squads) {
+      if (sq.team !== this.player || sq.dead || sq.order.kind !== 'repair') continue;
+      const target = this.world.get(sq.order.targetId);
+      const hull = target?.models.find((m) => m.alive);
+      if (!target || !hull) continue;
+      jobs.push({
+        key: `repair:${sq.id}`,
+        kind: 'repair',
+        icon: 'EN',
+        title: `Repairing ${target.def.name}`,
+        detail: `${Math.round((hull.hp / hull.maxHp) * 100)}% hull`,
+        progress: hull.hp / hull.maxHp,
+        remaining: null,
+        focus: sq.id,
+      });
+    }
     for (const sq of this.world.squads) {
       if (sq.team !== this.player || sq.dead || !sq.reinforcing) continue;
       jobs.push({
@@ -605,7 +663,7 @@ export class Hud {
 interface Job {
   key: string;
   /** 'upgrade' is reserved for squad upgrades (e.g. extra bazookas) once they exist. */
-  kind: 'unit' | 'reinforce' | 'upgrade';
+  kind: 'unit' | 'reinforce' | 'build' | 'repair' | 'upgrade';
   icon: string;
   title: string;
   detail: string;
