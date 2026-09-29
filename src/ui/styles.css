@@ -658,13 +658,15 @@ button:disabled {
 
 .job.reinforce,
 .job.build,
-.job.repair {
+.job.repair,
+.job.upgrade {
   cursor: pointer;
 }
 
 .job.reinforce:hover,
 .job.build:hover,
-.job.repair:hover {
+.job.repair:hover,
+.job.upgrade:hover {
   border-color: rgba(217, 180, 90, 0.6);
 }
 
@@ -704,6 +706,10 @@ button:disabled {
 
 .job.repair .job-bar .fill {
   background: linear-gradient(90deg, #4a7fb8, #7fb2e8);
+}
+
+.job.upgrade .job-bar .fill {
+  background: linear-gradient(90deg, #a0522d, #e08a4f);
 }
 
 .job.reinforce .job-bar .fill {
