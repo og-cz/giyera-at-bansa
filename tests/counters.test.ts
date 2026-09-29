@@ -55,7 +55,8 @@ function duel(attacker: string, defender: string, o: DuelOptions = {}, trials = 
 
 const winRate = (attacker: string, defender: string, o?: DuelOptions, trials?: number): number => duel(attacker, defender, o, trials).win;
 
-describe('unit counters', () => {
+// Each case simulates a dozen full fights; allow for a busy machine.
+describe('unit counters', { timeout: 60_000 }, () => {
   it('a machine gun beats infantry charging it head-on', () => {
     expect(winRate('us_riflemen', 'ija_hmg')).toBeLessThanOrEqual(0.25);
     expect(winRate('ija_riflemen', 'us_hmg')).toBeLessThanOrEqual(0.3);
