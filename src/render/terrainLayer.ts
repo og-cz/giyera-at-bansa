@@ -117,6 +117,43 @@ export class TerrainLayer {
         }
         break;
       }
+      case T.Wire: {
+        // Coils of wire strung between posts.
+        c.strokeStyle = 'rgba(60,60,60,0.9)';
+        c.lineWidth = 1.2;
+        for (let i = 0; i < 2; i++) {
+          c.beginPath();
+          for (let k = 0; k <= 8; k++) {
+            const px = x + (k / 8) * PX;
+            const py = y + PX / 2 + (k % 2 === 0 ? -5 : 5) + (i === 0 ? -2 : 2);
+            if (k === 0) c.moveTo(px, py);
+            else c.lineTo(px, py);
+          }
+          c.stroke();
+        }
+        c.fillStyle = '#4a3a24';
+        c.fillRect(x + 2, y + PX / 2 - 8, 3, 16);
+        c.fillRect(x + PX - 5, y + PX / 2 - 8, 3, 16);
+        break;
+      }
+      case T.TankTrap: {
+        // Steel hedgehogs.
+        c.strokeStyle = '#3a3a3a';
+        c.lineWidth = 3;
+        for (const [ox, oy] of [[0.3, 0.35], [0.72, 0.68]]) {
+          const cx = x + ox * PX;
+          const cy = y + oy * PX;
+          c.beginPath();
+          c.moveTo(cx - 7, cy - 7);
+          c.lineTo(cx + 7, cy + 7);
+          c.moveTo(cx + 7, cy - 7);
+          c.lineTo(cx - 7, cy + 7);
+          c.moveTo(cx, cy - 8);
+          c.lineTo(cx, cy + 8);
+          c.stroke();
+        }
+        break;
+      }
       case T.Wall:
         c.fillStyle = '#8d8a84';
         c.fillRect(x + 4, y + 4, PX - 8, PX - 8);
