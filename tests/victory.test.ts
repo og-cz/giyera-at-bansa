@@ -34,25 +34,34 @@ describe('win conditions', () => {
     expect(w.winner).toBe(-1);
   });
 
-  it('annihilation: losing the HQ alone is not enough', () => {
-    const w = battle('annihilation');
+  it.each(['points', 'annihilation', 'none'] as const)('%s: destroying the enemy HQ always wins', (win) => {
+    const w = battle(win);
     destroy(w, (team, isHq) => team === 1 && isHq);
     w.step(SIM_DT);
-    expect(w.winner).toBe(-1);
+    expect(w.winner).toBe(0);
+    expect(w.endReason).toMatch(/headquarters/);
   });
 
-  it('annihilation: destroying every enemy unit and the HQ wins', () => {
+  it('annihilation: wiping out the whole enemy army wins', () => {
     const w = battle('annihilation');
-    destroy(w, (team) => team === 1);
+    destroy(w, (team, isHq) => team === 1 && !isHq);
     w.step(SIM_DT);
     expect(w.winner).toBe(0);
     expect(w.endReason).toMatch(/annihilated/);
   });
 
-  it('none: the battle never ends on its own', () => {
+  it('annihilation: not while the enemy HQ is still recruiting', () => {
+    const w = battle('annihilation');
+    destroy(w, (team, isHq) => team === 1 && !isHq);
+    w.hqOf(1)!.production.push({ unitId: 'ija_riflemen', remaining: 10 });
+    w.step(SIM_DT);
+    expect(w.winner).toBe(-1);
+  });
+
+  it('none: tickets and losses do not end it, only the HQ', () => {
     const w = battle('none');
     w.teams[1].tickets = 0;
-    destroy(w, (team) => team === 1);
+    destroy(w, (team, isHq) => team === 1 && !isHq);
     w.step(SIM_DT);
     expect(w.winner).toBe(-1);
   });
