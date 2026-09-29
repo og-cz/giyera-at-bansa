@@ -59,8 +59,10 @@ Pick a mode from the main menu.
 **Skirmish**: a match against the AI on a map of your choice, with a victory condition of your choice:
 
 - **Capture Points:** holding more victory points drains the enemy's 500 tickets.
-- **Annihilation:** destroy every enemy unit and their headquarters.
-- **None:** no victory condition; fight as long as you like.
+- **Annihilation:** wipe out the enemy army (every unit, nothing left in production).
+- **None:** no tickets or time limit.
+
+Whatever the condition, destroying the enemy headquarters always wins.
 
 How the mission types work:
 
