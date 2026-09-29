@@ -1,6 +1,11 @@
 import type { Vec2 } from '../core/vec';
 
-export type Mode = { kind: 'none' } | { kind: 'attackMove' } | { kind: 'ability'; abilityId: string } | { kind: 'setup' };
+export type Mode =
+  | { kind: 'none' }
+  | { kind: 'attackMove' }
+  | { kind: 'ability'; abilityId: string }
+  | { kind: 'setup' }
+  | { kind: 'build'; buildId: string };
 
 /** Presentation-side state shared by input, renderer and HUD. Never read by the simulation. */
 export interface UIState {
@@ -12,6 +17,8 @@ export interface UIState {
   groups: Map<number, number[]>;
   /** Right mouse held down: a short click moves, a drag moves and faces. */
   faceDrag: FaceDrag | null;
+  /** Start of a defense line being dragged out in build mode (world point). */
+  buildFrom: Vec2 | null;
 }
 
 export interface FaceDrag {
@@ -34,5 +41,6 @@ export function createUIState(): UIState {
     hoverId: null,
     groups: new Map(),
     faceDrag: null,
+    buildFrom: null,
   };
 }
