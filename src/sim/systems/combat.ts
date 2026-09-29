@@ -320,7 +320,7 @@ function handOverCrewWeapon(sq: Squad, fallen: Model): void {
   }
   if (!heir) return;
   heir.loadoutIndex = fallen.loadoutIndex;
-  heir.weapons = createWeaponStates(sq.def.loadout[fallen.loadoutIndex].weapons);
+  heir.weapons = createWeaponStates(sq.loadout[fallen.loadoutIndex].weapons);
   heir.pos = { ...fallen.pos };
 }
 
