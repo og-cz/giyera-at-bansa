@@ -3,6 +3,7 @@ import { BUILDABLES, BUILDABLE_IDS } from '../data/buildables';
 import { ECONOMY, LOGISTICS } from '../data/balance';
 import type { Resources, TeamId } from '../data/types';
 import { UNITS } from '../data/units';
+import { UPGRADES } from '../data/upgrades';
 import { cancelProduction, queueProduction } from '../sim/commands';
 import { aliveCount, healthFraction, type SimEvent, type Squad, type Tone } from '../sim/entities';
 import { canAfford } from '../sim/systems/economy';
@@ -124,6 +125,7 @@ export class Hud {
     this.buildGrid = el('div', { class: 'cmd-grid build' });
     this.buildOrders();
     this.buildDefenseButtons();
+    this.buildUpgradeButtons();
     for (const id of team.faction.roster) this.buildButton(id);
     this.jobList = el('div', { class: 'job-list' });
     this.jobs = el('div', { class: 'jobs' }, el('div', { class: 'jobs-title', text: 'In progress' }), this.jobList);
@@ -283,6 +285,46 @@ export class Hud {
     }
   }
 
+  /** Weapon upgrade buttons (T, Y), shown when a selected squad can still take one. */
+  private buildUpgradeButtons(): void {
+    const icons: Record<string, string> = { T: '⇪', Y: '⇪' };
+    for (const hotkey of ['T', 'Y']) {
+      const offer = (own: Squad[]) => {
+        for (const sq of own) {
+          const id = sq.def.upgrades.find((u) => UPGRADES[u].hotkey === hotkey);
+          if (id) return { sq, def: UPGRADES[id] };
+        }
+        return null;
+      };
+      const node = this.gridButton(this.orderGrid, icons[hotkey], '—', hotkey, () => this.input.upgrade(hotkey));
+      this.tip(node, () => {
+        const o = offer(this.input.selectedOwn());
+        if (!o) return { title: '—' };
+        const taken = o.sq.upgrades.length > 0 || o.sq.upgrading;
+        return {
+          title: `Upgrade: ${o.def.name}`,
+          body: `${o.def.description}
+
+Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. One upgrade per squad; reinforcements replace the new weapon first.`,
+          key: hotkey,
+          cost: o.def.cost,
+          warn: taken ? 'This squad already has an upgrade' : undefined,
+        };
+      });
+      this.orders.push({
+        node,
+        refresh: (own) => {
+          const o = offer(own);
+          node.style.display = o ? '' : 'none';
+          if (!o) return;
+          (node.querySelector('.cmd-label') as HTMLElement).textContent = o.def.name;
+          const open = own.some((s) => s.def.upgrades.includes(o.def.id) && s.upgrades.length === 0 && !s.upgrading);
+          node.disabled = !open || !canAfford(this.world.teams[this.player].resources, o.def.cost);
+        },
+      });
+    }
+  }
+
   private buildButton(id: string): void {
     const def = UNITS[id];
     const node = this.gridButton(this.buildGrid, ROLE_ICON[def.role], def.name, '', () => {
@@ -380,7 +422,7 @@ export class Hud {
     }
   }
 
-  // ─── Jobs: production and reinforcement (upgrades later) ──────
+  // ─── Jobs: production, construction, repair, upgrades, reinforcement ──────
 
   /** Everything the player is waiting on, as uniform progress rows. */
   private collectJobs(): Job[] {
@@ -428,6 +470,20 @@ export class Hud {
         detail: `${Math.round((hull.hp / hull.maxHp) * 100)}% hull`,
         progress: hull.hp / hull.maxHp,
         remaining: null,
+        focus: sq.id,
+      });
+    }
+    for (const sq of this.world.squads) {
+      if (sq.team !== this.player || sq.dead || !sq.upgrading) continue;
+      const def = UPGRADES[sq.upgrading.id];
+      jobs.push({
+        key: `upgrade:${sq.id}`,
+        kind: 'upgrade',
+        icon: ROLE_ICON[sq.def.role],
+        title: `${def.name} for ${sq.def.name}`,
+        detail: 'Weapons on the way',
+        progress: 1 - Math.max(0, sq.upgrading.remaining) / def.time,
+        remaining: Math.max(0, sq.upgrading.remaining),
         focus: sq.id,
       });
     }
@@ -630,6 +686,7 @@ export class Hud {
     }
     if (sq.def.kind === 'team') lines.push(['Weapon', { packed: 'Packed', settingUp: 'Setting up…', deployed: 'Deployed', tearingDown: 'Packing up…' }[sq.setup]]);
     if (sq.def.vetXp.length) lines.push(['Veterancy', sq.vet > 0 ? '★'.repeat(sq.vet) : `${Math.floor(sq.xp)} / ${sq.def.vetXp[0]} xp`]);
+    if (sq.upgrading) lines.push(['Upgrade', `${UPGRADES[sq.upgrading.id].name} in ${Math.ceil(sq.upgrading.remaining)}s`]);
     lines.push(['Weapons', [...weapons].map(([n, c]) => (c > 1 ? `${c}× ${n}` : n)).join(', ') || '—']);
     if (sq.def.strongVs) lines.push(['Strong vs', sq.def.strongVs]);
     if (sq.def.weakVs) lines.push(['Weak vs', sq.def.weakVs]);
@@ -662,7 +719,6 @@ export class Hud {
 
 interface Job {
   key: string;
-  /** 'upgrade' is reserved for squad upgrades (e.g. extra bazookas) once they exist. */
   kind: 'unit' | 'reinforce' | 'build' | 'repair' | 'upgrade';
   icon: string;
   title: string;
