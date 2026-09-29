@@ -15,6 +15,7 @@ function createWindow() {
     show: false,
     backgroundColor: '#11150f',
     title: 'Taga Komando',
+    icon: path.join(__dirname, '..', 'dist', 'favicon.png'),
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
