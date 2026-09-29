@@ -118,6 +118,12 @@ const LIST: WeaponDef[] = [
     range: 200, accuracy: [0.4, 0.25], damage: 8, cooldown: 0.25, clip: 30, reload: 4, suppression: 0.02,
   }),
 
+  // A buried mine: built by engineers, set off by enemies stepping on it.
+  weapon('mine', 'Mine', {
+    vs: { infantry: 0.4, team: 0.4 },
+    range: 0, damage: 220, penetration: [200, 200], aoe: 22, suppression: 0.5, craterChance: 1, projectile: 'grenade',
+  }),
+
   // Ability-only munitions
   weapon('mk2_grenade', 'Mk 2 Grenade', {
     vs: { team: 1.5 },
