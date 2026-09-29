@@ -20,6 +20,7 @@ import { finishOrder } from '../orders';
 import { findPath, pathLength } from '../pathfinding';
 import type { World } from '../world';
 import { findCoverSpots } from './cover';
+import { constructionOf, currentTile, WORK_RANGE, workSpot } from './engineering';
 import { startSetup, startTeardown, updateSetupTimer } from './setup';
 import { suppressionSpeed } from './suppression';
 
@@ -59,6 +60,22 @@ function movementGoal(world: World, sq: Squad): Vec2 | null {
       if (inRange && (indirect || hasLineOfSight(world.map, sq.pos, t.pos, t.def.radius, sq.def.radius))) return null;
       return t.pos;
     }
+    case 'build': {
+      const c = constructionOf(world, sq);
+      const tile = c && currentTile(c);
+      if (!c || !tile) return null;
+      // Hold once within working distance of the tile; otherwise walk to a spot beside it.
+      if (dist(sq.pos, world.map.tileCenter(tile.tx, tile.ty)) <= WORK_RANGE - 4) return null;
+      return workSpot(world, sq, c);
+    }
+    case 'repair': {
+      const t = world.get(o.targetId);
+      if (!t || t.dead) {
+        finishOrder(sq);
+        return null;
+      }
+      return dist(sq.pos, t.pos) <= t.def.radius + 30 ? null : t.pos;
+    }
     case 'ability': {
       const ab = ABILITIES[o.abilityId ?? ''];
       if (!ab || !o.dest) return null;
@@ -97,7 +114,7 @@ function onArrive(world: World, sq: Squad): void {
     if (facing !== undefined && !sq.def.vehicle) sq.heading = facing;
     if (facing !== undefined && sq.def.kind === 'team') startSetup(sq, facing);
     if (sq.def.kind === 'infantry') assignCover(world, sq);
-  } else if (k === 'attack' || k === 'ability') {
+  } else if (k === 'attack' || k === 'ability' || k === 'build' || k === 'repair') {
     // Path ended without getting in range: the target is unreachable.
     const goal = movementGoal(world, sq);
     if (goal && dist(sq.pos, goal) > TILE * 2) finishOrder(sq);
