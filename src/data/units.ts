@@ -22,6 +22,7 @@ const DEFAULTS: Omit<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'> =
   weakVs: '',
   builds: [],
   canRepair: false,
+  upgrades: [],
 };
 
 const unit = (def: Partial<UnitDef> & Pick<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'>): UnitDef => ({
@@ -46,7 +47,7 @@ const LIST: UnitDef[] = [
     weakVs: 'Machine guns from the front, tanks',
     models: 5, modelHp: 80, cost: { manpower: 280, munitions: 0, fuel: 0 }, pop: 6, buildTime: 22,
     speed: 22, sight: 210, loadout: [{ weapons: ['m1_garand'], count: 5 }], canCapture: true,
-    abilities: ['grenade_us'],
+    abilities: ['grenade_us'], upgrades: ['us_bazooka_kit', 'us_bar'],
   }),
   unit({
     id: 'us_engineers', name: 'Combat Engineers', kind: 'infantry', role: 'engineer',
@@ -111,7 +112,7 @@ const LIST: UnitDef[] = [
     weakVs: 'Machine guns from the front, tanks',
     models: 6, modelHp: 70, cost: { manpower: 260, munitions: 0, fuel: 0 }, pop: 6, buildTime: 22,
     speed: 23, sight: 215, loadout: [{ weapons: ['arisaka'], count: 6 }], canCapture: true,
-    abilities: ['grenade_ija'],
+    abilities: ['grenade_ija'], upgrades: ['ija_lmg', 'ija_at_rifle'],
   }),
   unit({
     id: 'ija_engineers', name: 'Kohei Engineers', kind: 'infantry', role: 'engineer',
