@@ -1,6 +1,7 @@
 import { ABILITIES } from '../data/abilities';
 import { BUILDABLES } from '../data/buildables';
 import type { TeamId } from '../data/types';
+import { UPGRADES } from '../data/upgrades';
 import { add, angleTo, dist, scale, type Vec2 } from '../core/vec';
 import {
   issueAbility,
@@ -13,6 +14,7 @@ import {
   issueRetreat,
   issueSetup,
   issueStop,
+  issueUpgrade,
   type CommandResult,
 } from '../sim/commands';
 import type { Squad } from '../sim/entities';
@@ -166,6 +168,16 @@ export class Input {
 
   reinforce(): void {
     this.report(this.selectedOwn().filter((s) => s.def.kind === 'infantry' || s.def.kind === 'team').map((s) => issueReinforce(this.world, s)));
+  }
+
+  /** Buy the upgrade on `hotkey` (T or Y) for every selected squad that can still take it. */
+  upgrade(hotkey: string): void {
+    const results: CommandResult[] = [];
+    for (const sq of this.selectedOwn()) {
+      const id = sq.def.upgrades.find((u) => UPGRADES[u].hotkey === hotkey.toUpperCase());
+      if (id && sq.upgrades.length === 0 && !sq.upgrading) results.push(issueUpgrade(this.world, sq, id));
+    }
+    this.report(results);
   }
 
   setupMode(): void {
@@ -456,6 +468,10 @@ export class Input {
       case 'c':
       case 'v':
         this.buildHotkey(key);
+        break;
+      case 't':
+      case 'y':
+        this.upgrade(key);
         break;
       case 'h':
         this.selectHq();
