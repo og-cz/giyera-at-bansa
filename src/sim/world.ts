@@ -5,11 +5,21 @@ import type { Difficulty, MapDef, Owner, PlacedUnit, ScenarioDef, TeamId, WinCon
 import { UNITS } from '../data/units';
 import { Rng } from '../core/rng';
 import { add, angleTo, normalize, scale, sub, type Vec2 } from '../core/vec';
-import { createSquad, type CapturePoint, type Projectile, type SimEvent, type Squad, type TeamState } from './entities';
+import {
+  createSquad,
+  type CapturePoint,
+  type Construction,
+  type Mine,
+  type Projectile,
+  type SimEvent,
+  type Squad,
+  type TeamState,
+} from './entities';
 import { GameMap } from './grid';
 import { updateAbilities } from './systems/abilities';
 import { updateCombat, updateProjectiles } from './systems/combat';
 import { updateEconomy } from './systems/economy';
+import { updateEngineering } from './systems/engineering';
 import { updateLogistics } from './systems/logistics';
 import { updateMovement } from './systems/movement';
 import { updateProduction } from './systems/production';
@@ -40,6 +50,8 @@ export class World {
   readonly points: CapturePoint[];
   readonly teams: [TeamState, TeamState];
   projectiles: Projectile[] = [];
+  constructions: Construction[] = [];
+  mines: Mine[] = [];
   events: SimEvent[] = [];
   readonly vision: Vision;
   readonly territory: Territory;
@@ -182,6 +194,7 @@ export class World {
     updateLogistics(this, dt);
     updateAbilities(this, dt);
     updateMovement(this, dt);
+    updateEngineering(this, dt);
     updateCombat(this, dt);
     updateProjectiles(this, dt);
     updateSuppression(this, dt);
