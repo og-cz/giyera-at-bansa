@@ -15,7 +15,7 @@ export const CONTROLS: [string, string][] = [
   ['T / Y', 'Buy a weapon upgrade for the selected squad (near HQ or a supplied point)'],
   ['H', 'Select headquarters'],
   ['Ctrl+1–9 / 1–9', 'Assign / recall control group (double-tap to jump)'],
-  ['Space', 'Centre camera on selection'],
+  ['Space', 'Tap: centre camera on selection · Hold + left-drag: grab and move the map'],
   ['Arrows, screen edge, middle-drag', 'Pan camera · Mouse wheel zooms'],
   ['F11 / Alt+Enter', 'Fullscreen (desktop app)'],
   ['Esc / P', 'Pause'],
