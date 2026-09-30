@@ -1,4 +1,4 @@
-import { CAMPAIGN } from '../../data/scenarios';
+import { CAMPAIGN } from '../../data/campaign';
 import type { Difficulty } from '../../data/types';
 
 /**
@@ -34,8 +34,19 @@ export function isCampaignComplete(id: string): boolean {
   return load().campaign.includes(id);
 }
 
+/** A mission is complete once every one of its parts has been won. */
+export function isMissionComplete(index: number): boolean {
+  return CAMPAIGN[index].parts.every((p) => isCampaignComplete(p.id));
+}
+
+/** Missions unlock one by one, as the one before is completed. */
 export function isCampaignUnlocked(index: number): boolean {
-  return index === 0 || isCampaignComplete(CAMPAIGN[index - 1].id);
+  return index === 0 || isMissionComplete(index - 1);
+}
+
+/** Parts unlock in order inside an unlocked mission. */
+export function isPartUnlocked(mission: number, part: number): boolean {
+  return isCampaignUnlocked(mission) && (part === 0 || isCampaignComplete(CAMPAIGN[mission].parts[part - 1].id));
 }
 
 export function completeCampaign(id: string): void {
