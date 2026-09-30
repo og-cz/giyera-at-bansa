@@ -1,6 +1,7 @@
 import './ui/styles.css';
 import './ui/frontend.css';
 import { audio } from './audio/audio';
+import { installUiSounds } from './audio/uiSounds';
 import { CAMPAIGN } from './data/scenarios';
 import { Game, type MatchSetup } from './game';
 import { MenuBattle } from './ui/frontend/background';
@@ -77,5 +78,6 @@ function play(setup: MatchSetup, origin: Origin): void {
   });
 }
 
+installUiSounds();
 cinematic(true);
 playIntro(layer, mainMenu);
