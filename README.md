@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.1 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -158,6 +158,11 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 ## Changelog
 
+**0.6.1**
+- Interface sounds: buttons, menus, cards and queue slots click when pressed; Deploy has its own sound.
+- Units answer when selected or ordered: gear rattling for infantry, heavier clanks for weapon teams, an engine rev for tanks and radio static for headquarters.
+- Ready for voice lines: drop recordings into `src/audio/sfx` named `voice_<faction>_<select|order|retreat>_<n>.ogg` (factions: `usaffe`, `ija`) and units speak them instead.
+
 **0.6.0**
 - **Sound and music.** Recorded gunfire for every weapon (Garand, Arisaka, carbines, BAR, machine guns, AT rifle, bazooka), tank guns, mortars, grenade and shell explosions, destroyed tanks and tank engines. Sounds are placed where they happen on screen, louder up close and quieter zoomed out.
 - Orchestral music on the menus and in battle.
@@ -240,6 +245,7 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 - Town maps: generated with Watabou's **Village Generator** (https://watabou.itch.io/village-generator) and **Medieval Fantasy City Generator** (https://watabou.itch.io/medieval-fantasy-city-generator) and converted into battlefields. Watabou's maps are free to use; thank you.
 - Sound effects (all CC0, from OpenGameArt): **The Free Firearm Sound Library** (gunfire), "25 CC0 bang / firework SFX" by rubberduck, "Explosions" by EZduzziteh, "Cannon fire" and "Cannon hit" by Thimras, "Generator (loop)" by YCbCr, "Rocket launch" by qubodup.
+- Interface and unit sounds (CC0, from OpenGameArt): "51 UI sound effects" by Kenney, "Equipment Clicks II" and "equipment clicks III" by LFA, "Radio Noise 1" by Kresiek The Furry, "Car engine start 01" by looneybits.
 - Music (CC0, from OpenGameArt): "War Theme" by Spring Spring, "Determined Pursuit (epic orchestra loop)" by Emma_MA.
 - Display font: **Quiapo Free** by Aaron Amar (http://be.net/aaronamar), used under the SIL Open Font License 1.1. The licence text ships with the game in `licenses/Quiapo-OFL.txt`.
 
