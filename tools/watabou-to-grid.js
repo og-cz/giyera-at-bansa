@@ -20,7 +20,8 @@ function watabouToGrid(json, opts = {}) {
 
   const byId = {};
   for (const f of json.features) byId[f.id] = f;
-  const toWorld = (tx, ty) => [cx + (tx + 0.5 - W / 2) * UNITS_PER_TILE, cy + (ty + 0.5 - H / 2) * UNITS_PER_TILE];
+  // Watabou's y axis points north (up); grid rows run top to bottom, so y is flipped.
+  const toWorld = (tx, ty) => [cx + (tx + 0.5 - W / 2) * UNITS_PER_TILE, cy - (ty + 0.5 - H / 2) * UNITS_PER_TILE];
   const grid = Array.from({ length: H }, () => new Array(W).fill(OPEN));
 
   const inRing = (x, y, ring) => {
@@ -46,7 +47,7 @@ function watabouToGrid(json, opts = {}) {
     for (let sy = 0; sy < 4; sy++) {
       for (let sx = 0; sx < 4; sx++) {
         const x = cx + (tx + (sx + 0.5) / 4 - W / 2) * UNITS_PER_TILE;
-        const y = cy + (ty + (sy + 0.5) / 4 - H / 2) * UNITS_PER_TILE;
+        const y = cy - (ty + (sy + 0.5) / 4 - H / 2) * UNITS_PER_TILE;
         if (polys.some((p) => inPolygon(x, y, p))) hit++;
       }
     }
