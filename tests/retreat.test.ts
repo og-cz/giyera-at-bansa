@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SIM_DT } from '../src/data/balance';
 import { MAPS } from '../src/data/maps';
-import { issueAttackMove, issueMove, issueRetreat, issueSetup, issueStop } from '../src/sim/commands';
+import { issueAttackMove, issueMove, issueRetreat, issueSetup, issueStop, queueProduction } from '../src/sim/commands';
 import { World } from '../src/sim/world';
 
 function run(world: World, seconds: number): void {
@@ -37,5 +37,30 @@ describe('retreat is binding', () => {
     run(w, 40);
     expect(rifles.retreating).toBe(false);
     expect(issueMove(w, rifles, { x: 600, y: 560 }).ok).toBe(true);
+  });
+
+  it('tanks cannot retreat, and headquarters does not repair them', () => {
+    const w = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'] });
+    const hq = w.hqOf(0)!;
+    const tank = w.spawn(0, 'us_stuart', { x: hq.pos.x + 60, y: hq.pos.y }, 0);
+    expect(issueRetreat(w, tank).ok).toBe(false);
+    tank.models[0].hp = 200;
+    run(w, 20);
+    expect(tank.models[0].hp).toBe(200);
+  });
+
+  it('new units come out of headquarters side by side, not stacked', () => {
+    const w = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'] });
+    w.teams[0].resources = { manpower: 9000, munitions: 9000, fuel: 9000 };
+    for (let i = 0; i < 3; i++) queueProduction(w, 0, 'us_stuart');
+    const before = new Set(w.squads.map((s) => s.id));
+    const spots: { x: number; y: number }[] = [];
+    for (let t = 0; t < 200 && spots.length < 3; t += SIM_DT) {
+      w.step(SIM_DT);
+      w.events.length = 0;
+      for (const s of w.squads) if (!before.has(s.id)) { before.add(s.id); spots.push({ ...s.pos }); }
+    }
+    expect(spots).toHaveLength(3);
+    for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++) expect(Math.hypot(spots[i].x - spots[j].x, spots[i].y - spots[j].y)).toBeGreaterThan(20);
   });
 });
