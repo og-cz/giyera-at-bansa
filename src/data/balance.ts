@@ -34,7 +34,7 @@ export const LOGISTICS = {
   repairRate: 9,
   reinforceHqRadius: 280,
   reinforcePointRadius: 110,
-  reinforceTime: 2.4,
+  reinforceTime: 5.5,
   reinforceCostMult: 1.1,
   combatCooldown: 4,
 };
@@ -61,7 +61,7 @@ export const ECONOMY: {
   upkeepPerPop: 2,
   minManpowerIncome: 60,
   popCap: 100,
-  maxQueue: 5,
+  maxQueue: 3,
 };
 
 export const VICTORY = { tickets: 500, drainInterval: 2 };
