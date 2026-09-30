@@ -146,6 +146,10 @@ export interface BuildableDef {
   /** Terrain laid down when a tile is finished; null for mines. */
   terrain: number | null;
   maxLength: number;
+  /** Hit points of each finished tile (0 for mines). Only explosions wear defenses down. */
+  hp: number;
+  /** Multiplier on explosive damage: steel tank traps shrug off most of it. */
+  blastResist: number;
 }
 
 export interface AbilityDef {
