@@ -4,7 +4,7 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.5.2 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.5.3 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -115,7 +115,7 @@ How the mission types work:
 | G | Grenade |
 | B | Mortar barrage |
 | Z / X / C / V | Engineers: sandbags / barbed wire / tank traps / mine (drag to lay a line; Shift keeps placing) |
-| Right-click a damaged tank, HQ or defense | Engineers repair it |
+| F, then click a damaged tank, HQ or defense | Engineers repair it (right-click works too) |
 | Right-click an unfinished defense | Selected engineers help build it |
 | Click a defense or mine | Show its health and details |
 | T / Y | Weapon upgrade for the selected rifle squad (near HQ or a supplied point) |
@@ -159,6 +159,12 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.5.3**
+- **Repair order** for engineers (F): click it, then click the damaged tank, HQ or defense. Engineers do not fight while they repair or build.
+- With **several units selected**, only the common orders show (attack-move, stop, retreat), like CoH2; select one unit for its abilities, upgrades and special orders.
+- **Surrender** from the pause menu ends the battle on the defeat screen.
+- The camera starts closer and zooms in further.
 
 **0.5.2**
 - Queues belong to units again, like CoH2: the queue slots show the selected unit's own jobs. Select the HQ (or nothing) for its recruits, or a squad for its upgrade and reinforcements. The HQ recruits up to three units at a time; squads upgrade and reinforce on their own.
