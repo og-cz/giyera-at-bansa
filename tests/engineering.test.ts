@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { SIM_DT, TILE } from '../src/data/balance';
 import { MAPS } from '../src/data/maps';
 import { T } from '../src/data/terrain';
-import { issueBuild, issueHelpBuild, issueMove, issueRepair } from '../src/sim/commands';
+import { WEAPONS } from '../src/data/weapons';
+import { issueBuild, issueHelpBuild, issueMove, issueRepair, issueRepairDefense } from '../src/sim/commands';
+import { explode } from '../src/sim/systems/combat';
+import { defenseAt } from '../src/sim/systems/defenses';
 import { planBuild } from '../src/sim/systems/engineering';
 import { World } from '../src/sim/world';
 
@@ -126,6 +129,49 @@ describe('engineers', () => {
     expect(issueRepair(w, eng, tank).ok).toBe(true);
     run(w, 25);
     expect(tank.models[0].hp).toBe(tank.models[0].maxHp);
+    expect(eng.order.kind).toBe('idle');
+  });
+
+  it('sandbags shrug off bullets and single blasts, but a bombardment breaks them', () => {
+    const w = battle();
+    w.map.set(24, 30, T.Sandbag);
+    const centre = w.map.tileCenter(24, 30);
+    explode(w, centre, WEAPONS.type97_grenade, null);
+    const hit = defenseAt(w, 24, 30)!;
+    expect(hit.hp).toBeLessThan(hit.maxHp);
+    expect(w.map.get(24, 30)).toBe(T.Sandbag);
+    let shells = 1;
+    while (w.map.get(24, 30) === T.Sandbag && shells < 50) {
+      explode(w, centre, WEAPONS.type97_mortar, null);
+      shells++;
+    }
+    expect(w.map.get(24, 30)).toBe(T.Crater);
+    // Sturdy: it takes several direct mortar hits.
+    expect(shells).toBeGreaterThanOrEqual(5);
+  });
+
+  it('tank traps take far less from explosions than sandbags', () => {
+    const w = battle();
+    w.map.set(22, 30, T.Sandbag);
+    w.map.set(26, 30, T.TankTrap);
+    explode(w, w.map.tileCenter(22, 30), WEAPONS.type97_mortar, null);
+    explode(w, w.map.tileCenter(26, 30), WEAPONS.type97_mortar, null);
+    const bags = defenseAt(w, 22, 30)!;
+    const trap = defenseAt(w, 26, 30)!;
+    expect((trap.maxHp - trap.hp) / trap.maxHp).toBeLessThan((bags.maxHp - bags.hp) / bags.maxHp);
+  });
+
+  it('engineers repair damaged sandbags', () => {
+    const w = battle();
+    w.map.set(24, 30, T.Sandbag);
+    for (let i = 0; i < 3; i++) explode(w, w.map.tileCenter(24, 30), WEAPONS.type97_mortar, null);
+    const eng = w.spawn(0, 'us_engineers', at(20, 32), 0);
+    const rifles = w.spawn(0, 'us_riflemen', at(20, 33), 0);
+    expect(issueRepairDefense(w, rifles, 24, 30).ok).toBe(false);
+    expect(issueRepairDefense(w, eng, 24, 30).ok).toBe(true);
+    run(w, 30);
+    const d = defenseAt(w, 24, 30)!;
+    expect(d.hp).toBe(d.maxHp);
     expect(eng.order.kind).toBe('idle');
   });
 
