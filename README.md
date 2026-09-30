@@ -4,7 +4,7 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.5.1 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.5.2 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -159,6 +159,10 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.5.2**
+- Queues belong to units again, like CoH2: the queue slots show the selected unit's own jobs. Select the HQ (or nothing) for its recruits, or a squad for its upgrade and reinforcements. The HQ recruits up to three units at a time; squads upgrade and reinforce on their own.
+- Roster cards at the top right show a squad reinforcing (+, green bar) or upgrading (⇪, orange bar).
 
 **0.5.1**
 - Tighter, more focused maps: every town and mission map is zoomed in (houses are two or three tiles across) and cropped around the town, close to the size of the original battlefields.
