@@ -10,16 +10,25 @@
 
 /* eslint-disable */
 function watabouToGrid(json, opts = {}) {
-  const W = opts.width ?? 112;
-  const H = opts.height ?? 80;
-  const UNITS_PER_TILE = opts.unitsPerTile ?? 3.6;
-  const cx = opts.centerX ?? 0;
-  const cy = opts.centerY ?? 0;
+  // A close crop around the houses: about 2.8 m per tile makes a house two or three tiles across.
+  const W = opts.width ?? 96;
+  const H = opts.height ?? 68;
+  const UNITS_PER_TILE = opts.unitsPerTile ?? 2.8;
   // Tile codes (one character each), matching GRID_LEGEND in src/data/luzonMaps.ts.
   const OPEN = '.', ROAD = '=', PADDY = ',', HEDGE = 'h', JUNGLE = 'j', WATER = '~', BUILDING = '#', WALL = 'w';
 
   const byId = {};
   for (const f of json.features) byId[f.id] = f;
+  // Centre on the middle of the houses unless told otherwise.
+  let cx = opts.centerX;
+  let cy = opts.centerY;
+  if (cx === undefined || cy === undefined) {
+    const pts = (byId.buildings?.coordinates ?? []).flatMap((p) => p[0]);
+    const xs = pts.map((p) => p[0]).sort((a, b) => a - b);
+    const ys = pts.map((p) => p[1]).sort((a, b) => a - b);
+    cx = xs.length ? xs[Math.floor(xs.length / 2)] : 0;
+    cy = ys.length ? ys[Math.floor(ys.length / 2)] : 0;
+  }
   // Watabou's y axis points north (up); grid rows run top to bottom, so y is flipped.
   const toWorld = (tx, ty) => [cx + (tx + 0.5 - W / 2) * UNITS_PER_TILE, cy - (ty + 0.5 - H / 2) * UNITS_PER_TILE];
   const grid = Array.from({ length: H }, () => new Array(W).fill(OPEN));
