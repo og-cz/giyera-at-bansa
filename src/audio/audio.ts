@@ -76,6 +76,11 @@ class AudioSystem {
     if (this.wanted) this.playMusic(this.wanted);
   }
 
+  /** True once a clip (any variation of `name`) is loaded. */
+  has(name: string): boolean {
+    return this.clips.has(name);
+  }
+
   getVolume(channel: Channel): number {
     return this.volume[channel];
   }
