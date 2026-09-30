@@ -165,7 +165,8 @@ describe('offensive mode', () => {
     expect(world.points[0].locked).toBe(true);
     expect(world.points[1].locked).toBe(false);
     expect(world.objective.timeLeft).toBeGreaterThan(before + 170);
-    expect(world.teams[0].spawn.x).toBeGreaterThan(spawnBefore + 200);
+    // The reinforcement point moves well forward, to just behind the captured sector.
+    expect(world.teams[0].spawn.x).toBeGreaterThan(spawnBefore + TILE * 8);
   });
 
   it('launches counterattacks once the push has started', () => {
