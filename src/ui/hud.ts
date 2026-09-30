@@ -234,9 +234,9 @@ export class Hud {
     add('+', 'Reinforce', 'E', () => {
       const soft = this.input.selectedOwn().filter((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) < s.def.models);
       const cost = soft.length === 1 ? { manpower: reinforceCost(soft[0].def), munitions: 0, fuel: 0 } : undefined;
-      return { title: 'Reinforce', body: 'Replace casualties one soldier at a time. Must be near headquarters or a supplied friendly point.', key: 'E', cost };
+      return { title: 'Reinforce', body: 'Each press queues one soldier, paid for now, in the squad’s queue (three jobs at a time, the upgrade included). They join one after another. Must stay near headquarters or a supplied friendly point, or the rest are called off and refunded.', key: 'E', cost };
     }, () => this.input.reinforce(), (b, own) => {
-      b.disabled = !own.some((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) < s.def.models);
+      b.disabled = !own.some((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) + s.reinforceQueued < s.def.models);
     });
     add('⚒', 'Repair', 'F', () => ({
       title: 'Repair',
@@ -502,19 +502,25 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       });
     }
     for (const sq of squads) {
-      if (!sq.reinforcing) continue;
-      jobs.push({
-        key: `reinforce:${sq.id}`,
-        glyph: ROLE_ICON[sq.def.role],
-        mark: '+',
-        running: true,
-        progress: reinforceProgress(sq),
-        remaining: Math.max(0, sq.reinforceTimer),
-        title: `Reinforcing ${sq.def.name}`,
-        body: `${aliveCount(sq)}/${sq.def.models} men · next soldier in ${Math.ceil(Math.max(0, sq.reinforceTimer))}s. Each soldier costs ${reinforceCost(sq.def)} MP.`,
-        action: 'Click to stop reinforcing.',
-        click: () => cancelReinforce(this.world, sq),
-      });
+      // One slot per soldier on the way; only the first is being brought up.
+      for (let i = 0; i < sq.reinforceQueued; i++) {
+        const first = i === 0;
+        jobs.push({
+          key: `reinforce:${sq.id}:${i}`,
+          glyph: ROLE_ICON[sq.def.role],
+          mark: '+',
+          running: first,
+          progress: first ? reinforceProgress(sq) : 0,
+          remaining: Math.max(0, sq.reinforceTimer) + i * LOGISTICS.reinforceTime,
+          title: `Soldier for ${sq.def.name}`,
+          body: first
+            ? `${aliveCount(sq)}/${sq.def.models} men · joins in ${Math.ceil(Math.max(0, sq.reinforceTimer))}s.`
+            : `Waiting behind ${i} other soldier${i > 1 ? 's' : ''}.`,
+          action: 'Click to call off the last soldier and get the manpower back.',
+          cost: { manpower: reinforceCost(sq.def), munitions: 0, fuel: 0 },
+          click: () => cancelReinforce(this.world, sq),
+        });
+      }
     }
     return jobs;
   }
@@ -621,7 +627,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     if (sq.vet > 0) badges.push('★'.repeat(sq.vet));
     if (sq.retreating) badges.push('↩');
     else if (sq.suppState === 'pinned') badges.push('PIN');
-    else if (sq.reinforcing) badges.push('+');
+    else if (sq.reinforcing) badges.push(sq.reinforceQueued > 1 ? `+${sq.reinforceQueued}` : '+');
     if (sq.upgrading) badges.push('⇪');
     card.classList.toggle('reinforcing', sq.reinforcing);
     card.classList.toggle('upgrading', !!sq.upgrading);
