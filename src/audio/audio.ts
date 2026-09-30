@@ -19,8 +19,8 @@ const FADE_SECONDS = 1.5;
  * end, so a track that fades out (or ends mid-phrase) never cuts or jumps.
  */
 const LOOP_CROSSFADE = 4;
-/** Where a track's music really ends: the menu theme closes on a long fade. */
-const TRACK_END_TRIM: Record<Track, number> = { menu: 3, battle: 0 };
+/** Where a track's music really ends: the menu theme closes on a long fade, the battle theme on a short one. */
+const TRACK_END_TRIM: Record<Track, number> = { menu: 10, battle: 2 };
 
 /** One music track: two copies of the same file take turns so it can loop with a crossfade. */
 interface MusicTrack {
