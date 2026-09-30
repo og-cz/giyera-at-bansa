@@ -1,5 +1,6 @@
 import { ECONOMY, TILE, VICTORY } from '../data/balance';
 import { FACTIONS } from '../data/factions';
+import { SQUAD_NAMES, pickName } from '../data/squadNames';
 import { T } from '../data/terrain';
 import type { Difficulty, MapDef, Owner, PlacedUnit, ScenarioDef, TeamId, WinCondition } from '../data/types';
 import { UNITS } from '../data/units';
@@ -68,6 +69,8 @@ export class World {
   readonly objective: ObjectiveState;
   private readonly byId = new Map<number, Squad>();
   private idCounter = 1;
+  /** How many call names each side has handed out, per list. */
+  private readonly namesUsed = new Map<string, number>();
 
   constructor(opts: WorldOptions) {
     this.mapDef = opts.map;
@@ -169,9 +172,22 @@ export class World {
     const def = UNITS[unitId];
     if (!def) throw new Error(`Unknown unit ${unitId}`);
     const sq = createSquad(this.nextId, team, def, pos, heading);
+    this.nameSquad(sq);
     this.squads.push(sq);
     this.byId.set(sq.id, sq);
     return sq;
+  }
+
+  /** Give a new squad or tank the next call name on its side's list. */
+  private nameSquad(sq: Squad): void {
+    const names = SQUAD_NAMES[this.teams[sq.team].faction.id];
+    if (!names || sq.def.kind === 'structure') return;
+    const tank = sq.def.kind === 'vehicle';
+    const key = `${sq.team}:${tank ? 'tank' : 'squad'}`;
+    const n = this.namesUsed.get(key) ?? 0;
+    this.namesUsed.set(key, n + 1);
+    sq.shortName = pickName(tank ? names.tank : names.squad, n);
+    sq.callsign = tank ? names.tankName(sq.shortName) : names.squadName(sq.shortName);
   }
 
   emit(e: SimEvent): void {
