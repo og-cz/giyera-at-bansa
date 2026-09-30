@@ -53,6 +53,8 @@ export class World {
   projectiles: Projectile[] = [];
   constructions: Construction[] = [];
   mines: Mine[] = [];
+  /** Damaged defense tiles: tile index → hit points left. Missing means untouched. */
+  readonly defenseHp = new Map<number, number>();
   events: SimEvent[] = [];
   readonly vision: Vision;
   readonly territory: Territory;
