@@ -26,12 +26,19 @@ export const FIRE: Readonly<Record<string, SoundSpec>> = {
   coax_type97: s('coax', 0.4, 0.08),
   hq_mg: s('hmg', 0.4, 0.1),
   nest_mg: s('hmg', 0.45, 0.08),
-  bazooka: s('bazooka', 0.7, 0.2),
+  bazooka: s('bazooka', 0.6, 0.2),
   type97_at_rifle: s('atrifle', 0.6, 0.15),
   m6_37mm: s('tankgun', 0.75, 0.2),
   type97_57mm: s('tankgun', 0.8, 0.2),
   m2_mortar: s('mortar', 0.6, 0.15),
   type97_mortar: s('mortar', 0.7, 0.15),
+};
+
+/** Rockets and HE shells that burst on impact (bazooka, tank guns). */
+export const IMPACT: Readonly<Record<string, SoundSpec>> = {
+  bazooka: s('explode_small', 0.65, 0.05),
+  m6_37mm: s('explode_small', 0.4, 0.05),
+  type97_57mm: s('explode_small', 0.5, 0.05),
 };
 
 /** Blast sounds, by weapon id; anything unlisted uses the small blast. */
