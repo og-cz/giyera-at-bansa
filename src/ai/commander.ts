@@ -8,6 +8,7 @@ import { dist, lerpVec, type Vec2 } from '../core/vec';
 import {
   issueAbility,
   issueAttackMove,
+  issueMove,
   issueReinforce,
   issueRepair,
   issueRetreat,
@@ -93,7 +94,12 @@ export class AICommander {
     const atBase = !!hq && dist(sq.pos, hq.pos) < LOGISTICS.healRadius;
 
     if (!atBase && this.shouldRetreat(sq)) {
-      issueRetreat(world, sq);
+      // Tanks cannot retreat: drive them home for the engineers instead.
+      if (sq.def.kind === 'vehicle') {
+        if (hq && sq.order.kind !== 'move') issueMove(world, sq, world.map.nearestPassable(hq.pos, 'vehicle'));
+      } else {
+        issueRetreat(world, sq);
+      }
       this.objective.delete(sq.id);
       return;
     }
