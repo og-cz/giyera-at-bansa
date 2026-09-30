@@ -251,3 +251,35 @@ describe('engineer structures', () => {
     expect(hq.rally).toEqual(at(25, 30));
   });
 });
+
+describe('structure toughness', () => {
+  const hullOf = (sq: { models: { hp: number }[] }) => sq.models[0].hp;
+
+  it('a tank knocks out an MG nest in a few shots', () => {
+    const w = battle();
+    const nest = w.spawn(1, 'mg_nest', at(26, 30), 0);
+    w.spawn(0, 'us_stuart', at(16, 30), 0);
+    run(w, 15);
+    expect(nest.dead).toBe(true);
+  });
+
+  it('rifles barely scratch a bunker, a bazooka squad breaks it', () => {
+    const w = battle();
+    const bunker = w.spawn(1, 'bunker', at(26, 30), 0);
+    bunker.models[0].weapons.length = 0;
+    w.spawn(0, 'us_riflemen', at(18, 30), 0);
+    run(w, 20);
+    expect(hullOf(bunker)).toBeGreaterThan(1000);
+    w.spawn(0, 'us_bazooka', at(19, 32), 0);
+    run(w, 40);
+    expect(bunker.dead).toBe(true);
+  });
+
+  it('an aid tent goes down quickly under rifle fire', () => {
+    const w = battle();
+    const tent = w.spawn(1, 'aid_tent', at(24, 30), 0);
+    w.spawn(0, 'us_riflemen', at(18, 30), 0);
+    run(w, 30);
+    expect(tent.dead).toBe(true);
+  });
+});
