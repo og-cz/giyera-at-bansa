@@ -32,18 +32,18 @@ interface LuzonMapSource {
 }
 
 /** Tiles tanks cannot cross: water, buildings, jungle, walls. */
-const UNDRIVABLE = new Set(['~', '#', 'j', 'w']);
+const UNDRIVABLE = new Set(['~', '#', 'j', 'w', 'r']);
 /** Half-size of the open ground cleared around each HQ. */
 const BASE_CLEAR = 4;
 
 type Cell = { x: number; y: number };
 
-function build(src: LuzonMapSource): MapDef {
-  const grid = src.rows.map(decodeGridRow);
+/** Decodes a grid and widens roads that only touch corner to corner (see below). */
+function prepareGrid(rows: readonly string[]): string[][] {
+  const grid = rows.map(decodeGridRow);
   const H = grid.length;
   const W = grid[0].length;
   const drivable = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && !UNDRIVABLE.has(grid[y][x]);
-
   // Units never squeeze diagonally between two blocked tiles, so a road (or bridge) that only
   // touches corner to corner would be a dead end. Widen it at every such step.
   for (let y = 0; y < H - 1; y++) {
@@ -56,6 +56,21 @@ function build(src: LuzonMapSource): MapDef {
       }
     }
   }
+  return grid;
+}
+
+/** Open ground for an HQ. */
+function clearBase(grid: string[][], c: Cell): void {
+  for (let y = c.y - BASE_CLEAR; y <= c.y + BASE_CLEAR; y++) {
+    for (let x = c.x - BASE_CLEAR; x <= c.x + BASE_CLEAR; x++) if (y >= 0 && y < grid.length && x >= 0 && x < grid[0].length) grid[y][x] = '.';
+  }
+}
+
+function build(src: LuzonMapSource): MapDef {
+  const grid = prepareGrid(src.rows);
+  const H = grid.length;
+  const W = grid[0].length;
+  const drivable = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && !UNDRIVABLE.has(grid[y][x]);
 
   const around = (c: Cell, r: number, test: (ch: string) => boolean) => {
     let n = 0;
@@ -115,9 +130,7 @@ function build(src: LuzonMapSource): MapDef {
         }
       }
     }
-    for (let y = best.y - BASE_CLEAR; y <= best.y + BASE_CLEAR; y++) {
-      for (let x = best.x - BASE_CLEAR; x <= best.x + BASE_CLEAR; x++) if (y >= 0 && y < H && x >= 0 && x < W) grid[y][x] = '.';
-    }
+    clearBase(grid, best);
     return best;
   });
 
@@ -372,3 +385,69 @@ const SOURCES: LuzonMapSource[] = [
 ];
 
 export const LUZON_MAPS: readonly MapDef[] = SOURCES.map(build);
+
+/** A mission map: a converted grid with hand-placed bases and points (tile coordinates). */
+export interface MissionMapSource {
+  id: string;
+  name: string;
+  description: string;
+  rows: readonly string[];
+  bases: readonly [Cell, Cell];
+  points: readonly MapPointDef[];
+  /** Ground cut into the grid, such as a gate through a wall. */
+  carve?: readonly { x: number; y: number; w: number; h: number; tile: string }[];
+}
+
+/**
+ * Builds a mission map. Bases are cleared for their HQs, and each point is moved
+ * to the nearest spot tanks can reach from the first base, so none ends up inside
+ * a house or on the wrong side of a wall.
+ */
+export function missionMap(src: MissionMapSource): MapDef {
+  const grid = prepareGrid(src.rows);
+  const H = grid.length;
+  const W = grid[0].length;
+  for (const c of src.carve ?? []) {
+    for (let y = c.y; y < c.y + c.h; y++) for (let x = c.x; x < c.x + c.w; x++) if (y >= 0 && y < H && x >= 0 && x < W) grid[y][x] = c.tile;
+  }
+  for (const b of src.bases) clearBase(grid, b);
+  const drivable = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && !UNDRIVABLE.has(grid[y][x]);
+  const reach = new Uint8Array(W * H);
+  const queue: Cell[] = [src.bases[0]];
+  reach[src.bases[0].y * W + src.bases[0].x] = 1;
+  for (let head = 0; head < queue.length; head++) {
+    const { x, y } = queue[head];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (!drivable(nx, ny) || reach[ny * W + nx]) continue;
+      reach[ny * W + nx] = 1;
+      queue.push({ x: nx, y: ny });
+    }
+  }
+  const snap = (p: MapPointDef): MapPointDef => {
+    let best = { x: Math.floor(p.x), y: Math.floor(p.y) };
+    let bestD = Infinity;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (!reach[y * W + x]) continue;
+        const d = Math.hypot(x + 0.5 - p.x, y + 0.5 - p.y);
+        if (d < bestD) {
+          bestD = d;
+          best = { x, y };
+        }
+      }
+    }
+    return { ...p, x: best.x + 0.5, y: best.y + 0.5 };
+  };
+  return {
+    id: src.id,
+    name: src.name,
+    description: src.description,
+    width: W,
+    height: H,
+    bases: [src.bases[0], src.bases[1]],
+    points: src.points.map(snap),
+    features: [{ kind: 'grid', rows: grid.map(encodeGridRow) }],
+  };
+}
