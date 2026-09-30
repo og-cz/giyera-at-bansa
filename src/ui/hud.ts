@@ -5,6 +5,7 @@ import type { Resources, TeamId, UnitDef } from '../data/types';
 import { TERRAIN } from '../data/terrain';
 import { UNITS } from '../data/units';
 import { UPGRADES } from '../data/upgrades';
+import { WEAPONS } from '../data/weapons';
 import { cancelProduction, cancelReinforce, cancelUpgrade, queueProduction } from '../sim/commands';
 import { aliveCount, healthFraction, type SimEvent, type Squad, type Tone } from '../sim/entities';
 import { defenseAt } from '../sim/systems/defenses';
@@ -16,14 +17,11 @@ import type { World } from '../sim/world';
 import type { Input } from '../input/input';
 import type { UIState } from '../input/uiState';
 import { el, formatTime } from './dom';
+import { icon, unitIcon } from './icons';
 import type { Minimap } from './minimap';
 
-const DEFENSE_ICON: Record<string, string> = { sandbags: '▤', wire: '⌇', tanktrap: '✕', mine: '●', mg_nest: '◉', bunker: '▣', aid_tent: '✚' };
-
-const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN', fort: '▣' };
-/** Short badge for a unit: structures show what they are (nest, bunker, tent). */
-const glyphOf = (def: UnitDef): string => (def.role === 'fort' ? FORT_GLYPH[def.id] ?? '▣' : ROLE_ICON[def.role]);
-const FORT_GLYPH: Record<string, string> = { mg_nest: 'N', bunker: 'BK', aid_tent: '+' };
+/** Icon for a unit (its role, or what a structure is). */
+const glyphOf = (def: UnitDef): SVGSVGElement => icon(unitIcon(def));
 
 interface Tip {
   title: string;
@@ -63,7 +61,7 @@ export class Hud {
   private readonly roster: HTMLElement;
   private readonly rosterCards = new Map<number, HTMLElement>();
   private readonly unitPanel: HTMLElement;
-  private readonly cardTitle: HTMLElement;
+  private readonly income: Record<'manpower' | 'munitions' | 'fuel', HTMLElement>;
   private readonly orderGrid: HTMLElement;
   private readonly buildGrid: HTMLElement;
   private readonly orders: GridButton[] = [];
@@ -109,7 +107,20 @@ export class Hud {
     }
     const top = el('div', { class: 'hud-top' }, this.objective ? this.objective.box : el('div', { class: 'score' }, t0, this.pointIcons, t1), this.clock);
 
-    // ─── Top right: menu buttons and unit roster ───
+    // ─── Top right: resources, menu buttons and unit roster ───
+    const stat = (cls: string, label: string, name: string) => {
+      const v = el('span', { class: 'val' });
+      const inc = el('span', { class: 'inc' });
+      const node = el('div', { class: `res ${cls}` }, icon(name, 'ico res-icon'), v, inc);
+      this.tip(node, () => ({ title: label, body: RESOURCE_HELP[cls] }));
+      return [node, v, inc] as const;
+    };
+    const [mpBox, mp, mpInc] = stat('mp', 'Manpower', 'manpower');
+    const [muBox, mu, muInc] = stat('mu', 'Munitions', 'munitions');
+    const [fuBox, fu, fuInc] = stat('fu', 'Fuel', 'fuel');
+    const [popBox, pop] = stat('pop', 'Population', 'pop');
+    this.res = { manpower: mp, munitions: mu, fuel: fu, pop };
+    this.income = { manpower: mpInc, munitions: muInc, fuel: fuInc };
     const menu = el('button', { class: 'corner-btn', text: 'Menu' });
     const help = el('button', { class: 'corner-btn', text: '?' });
     menu.addEventListener('click', () => this.onMenu());
@@ -117,21 +128,15 @@ export class Hud {
     this.tip(menu, () => ({ title: 'Menu', body: 'Pause the battle, see the controls, or leave.', key: 'Esc' }));
     this.tip(help, () => ({ title: 'Controls', body: 'Show every key binding.', key: 'F1' }));
     this.roster = el('div', { class: 'roster' });
-    const corner = el('div', { class: 'hud-corner' }, el('div', { class: 'corner-btns' }, help, menu), this.roster);
+    const corner = el(
+      'div',
+      { class: 'hud-corner' },
+      el('div', { class: 'corner-btns' }, help, menu),
+      el('div', { class: 'resources' }, mpBox, muBox, fuBox, popBox),
+      this.roster,
+    );
 
-    // ─── Bottom: minimap · unit card · resources + command grid ───
-    const stat = (cls: string, label: string, icon: string) => {
-      const v = el('span', { class: 'val' });
-      const node = el('div', { class: `res ${cls}` }, el('span', { class: 'icon', text: icon }), v);
-      this.tip(node, () => ({ title: label, body: RESOURCE_HELP[cls] }));
-      return [node, v] as const;
-    };
-    const [mpBox, mp] = stat('mp', 'Manpower', 'MP');
-    const [muBox, mu] = stat('mu', 'Munitions', 'MU');
-    const [fuBox, fu] = stat('fu', 'Fuel', 'FU');
-    const [popBox, pop] = stat('pop', 'Population', 'POP');
-    this.res = { manpower: mp, munitions: mu, fuel: fu, pop };
-
+    // ─── Bottom: minimap · unit card · queue · command grid ───
     this.unitPanel = el('div', { class: 'unit-panel' });
     this.orderGrid = el('div', { class: 'cmd-grid' });
     this.buildGrid = el('div', { class: 'cmd-grid build' });
@@ -142,7 +147,6 @@ export class Hud {
     this.rallyButton();
     const queue = el('div', { class: 'panel queue-panel' });
     for (let i = 0; i < ECONOMY.maxQueue; i++) queue.append(this.queueSlot(i));
-    this.cardTitle = el('div', { class: 'panel-title' });
 
     const bottom = el(
       'div',
@@ -153,8 +157,6 @@ export class Hud {
       el(
         'div',
         { class: 'panel command-card' },
-        el('div', { class: 'resources' }, mpBox, muBox, fuBox, popBox),
-        this.cardTitle,
         this.orderGrid,
         this.buildGrid,
       ),
@@ -213,8 +215,10 @@ export class Hud {
 
   // ─── Command grid ──────────────────────────────────────────────
 
-  private gridButton(grid: HTMLElement, icon: string, label: string, key: string, action: () => void): HTMLButtonElement {
-    const node = el('button', { class: 'cmd' }, el('span', { class: 'cmd-icon', text: icon }), el('span', { class: 'cmd-label', text: label }), el('span', { class: 'key', text: key }));
+  /** An icon-only command button; its name and details live in the tooltip. */
+  private gridButton(grid: HTMLElement, iconName: string, label: string, key: string, action: () => void): HTMLButtonElement {
+    const node = el('button', { class: 'cmd' }, icon(iconName, 'ico cmd-icon'), el('span', { class: 'key', text: key }), el('span', { class: 'cmd-cd' }));
+    node.setAttribute('aria-label', label);
     node.addEventListener('click', action);
     grid.append(node);
     return node;
@@ -228,24 +232,24 @@ export class Hud {
       this.orders.push({ node, refresh: (own) => refresh(node, own), common });
     };
 
-    add('⤳', 'Attack-Move', 'A', () => ({ title: 'Attack-Move', body: 'Move and engage anything on the way. Press A, then left-click the destination.', key: 'A' }), () => this.input.attackMoveMode(), (b, own) => {
+    add('attack', 'Attack-Move', 'A', () => ({ title: 'Attack-Move', body: 'Move and engage anything on the way. Press A, then left-click the destination.', key: 'A' }), () => this.input.attackMoveMode(), (b, own) => {
       b.disabled = units(own).length === 0;
       b.classList.toggle('active', this.ui.mode.kind === 'attackMove');
     }, true);
-    add('■', 'Stop', 'S', () => ({ title: 'Stop', body: 'Cancel all orders.', key: 'S' }), () => this.input.stop(), (b, own) => (b.disabled = units(own).length === 0), true);
-    add('↩', 'Retreat', 'R', () => ({ title: 'Retreat', body: 'Fall back to headquarters. Retreating units run faster, take less fire and cannot be pinned, but they take no other orders until they get there. Tanks cannot retreat: drive them back and have engineers repair them.', key: 'R' }), () => this.input.retreat(), (b, own) => {
+    add('stop', 'Stop', 'S', () => ({ title: 'Stop', body: 'Cancel all orders.', key: 'S' }), () => this.input.stop(), (b, own) => (b.disabled = units(own).length === 0), true);
+    add('retreat', 'Retreat', 'R', () => ({ title: 'Retreat', body: 'Fall back to headquarters. Retreating units run faster, take less fire and cannot be pinned, but they take no other orders until they get there. Tanks cannot retreat: drive them back and have engineers repair them.', key: 'R' }), () => this.input.retreat(), (b, own) => {
       b.disabled = units(own).length === 0;
       // Tanks cannot retreat.
       if (units(own).length > 0 && units(own).every((s) => s.def.kind === 'vehicle')) b.style.display = 'none';
     }, true);
-    add('+', 'Reinforce', 'E', () => {
+    add('reinforce', 'Reinforce', 'E', () => {
       const soft = this.input.selectedOwn().filter((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) < s.def.models);
       const cost = soft.length === 1 ? { manpower: reinforceCost(soft[0].def), munitions: 0, fuel: 0 } : undefined;
       return { title: 'Reinforce', body: 'Each press queues one soldier, paid for now, in the squad’s queue (three jobs at a time, the upgrade included). They join one after another. Must stay near headquarters or a supplied friendly point, or the rest are called off and refunded.', key: 'E', cost };
     }, () => this.input.reinforce(), (b, own) => {
       b.disabled = !own.some((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) + s.reinforceQueued < s.def.models);
     });
-    add('⚒', 'Repair', 'F', () => ({
+    add('repair', 'Repair', 'F', () => ({
       title: 'Repair',
       body: 'Click, then click a damaged tank, the headquarters or a damaged defense. The engineers work until it is fully repaired and do not fight while they work. Shift-click to repair several in a row.',
       key: 'F',
@@ -253,7 +257,7 @@ export class Hud {
       b.style.display = own.some((s) => s.def.canRepair) ? '' : 'none';
       b.classList.toggle('active', this.ui.mode.kind === 'repair');
     });
-    add('◭', 'Set Up', 'D', () => ({
+    add('setup', 'Set Up', 'D', () => ({
       title: 'Set Up / Tear Down',
       body: 'Set a weapon team up to fire, aimed at the cursor (the firing cone shows as you aim), or pack it up to move. Tip: right-click drag to move and set up in one order.',
       key: 'D',
@@ -261,13 +265,12 @@ export class Hud {
       const teams = own.filter((s) => s.def.kind === 'team');
       // Only weapon teams set up; hide the button otherwise so engineers' build buttons fit.
       b.style.display = teams.length === 0 ? 'none' : '';
-      const deployed = teams.some((s) => s.setup === 'deployed' || s.setup === 'settingUp');
-      (b.querySelector('.cmd-label') as HTMLElement).textContent = deployed ? 'Tear Down' : 'Set Up';
+      b.classList.toggle('on', teams.some((s) => s.setup === 'deployed' || s.setup === 'settingUp'));
       b.classList.toggle('active', this.ui.mode.kind === 'setup');
     });
     for (const hotkey of ['G', 'B']) {
       const holderOf = (own: Squad[]) => own.find((s) => s.def.abilities.some((a) => ABILITIES[a].hotkey === hotkey));
-      add(hotkey === 'G' ? '✹' : '☄', '—', hotkey, () => {
+      add(hotkey === 'G' ? 'grenade' : 'barrage', hotkey === 'G' ? 'Grenade' : 'Barrage', hotkey, () => {
         const holder = holderOf(this.input.selectedOwn());
         if (!holder) return { title: '—' };
         const ab = ABILITIES[holder.def.abilities.find((a) => ABILITIES[a].hotkey === hotkey)!];
@@ -279,7 +282,7 @@ export class Hud {
         if (!holder) return;
         const ab = ABILITIES[holder.def.abilities.find((a) => ABILITIES[a].hotkey === hotkey)!];
         const cd = Math.max(0, holder.cooldowns[ab.id] ?? 0);
-        (b.querySelector('.cmd-label') as HTMLElement).textContent = cd > 0 ? `${Math.ceil(cd)}s` : ab.name;
+        (b.querySelector('.cmd-cd') as HTMLElement).textContent = cd > 0 ? String(Math.ceil(cd)) : '';
         b.disabled = cd > 0 || !canAfford(this.world.teams[this.player].resources, ab.cost);
         b.classList.toggle('active', this.ui.mode.kind === 'ability' && this.ui.mode.abilityId === ab.id);
       });
@@ -289,12 +292,12 @@ export class Hud {
   /** The Build button, and the engineer construction buttons on its submenu page. */
   private buildDefenseButtons(): void {
     const builders = (own: Squad[]) => own.some((s) => s.def.builds.length > 0);
-    const open = this.gridButton(this.orderGrid, '⌂', 'Build', 'Q', () => this.input.toggleBuildMenu());
+    const open = this.gridButton(this.orderGrid, 'build', 'Build', 'Q', () => this.input.toggleBuildMenu());
     this.tip(open, () => ({ title: 'Build', body: 'Open the engineers’ construction menu: sandbags, barbed wire, tank traps, mines, MG nests, bunkers and aid tents.', key: 'Q' }));
     this.orders.push({ node: open, refresh: (own) => (open.style.display = builders(own) ? '' : 'none') });
     for (const id of BUILDABLE_IDS) {
       const def = BUILDABLES[id];
-      const node = this.gridButton(this.orderGrid, DEFENSE_ICON[id] ?? '◆', def.name, def.hotkey, () => this.input.buildMode(id));
+      const node = this.gridButton(this.orderGrid, id, def.name, def.hotkey, () => this.input.buildMode(id));
       const how = def.shape === 'line' ? `Click and drag to lay a line of up to ${def.maxLength} tiles. Cost is per tile.` : 'Click to place.';
       this.tip(node, () => ({
         title: def.name,
@@ -313,14 +316,13 @@ export class Hud {
         },
       });
     }
-    const back = this.gridButton(this.orderGrid, '↶', 'Back', 'Esc', () => (this.ui.buildMenu = false));
+    const back = this.gridButton(this.orderGrid, 'back', 'Back', 'Esc', () => (this.ui.buildMenu = false));
     this.tip(back, () => ({ title: 'Back', body: 'Close the Build menu.', key: 'Esc' }));
     this.orders.push({ buildPage: true, node: back, refresh: () => {} });
   }
 
   /** Weapon upgrade buttons (T, Y), shown when a selected squad can still take one. */
   private buildUpgradeButtons(): void {
-    const icons: Record<string, string> = { T: '⇪', Y: '⇪' };
     for (const hotkey of ['T', 'Y']) {
       const offer = (own: Squad[]) => {
         for (const sq of own) {
@@ -329,7 +331,8 @@ export class Hud {
         }
         return null;
       };
-      const node = this.gridButton(this.orderGrid, icons[hotkey], '—', hotkey, () => this.input.upgrade(hotkey));
+      const node = this.gridButton(this.orderGrid, 'upgrade', 'Upgrade', hotkey, () => this.input.upgrade(hotkey));
+      node.classList.add('upgrade');
       this.tip(node, () => {
         const o = offer(this.input.selectedOwn());
         if (!o) return { title: '—' };
@@ -350,7 +353,12 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
           const o = offer(own);
           node.style.display = o ? '' : 'none';
           if (!o) return;
-          (node.querySelector('.cmd-label') as HTMLElement).textContent = o.def.name;
+          // Show what the upgrade gives: an anti-tank weapon or a machine gun.
+          const kind = o.def.weapons.some((w) => WEAPONS[w].prefers === 'vehicle') ? 'at' : 'mg';
+          if (node.dataset.icon !== kind) {
+            node.dataset.icon = kind;
+            node.querySelector('.cmd-icon')!.replaceWith(icon(kind, 'ico cmd-icon'));
+          }
           const open = own.some((s) => s.def.upgrades.includes(o.def.id) && s.upgrades.length === 0 && !s.upgrading);
           node.disabled = !open || !canAfford(this.world.teams[this.player].resources, o.def.cost);
         },
@@ -360,7 +368,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
 
   /** HQ: set the rally point where new units go. */
   private rallyButton(): void {
-    const node = this.gridButton(this.buildGrid, '⚑', 'Rally Point', '', () => {
+    const node = this.gridButton(this.buildGrid, 'rally', 'Rally Point', '', () => {
       if (!this.input.selectedOwn().some((s) => s.def.role === 'hq')) this.input.selectHq();
       this.input.rallyMode();
     });
@@ -373,7 +381,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
 
   private buildButton(id: string): void {
     const def = UNITS[id];
-    const node = this.gridButton(this.buildGrid, ROLE_ICON[def.role], def.name, '', () => {
+    const node = this.gridButton(this.buildGrid, unitIcon(def), def.name, '', () => {
       const r = queueProduction(this.world, this.player, id);
       if (!r.ok) this.toast(r.reason ?? 'Cannot build', 'bad');
     });
@@ -407,9 +415,10 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     const team = world.teams[this.player];
     const r = team.resources;
     const inc = team.income;
-    this.res.manpower.textContent = `${Math.floor(r.manpower)} +${Math.round(inc.manpower)}`;
-    this.res.munitions.textContent = `${Math.floor(r.munitions)} +${Math.round(inc.munitions)}`;
-    this.res.fuel.textContent = `${Math.floor(r.fuel)} +${Math.round(inc.fuel)}`;
+    for (const k of ['manpower', 'munitions', 'fuel'] as const) {
+      this.res[k].textContent = String(Math.floor(r[k]));
+      this.income[k].textContent = `+${Math.round(inc[k])}`;
+    }
     this.res.pop.textContent = `${team.pop}/${ECONOMY.popCap}`;
     for (const t of [0, 1] as const) {
       this.tickets[t].textContent = String(world.teams[t].tickets);
@@ -429,7 +438,6 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     if (this.ui.buildMenu && !own.some((s) => s.def.builds.length > 0)) this.ui.buildMenu = false;
     this.orderGrid.style.display = building || fort ? 'none' : '';
     this.buildGrid.style.display = building ? '' : 'none';
-    this.cardTitle.textContent = fort ? fort.def.name : building ? `${team.faction.name} Headquarters` : this.ui.buildMenu ? 'Build' : 'Orders';
     // One unit type selected (one squad or several of the same kind): its abilities show; a mixed group only gets the common orders.
     const kinds = new Set(own.filter((s) => s.def.kind !== 'structure').map((s) => s.def.id));
     const single = kinds.size <= 1;
@@ -500,7 +508,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       const def = UNITS[item.unitId];
       jobs.push({
         key: `unit:${i}:${item.unitId}`,
-        glyph: ROLE_ICON[def.role],
+        glyph: unitIcon(def),
         mark: '',
         running: i === 0,
         progress: i === 0 ? 1 - item.remaining / def.buildTime : 0,
@@ -522,7 +530,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       const def = UPGRADES[sq.upgrading.id];
       jobs.push({
         key: `upgrade:${sq.id}`,
-        glyph: ROLE_ICON[sq.def.role],
+        glyph: unitIcon(sq.def),
         mark: '⇪',
         running: true,
         progress: 1 - Math.max(0, sq.upgrading.remaining) / def.time,
@@ -540,7 +548,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         const first = i === 0;
         jobs.push({
           key: `reinforce:${sq.id}:${i}`,
-          glyph: ROLE_ICON[sq.def.role],
+          glyph: unitIcon(sq.def),
           mark: '+',
           running: first,
           progress: first ? reinforceProgress(sq) : 0,
@@ -595,7 +603,11 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       const job = jobs[i];
       slot.classList.toggle('filled', !!job);
       slot.classList.toggle('active', !!job?.running);
-      (slot.querySelector('.qslot-glyph') as HTMLElement).textContent = job?.glyph ?? '';
+      const glyph = slot.querySelector('.qslot-glyph') as HTMLElement;
+      if (glyph.dataset.icon !== (job?.glyph ?? '')) {
+        glyph.dataset.icon = job?.glyph ?? '';
+        glyph.replaceChildren(...(job ? [icon(job.glyph)] : []));
+      }
       (slot.querySelector('.qslot-mark') as HTMLElement).textContent = job?.mark ?? '';
       (slot.querySelector('.qslot-time') as HTMLElement).textContent = job && job.remaining !== null ? `${Math.ceil(job.remaining)}s` : '';
       (slot.querySelector('.qslot-fill') as HTMLElement).style.height = `${Math.round((job?.progress ?? 0) * 100)}%`;
@@ -623,19 +635,17 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     }
   }
 
+  /** A roster card: the unit's icon, health and squad size; the name is in the tooltip. */
   private rosterCard(sq: Squad): HTMLElement {
     const card = el(
       'button',
       { class: 'roster-card' },
-      el('span', { class: 'glyph', text: glyphOf(sq.def) }),
-      el(
-        'div',
-        { class: 'rc-body' },
-        el('div', { class: 'rc-name', text: sq.def.name }),
-        el('div', { class: 'rc-bar' }, el('div', { class: 'fill' })),
-        el('div', { class: 'rc-job' }, el('div', { class: 'fill' })),
-      ),
-      el('div', { class: 'rc-badges' }),
+      glyphOf(sq.def),
+      el('span', { class: 'rc-group' }),
+      el('span', { class: 'rc-state' }),
+      el('span', { class: 'rc-count' }),
+      el('div', { class: 'rc-bar' }, el('div', { class: 'fill' })),
+      el('div', { class: 'rc-job' }, el('div', { class: 'fill' })),
     );
     // mousedown, not click: the card is refreshed often and a click can get lost between frames.
     card.addEventListener('mousedown', (e) => {
@@ -651,23 +661,20 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     card.classList.toggle('selected', this.ui.selected.has(sq.id));
     card.classList.toggle('pinned', sq.suppState === 'pinned');
     card.classList.toggle('retreating', sq.retreating);
-    const fill = card.querySelector('.rc-bar .fill') as HTMLElement;
-    fill.style.width = `${healthFraction(sq) * 100}%`;
-    const group = [...this.ui.groups].find(([, ids]) => ids.includes(sq.id))?.[0];
-    const badges: string[] = [];
-    if (group !== undefined) badges.push(String(group));
-    if (sq.def.kind !== 'vehicle') badges.push(`${aliveCount(sq)}/${sq.def.models}`);
-    if (sq.vet > 0) badges.push('★'.repeat(sq.vet));
-    if (sq.retreating) badges.push('↩');
-    else if (sq.suppState === 'pinned') badges.push('PIN');
-    else if (sq.reinforcing) badges.push(sq.reinforceQueued > 1 ? `+${sq.reinforceQueued}` : '+');
-    if (sq.upgrading) badges.push('⇪');
     card.classList.toggle('reinforcing', sq.reinforcing);
     card.classList.toggle('upgrading', !!sq.upgrading);
+    const hp = healthFraction(sq);
+    const fill = card.querySelector('.rc-bar .fill') as HTMLElement;
+    fill.style.width = `${hp * 100}%`;
+    fill.classList.toggle('low', hp < 0.35);
+    const group = [...this.ui.groups].find(([, ids]) => ids.includes(sq.id))?.[0];
+    (card.querySelector('.rc-group') as HTMLElement).textContent = group !== undefined ? String(group) : '';
+    (card.querySelector('.rc-count') as HTMLElement).textContent =
+      sq.def.kind !== 'vehicle' && aliveCount(sq) < sq.def.models ? String(aliveCount(sq)) : sq.vet > 0 ? '★'.repeat(sq.vet) : '';
+    (card.querySelector('.rc-state') as HTMLElement).textContent = sq.retreating ? '↩' : sq.suppState === 'pinned' ? '!' : sq.reinforcing ? '+' : sq.upgrading ? '⇪' : '';
     // The squad's own job, shown on its card too: reinforcing first, else the upgrade on its way.
     const job = sq.reinforcing ? reinforceProgress(sq) : sq.upgrading ? 1 - Math.max(0, sq.upgrading.remaining) / UPGRADES[sq.upgrading.id].time : 0;
     (card.querySelector('.rc-job .fill') as HTMLElement).style.width = `${Math.round(job * 100)}%`;
-    (card.querySelector('.rc-badges') as HTMLElement).textContent = badges.join(' ');
   }
 
   private statusLine(sq: Squad): string {
@@ -699,7 +706,8 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     if (squads.length === 0) {
       if (this.selectionKey !== 'none') {
         this.selectionKey = 'none';
-        this.unitPanel.replaceChildren(el('div', { class: 'hint', html: 'Select a unit, or pick one from the roster at the top right.<br>Right-click to move · right-click drag to move and face · <b>F1</b> for controls' }));
+        const team = this.world.teams[this.player];
+        this.unitPanel.replaceChildren(el('div', { class: 'empty-card' }, icon('hq', 'ico empty-icon'), el('div', {}, el('div', { class: 'empty-name', text: team.faction.name }), el('div', { class: 'empty-sub', text: 'No unit selected' }))));
       }
       return;
     }
@@ -719,17 +727,18 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     const card = (glyph: string, name: string, desc: string, lines: [string, string][], health: number | null, hint?: string) => {
       const fill = el('div', { class: 'fill' });
       fill.style.width = `${(health ?? 1) * 100}%`;
+      const portrait = el('div', { class: 'portrait' }, icon(glyph, 'ico portrait-icon'));
+      this.tip(portrait, () => ({ title: name, body: desc }));
       return el(
         'div',
         { class: `portrait-card t${this.player}` },
-        el('div', { class: 'portrait' }, el('span', { class: 'portrait-glyph', text: glyph }), el('div', { class: 'hpbar' }, fill)),
+        portrait,
         el(
           'div',
           { class: 'portrait-text' },
-          el('div', { class: 'portrait-faction', text: 'Field works' }),
           el('div', { class: 'portrait-name', text: name }),
-          el('p', { class: 'portrait-desc', text: desc }),
-          el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
+          el('div', { class: 'hpbar big' }, fill),
+          el('div', { class: 'chips' }, ...lines.map(([k, v]) => el('span', { class: 'chip', text: `${k} ${v}` }))),
           ...(hint ? [el('div', { class: 'portrait-hint', text: hint })] : []),
         ),
       );
@@ -743,7 +752,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       const damaged = d.hp < d.maxHp;
       return {
         key: `d:${ins.tx},${ins.ty}:${hp}`,
-        node: card(DEFENSE_ICON[d.def.id] ?? '◆', d.def.name, d.def.description, [
+        node: card(d.def.id, d.def.name, d.def.description, [
           ['Health', `${hp} / ${d.maxHp}`],
           ['Cover', t.cover === 'none' ? 'None' : t.cover === 'heavy' ? 'Heavy' : t.cover === 'light' ? 'Light' : 'Exposed'],
           ['Blocks', blocks],
@@ -760,7 +769,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       const workers = workersOf(world, c).length;
       return {
         key: `c:${c.id}:${Math.round(progress * 100)}:${workers}`,
-        node: card(DEFENSE_ICON[def.id] ?? '◆', `Building ${def.name}`, def.description, [
+        node: card(def.id, `Building ${def.name}`, def.description, [
           ['Progress', `${Math.round(progress * 100)}%${def.shape === 'line' ? ` · ${done}/${c.tiles.length} tiles` : ''}`],
           ['Engineers', `${workers} squad${workers === 1 ? '' : 's'} working`],
         ], progress, 'Right-click it with more engineers selected to help build.'),
@@ -769,55 +778,58 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     const mine = world.mines.find((m) => m.id === ins.id);
     if (!mine) return null;
     const def = BUILDABLES.mine;
-    return { key: `m:${mine.id}`, node: card('●', def.name, def.description, [['Status', 'Armed · hidden from the enemy']], null) };
+    return { key: `m:${mine.id}`, node: card('mine', def.name, def.description, [['Status', 'Armed · hidden from the enemy']], null) };
   }
 
   private miniCard(sq: Squad): HTMLElement {
     const fill = el('div', { class: 'fill' });
     fill.style.width = `${healthFraction(sq) * 100}%`;
-    const card = el('button', { class: `mini t${sq.team}` }, el('span', { class: 'glyph', text: glyphOf(sq.def) }), el('div', { class: 'hp' }, fill));
+    const card = el('button', { class: `mini t${sq.team}` }, glyphOf(sq.def), el('div', { class: 'hp' }, fill));
     if (sq.suppState !== 'normal') card.classList.add(sq.suppState);
     card.addEventListener('mousedown', (e) => this.input.select([sq.id], e.shiftKey));
     this.tip(card, () => ({ title: sq.def.name, body: this.statusLine(sq) }));
     return card;
   }
 
-
+  /**
+   * The selected unit at a glance: portrait, name, health, one pip per soldier
+   * and a few short status chips. The description is in the portrait's tooltip.
+   */
   private portraitCard(sq: Squad): HTMLElement {
     const weapons = new Map<string, number>();
     for (const m of sq.models) if (m.alive) for (const w of m.weapons) weapons.set(w.def.name, (weapons.get(w.def.name) ?? 0) + 1);
-    const lines: [string, string][] = [];
-    if (sq.def.kind === 'infantry' || sq.def.kind === 'team') lines.push(['Squad', `${aliveCount(sq)} / ${sq.def.models}`]);
     const hp = healthFraction(sq);
-    lines.push(['Health', `${Math.round(hp * 100)}%`]);
-    if (sq.def.armor) lines.push(['Armour', sq.def.vehicle ? `${sq.def.armor.front} front / ${sq.def.armor.rear} rear` : `${sq.def.armor.front}`]);
-    if (sq.def.kind === 'infantry' || sq.def.kind === 'team') {
-      lines.push(['Morale', sq.suppState === 'normal' ? 'Steady' : sq.suppState === 'suppressed' ? 'Suppressed' : 'PINNED']);
-    }
-    if (sq.def.kind === 'team') lines.push(['Weapon', { packed: 'Packed', settingUp: 'Setting up…', deployed: 'Deployed', tearingDown: 'Packing up…' }[sq.setup]]);
-    if (sq.def.vetXp.length) lines.push(['Veterancy', sq.vet > 0 ? '★'.repeat(sq.vet) : `${Math.floor(sq.xp)} / ${sq.def.vetXp[0]} xp`]);
-    lines.push(['Weapons', [...weapons].map(([n, c]) => (c > 1 ? `${c}× ${n}` : n)).join(', ') || '—']);
+    const soft = sq.def.kind === 'infantry' || sq.def.kind === 'team';
+    const chips: [string, string][] = [];
+    if (soft && sq.suppState !== 'normal') chips.push([sq.suppState === 'pinned' ? 'Pinned' : 'Suppressed', 'bad']);
+    if (sq.retreating) chips.push(['Retreating', 'bad']);
+    if (sq.def.kind === 'team') chips.push([{ packed: 'Packed', settingUp: 'Setting up', deployed: 'Set up', tearingDown: 'Packing' }[sq.setup], sq.setup === 'deployed' ? 'good' : '']);
+    if (sq.def.armor) chips.push([sq.def.vehicle ? `Armour ${sq.def.armor.front}/${sq.def.armor.rear}` : `Armour ${sq.def.armor.front}`, '']);
+    for (const [n, c] of weapons) chips.push([c > 1 ? `${c}× ${n}` : n, 'weapon']);
 
     const enemy = sq.team !== this.player;
-    const fill = el('div', { class: 'fill' });
+    const fill = el('div', { class: `fill ${hp < 0.35 ? 'low' : ''}` });
     fill.style.width = `${hp * 100}%`;
+    const alive = sq.models.filter((x) => x.alive);
+    const pips = soft
+      ? el('div', { class: 'pips' }, ...Array.from({ length: sq.def.models }, (_, i) => {
+          const m = alive[i];
+          return el('span', { class: `pip ${m ? (m.hp / m.maxHp < 0.4 ? 'hurt' : '') : 'lost'}` });
+        }))
+      : null;
+    const portrait = el('div', { class: 'portrait' }, icon(unitIcon(sq.def), 'ico portrait-icon'), el('span', { class: 'portrait-vet', text: '★'.repeat(sq.vet) }));
+    this.tip(portrait, () => ({ title: sq.def.name, body: sq.def.description, strong: sq.def.strongVs, weak: sq.def.weakVs }));
     return el(
       'div',
       { class: `portrait-card t${sq.team}` },
-      el(
-        'div',
-        { class: 'portrait' },
-        el('span', { class: 'portrait-glyph', text: glyphOf(sq.def) }),
-        el('span', { class: 'portrait-vet', text: '★'.repeat(sq.vet) }),
-        el('div', { class: 'hpbar' }, fill),
-      ),
+      portrait,
       el(
         'div',
         { class: 'portrait-text' },
-        el('div', { class: 'portrait-faction', text: this.world.teams[sq.team].faction.name + (enemy ? ' · enemy' : '') }),
-        el('div', { class: 'portrait-name', text: sq.def.name }),
-        el('p', { class: 'portrait-desc', text: sq.def.description }),
-        el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v, class: WIDE_ROWS.has(k) ? 'wide' : '' })])),
+        el('div', { class: 'portrait-name', text: sq.def.name + (enemy ? ' · enemy' : '') }),
+        el('div', { class: 'hpbar big' }, fill),
+        ...(pips ? [pips] : []),
+        el('div', { class: 'chips' }, ...chips.map(([text, tone]) => el('span', { class: `chip ${tone}`, text }))),
       ),
     );
   }
@@ -842,9 +854,6 @@ interface QueueJob {
 
 const reinforceProgress = (sq: Squad): number =>
   sq.reinforcing ? 1 - Math.max(0, sq.reinforceTimer) / LOGISTICS.reinforceTime : 0;
-
-/** Unit card rows long enough to need the full width. */
-const WIDE_ROWS = new Set(['Weapons']);
 
 const RESOURCE_HELP: Record<string, string> = {
   mp: 'Recruits and reinforces soldiers. Income comes from your base; a larger army costs more upkeep.',
