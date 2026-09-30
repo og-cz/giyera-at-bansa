@@ -2,11 +2,14 @@ import { ABILITIES } from '../data/abilities';
 import { BUILDABLES, BUILDABLE_IDS } from '../data/buildables';
 import { ECONOMY, LOGISTICS } from '../data/balance';
 import type { Resources, TeamId } from '../data/types';
+import { TERRAIN } from '../data/terrain';
 import { UNITS } from '../data/units';
 import { UPGRADES } from '../data/upgrades';
 import { cancelProduction, queueProduction } from '../sim/commands';
 import { aliveCount, healthFraction, type SimEvent, type Squad, type Tone } from '../sim/entities';
+import { defenseAt } from '../sim/systems/defenses';
 import { canAfford } from '../sim/systems/economy';
+import { workersOf } from '../sim/systems/engineering';
 import { reinforceCost } from '../sim/systems/logistics';
 import { forcesRemaining } from '../sim/systems/victory';
 import type { World } from '../sim/world';
@@ -14,6 +17,8 @@ import type { Input } from '../input/input';
 import type { UIState } from '../input/uiState';
 import { el, formatTime } from './dom';
 import type { Minimap } from './minimap';
+
+const DEFENSE_ICON: Record<string, string> = { sandbags: '▤', wire: '⌇', tanktrap: '✕', mine: '●' };
 
 const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN' };
 
@@ -56,9 +61,8 @@ export class Hud {
   private readonly buildGrid: HTMLElement;
   private readonly orders: GridButton[] = [];
   private readonly builds: { id: string; node: HTMLButtonElement }[] = [];
-  private readonly jobs: HTMLElement;
-  private readonly jobList: HTMLElement;
-  private readonly jobRows = new Map<string, HTMLElement>();
+  /** The HQ's production queue: three slots beside the orders, like a CoH2 building queue. */
+  private readonly queueSlots: HTMLElement[] = [];
   private readonly toasts: HTMLElement;
   private readonly tooltip: HTMLElement;
   private tipSource: { node: HTMLElement; get: () => Tip } | null = null;
@@ -127,8 +131,8 @@ export class Hud {
     this.buildDefenseButtons();
     this.buildUpgradeButtons();
     for (const id of team.faction.roster) this.buildButton(id);
-    this.jobList = el('div', { class: 'job-list' });
-    this.jobs = el('div', { class: 'jobs' }, el('div', { class: 'jobs-title', text: 'In progress' }), this.jobList);
+    const queue = el('div', { class: 'panel queue-panel' });
+    for (let i = 0; i < ECONOMY.maxQueue; i++) queue.append(this.queueSlot(i));
     this.cardTitle = el('div', { class: 'panel-title' });
 
     const bottom = el(
@@ -136,6 +140,7 @@ export class Hud {
       { class: 'bottombar' },
       el('div', { class: 'panel minimap-panel' }, minimap.canvas),
       el('div', { class: 'panel unit-card' }, this.unitPanel),
+      queue,
       el(
         'div',
         { class: 'panel command-card' },
@@ -148,7 +153,7 @@ export class Hud {
 
     this.toasts = el('div', { class: 'toasts' });
     this.tooltip = el('div', { class: 'tooltip' });
-    this.root = el('div', { class: 'hud' }, top, corner, this.toasts, this.jobs, bottom, this.tooltip);
+    this.root = el('div', { class: 'hud' }, top, corner, this.toasts, bottom, this.tooltip);
     parent.append(this.root);
     this.update(0, true);
   }
@@ -384,7 +389,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     this.cardTitle.textContent = building ? `${team.faction.name} Headquarters` : 'Orders';
     for (const c of this.orders) c.refresh(own);
     for (const b of this.builds) b.node.disabled = !canAfford(r, UNITS[b.id].cost);
-    this.renderJobs();
+    this.renderQueue();
     this.renderRoster();
     this.renderUnitPanel();
     if (this.tipSource) this.renderTip();
@@ -422,141 +427,45 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     }
   }
 
-  // ─── Jobs: production, construction, repair, upgrades, reinforcement ──────
+  // ─── Production queue ────────────────────────────────────────
 
-  /** Everything the player is waiting on, as uniform progress rows. */
-  private collectJobs(): Job[] {
-    const jobs: Job[] = [];
-    const hq = this.world.hqOf(this.player);
-    (hq?.production ?? []).forEach((item, i) => {
+  private queueSlot(i: number): HTMLElement {
+    const slot = el(
+      'button',
+      { class: 'qslot' },
+      el('span', { class: 'qslot-fill' }),
+      el('span', { class: 'qslot-glyph' }),
+      el('span', { class: 'qslot-time' }),
+    );
+    // mousedown: slots refresh every tick and a click could fall between two frames.
+    slot.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      const hq = this.world.hqOf(this.player);
+      if (hq && hq.production[i]) cancelProduction(this.world, this.player, i);
+    });
+    this.tip(slot, () => {
+      const item = this.world.hqOf(this.player)?.production[i];
+      if (!item) return { title: `Queue slot ${i + 1}`, body: `Units bought at headquarters wait here. Up to ${ECONOMY.maxQueue} at a time.` };
       const def = UNITS[item.unitId];
-      jobs.push({
-        key: `unit:${i}:${item.unitId}`,
-        kind: 'unit',
-        icon: ROLE_ICON[def.role],
-        title: def.name,
-        detail: i === 0 ? 'Recruiting' : `Queued (${ordinal(i + 1)})`,
-        progress: i === 0 ? 1 - item.remaining / def.buildTime : 0,
-        remaining: i === 0 ? item.remaining : null,
-        cancel: () => cancelProduction(this.world, this.player, i),
-      });
+      const status = i === 0 ? `Recruiting · ${Math.ceil(item.remaining)}s left.` : 'Waiting in the queue.';
+      return { title: def.name, body: `${status}\nClick to cancel and get the full cost back.`, cost: def.cost };
     });
-    for (const c of this.world.constructions) {
-      if (c.team !== this.player) continue;
-      const def = BUILDABLES[c.buildId];
-      const done = c.tiles.filter((t) => t.done).length;
-      const current = c.tiles.find((t) => !t.done);
-      jobs.push({
-        key: `build:${c.id}`,
-        kind: 'build',
-        icon: 'EN',
-        title: `Building ${def.name}`,
-        detail: def.shape === 'line' ? `${done}/${c.tiles.length} tiles` : 'Digging in',
-        progress: (done + (current?.progress ?? 0)) / c.tiles.length,
-        remaining: null,
-        focus: c.ownerId,
-      });
-    }
-    for (const sq of this.world.squads) {
-      if (sq.team !== this.player || sq.dead || sq.order.kind !== 'repair') continue;
-      const target = this.world.get(sq.order.targetId);
-      const hull = target?.models.find((m) => m.alive);
-      if (!target || !hull) continue;
-      jobs.push({
-        key: `repair:${sq.id}`,
-        kind: 'repair',
-        icon: 'EN',
-        title: `Repairing ${target.def.name}`,
-        detail: `${Math.round((hull.hp / hull.maxHp) * 100)}% hull`,
-        progress: hull.hp / hull.maxHp,
-        remaining: null,
-        focus: sq.id,
-      });
-    }
-    for (const sq of this.world.squads) {
-      if (sq.team !== this.player || sq.dead || !sq.upgrading) continue;
-      const def = UPGRADES[sq.upgrading.id];
-      jobs.push({
-        key: `upgrade:${sq.id}`,
-        kind: 'upgrade',
-        icon: ROLE_ICON[sq.def.role],
-        title: `${def.name} for ${sq.def.name}`,
-        detail: 'Weapons on the way',
-        progress: 1 - Math.max(0, sq.upgrading.remaining) / def.time,
-        remaining: Math.max(0, sq.upgrading.remaining),
-        focus: sq.id,
-      });
-    }
-    for (const sq of this.world.squads) {
-      if (sq.team !== this.player || sq.dead || !sq.reinforcing) continue;
-      jobs.push({
-        key: `reinforce:${sq.id}`,
-        kind: 'reinforce',
-        icon: ROLE_ICON[sq.def.role],
-        title: `Reinforcing ${sq.def.name}`,
-        detail: `${aliveCount(sq)}/${sq.def.models} men · next soldier arriving`,
-        progress: reinforceProgress(sq),
-        remaining: Math.max(0, sq.reinforceTimer),
-        focus: sq.id,
-      });
-    }
-    return jobs;
+    this.queueSlots.push(slot);
+    return slot;
   }
 
-  private renderJobs(): void {
-    const jobs = this.collectJobs();
-    this.jobs.classList.toggle('show', jobs.length > 0);
-    const keys = new Set(jobs.map((j) => j.key));
-    for (const [key, row] of this.jobRows) {
-      if (keys.has(key)) continue;
-      row.remove();
-      this.jobRows.delete(key);
-    }
-    jobs.forEach((job, i) => {
-      let row = this.jobRows.get(job.key);
-      if (!row) {
-        row = this.jobRow(job);
-        this.jobRows.set(job.key, row);
-      }
-      if (this.jobList.children[i] !== row) this.jobList.insertBefore(row, this.jobList.children[i] ?? null);
-      (row.querySelector('.job-detail') as HTMLElement).textContent = job.detail;
-      (row.querySelector('.job-time') as HTMLElement).textContent = job.remaining === null ? '' : `${Math.ceil(job.remaining)}s`;
-      (row.querySelector('.job-bar .fill') as HTMLElement).style.width = `${Math.round(job.progress * 100)}%`;
+  private renderQueue(): void {
+    const production = this.world.hqOf(this.player)?.production ?? [];
+    this.queueSlots.forEach((slot, i) => {
+      const item = production[i];
+      slot.classList.toggle('filled', !!item);
+      slot.classList.toggle('active', i === 0 && !!item);
+      const def = item ? UNITS[item.unitId] : null;
+      (slot.querySelector('.qslot-glyph') as HTMLElement).textContent = def ? ROLE_ICON[def.role] : '';
+      (slot.querySelector('.qslot-time') as HTMLElement).textContent = item && i === 0 ? `${Math.ceil(item.remaining)}s` : '';
+      const progress = item && i === 0 && def ? 1 - item.remaining / def.buildTime : 0;
+      (slot.querySelector('.qslot-fill') as HTMLElement).style.height = `${Math.round(progress * 100)}%`;
     });
-  }
-
-  private jobRow(job: Job): HTMLElement {
-    const parts: HTMLElement[] = [
-      el('span', { class: 'glyph', text: job.icon }),
-      el(
-        'div',
-        { class: 'job-body' },
-        el('div', { class: 'job-head' }, el('span', { class: 'job-title', text: job.title }), el('span', { class: 'job-time' })),
-        el('div', { class: 'job-bar' }, el('div', { class: 'fill' })),
-        el('div', { class: 'job-detail' }),
-      ),
-    ];
-    if (job.cancel) {
-      const cancel = job.cancel;
-      const b = el('button', { class: 'job-cancel', text: '✕' });
-      // mousedown: rows refresh every tick and a click could fall between two frames.
-      b.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-        cancel();
-      });
-      this.tip(b, () => ({ title: 'Cancel', body: 'Stop and get the full cost back.' }));
-      parts.push(b);
-    }
-    const row = el('div', { class: `job ${job.kind}` }, ...parts);
-    if (job.focus !== undefined) {
-      const id = job.focus;
-      row.addEventListener('mousedown', () => {
-        this.input.select([id]);
-        this.input.centerOnSelection();
-      });
-      this.tip(row, () => ({ title: job.title, body: 'Click to select the squad and jump to it.' }));
-    }
-    return row;
   }
 
   // ─── Unit roster (top right) ───────────────────────────────────
@@ -637,6 +546,18 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
   private renderUnitPanel(): void {
     const squads = [...this.ui.selected].map((id) => this.world.get(id)).filter((s): s is Squad => !!s && !s.dead);
     const key = squads.map((s) => s.id).join(',');
+    if (squads.length === 0 && this.ui.inspect) {
+      const card = this.inspectCard();
+      if (card) {
+        const k = `inspect:${card.key}`;
+        if (this.selectionKey !== k) {
+          this.selectionKey = k;
+          this.unitPanel.replaceChildren(card.node);
+        }
+        return;
+      }
+      this.ui.inspect = null;
+    }
     if (squads.length === 0) {
       if (this.selectionKey !== 'none') {
         this.selectionKey = 'none';
@@ -650,6 +571,67 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       return;
     }
     this.unitPanel.replaceChildren(el('div', { class: 'multi' }, ...squads.map((s) => this.miniCard(s))));
+  }
+
+  /** Info card for a clicked defense tile, construction job or mine (CoH2-style). */
+  private inspectCard(): { key: string; node: HTMLElement } | null {
+    const ins = this.ui.inspect;
+    if (!ins) return null;
+    const world = this.world;
+    const card = (glyph: string, name: string, desc: string, lines: [string, string][], health: number | null, hint?: string) => {
+      const fill = el('div', { class: 'fill' });
+      fill.style.width = `${(health ?? 1) * 100}%`;
+      return el(
+        'div',
+        { class: `portrait-card t${this.player}` },
+        el('div', { class: 'portrait' }, el('span', { class: 'portrait-glyph', text: glyph }), el('div', { class: 'hpbar' }, fill)),
+        el(
+          'div',
+          { class: 'portrait-text' },
+          el('div', { class: 'portrait-faction', text: 'Field works' }),
+          el('div', { class: 'portrait-name', text: name }),
+          el('p', { class: 'portrait-desc', text: desc }),
+          el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v })])),
+          ...(hint ? [el('div', { class: 'portrait-hint', text: hint })] : []),
+        ),
+      );
+    };
+    if (ins.kind === 'defense') {
+      const d = defenseAt(world, ins.tx, ins.ty);
+      if (!d) return null;
+      const t = TERRAIN[world.map.get(ins.tx, ins.ty)];
+      const blocks = [t.infantryCost === Infinity ? 'infantry' : '', t.vehicleCost === Infinity ? 'vehicles' : ''].filter(Boolean).join(' and ') || 'nothing';
+      const hp = Math.ceil(d.hp);
+      const damaged = d.hp < d.maxHp;
+      return {
+        key: `d:${ins.tx},${ins.ty}:${hp}`,
+        node: card(DEFENSE_ICON[d.def.id] ?? '◆', d.def.name, d.def.description, [
+          ['Health', `${hp} / ${d.maxHp}`],
+          ['Cover', t.cover === 'none' ? 'None' : t.cover === 'heavy' ? 'Heavy' : t.cover === 'light' ? 'Light' : 'Exposed'],
+          ['Blocks', blocks],
+          ['Explosives', d.def.blastResist < 1 ? 'Resists them' : 'Wear it down'],
+        ], d.hp / d.maxHp, damaged ? 'Damaged: right-click it with engineers selected to repair.' : undefined),
+      };
+    }
+    if (ins.kind === 'construction') {
+      const c = world.constructions.find((k) => k.id === ins.id);
+      if (!c) return null;
+      const def = BUILDABLES[c.buildId];
+      const done = c.tiles.filter((t) => t.done).length;
+      const progress = (done + (c.tiles.find((t) => !t.done)?.progress ?? 0)) / c.tiles.length;
+      const workers = workersOf(world, c).length;
+      return {
+        key: `c:${c.id}:${Math.round(progress * 100)}:${workers}`,
+        node: card(DEFENSE_ICON[def.id] ?? '◆', `Building ${def.name}`, def.description, [
+          ['Progress', `${Math.round(progress * 100)}%${def.shape === 'line' ? ` · ${done}/${c.tiles.length} tiles` : ''}`],
+          ['Engineers', `${workers} squad${workers === 1 ? '' : 's'} working`],
+        ], progress, 'Right-click it with more engineers selected to help build.'),
+      };
+    }
+    const mine = world.mines.find((m) => m.id === ins.id);
+    if (!mine) return null;
+    const def = BUILDABLES.mine;
+    return { key: `m:${mine.id}`, node: card('●', def.name, def.description, [['Status', 'Armed · hidden from the enemy']], null) };
   }
 
   private miniCard(sq: Squad): HTMLElement {
@@ -714,20 +696,6 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     );
   }
 }
-
-interface Job {
-  key: string;
-  kind: 'unit' | 'reinforce' | 'build' | 'repair' | 'upgrade';
-  icon: string;
-  title: string;
-  detail: string;
-  progress: number;
-  remaining: number | null;
-  cancel?: () => void;
-  focus?: number;
-}
-
-const ordinal = (n: number): string => `${n}${n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
 
 /** How far the next reinforcement is, 0..1. */
 const reinforceProgress = (sq: Squad): number =>
