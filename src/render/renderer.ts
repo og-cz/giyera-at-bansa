@@ -6,6 +6,7 @@ import { WEAPONS } from '../data/weapons';
 import { add, angleTo, fromAngle, rotate, type Vec2 } from '../core/vec';
 import { aliveCount, formationOffset, healthFraction, maxRange, type Squad } from '../sim/entities';
 import { coverAt, findCoverSpots } from '../sim/systems/cover';
+import { defenseAt } from '../sim/systems/defenses';
 import { planBuild } from '../sim/systems/engineering';
 import type { World } from '../sim/world';
 import type { UIState } from '../input/uiState';
@@ -641,6 +642,7 @@ export class Renderer {
         }
       }
     }
+    this.drawDefenseHealth(ui, lw);
     for (const m of world.mines) {
       if (m.team !== this.player && !this.spectator) continue;
       ctx.fillStyle = 'rgba(20,20,18,0.85)';
@@ -659,6 +661,36 @@ export class Renderer {
       ctx.lineWidth = lw;
       ctx.fillRect(t.tx * TILE, t.ty * TILE, TILE, TILE);
       ctx.strokeRect(t.tx * TILE + 0.5, t.ty * TILE + 0.5, TILE - 1, TILE - 1);
+    }
+  }
+
+  /** Health bars on damaged defenses we can see, and an outline on the one being inspected. */
+  private drawDefenseHealth(ui: UIState, lw: number): void {
+    const { ctx, world } = this;
+    const bar = (tx: number, ty: number, frac: number) => {
+      const x = tx * TILE + 1;
+      const y = ty * TILE - 4;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(x - 0.5, y - 0.5, TILE - 1, 3.5);
+      ctx.fillStyle = frac > 0.5 ? '#8fd16a' : frac > 0.25 ? '#e0b640' : '#e0573e';
+      ctx.fillRect(x, y, (TILE - 2) * frac, 2.5);
+    };
+    for (const [idx, hp] of world.defenseHp) {
+      const tx = idx % world.map.w;
+      const ty = Math.floor(idx / world.map.w);
+      const d = defenseAt(world, tx, ty);
+      if (!d || (!this.spectator && !world.vision.isVisible(this.player, world.map.tileCenter(tx, ty)))) continue;
+      bar(tx, ty, hp / d.maxHp);
+    }
+    const ins = ui.inspect;
+    if (ins?.kind === 'defense') {
+      const d = defenseAt(world, ins.tx, ins.ty);
+      if (d) {
+        ctx.strokeStyle = 'rgba(255,230,140,0.95)';
+        ctx.lineWidth = lw * 1.4;
+        ctx.strokeRect(ins.tx * TILE + 0.5, ins.ty * TILE + 0.5, TILE - 1, TILE - 1);
+        bar(ins.tx, ins.ty, d.hp / d.maxHp);
+      }
     }
   }
 
