@@ -26,6 +26,12 @@ const ORDER_COLOR: Record<string, string> = {
   ability: '#c9a2ff',
 };
 
+/** Uniform colours seen from above, by faction: cloth, helmet, pack. */
+const UNIFORM: Record<string, { cloth: string; helmet: string; pack: string }> = {
+  usaffe: { cloth: '#6f6f47', helmet: '#4e5335', pack: '#47442d' },
+  ija: { cloth: '#8c7c47', helmet: '#6d673b', pack: '#5a4a2b' },
+};
+
 /** Draws the world from the player's point of view. Reads the simulation, never writes it. */
 export class Renderer {
   readonly effects = new Effects();
@@ -377,7 +383,6 @@ export class Renderer {
 
   private drawInfantry(sq: Squad, ui: UIState): void {
     const { ctx } = this;
-    const col = TEAM[sq.team];
     const selected = ui.selected.has(sq.id);
     const hovered = ui.hoverId === sq.id;
     const pinned = sq.suppState === 'pinned';
@@ -403,29 +408,70 @@ export class Renderer {
         }
         ctx.restore();
       }
-      ctx.fillStyle = col.main;
-      ctx.strokeStyle = col.dark;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      if (pinned) ctx.ellipse(m.pos.x, m.pos.y, 4.6, 3, m.facing, 0, Math.PI * 2);
-      else ctx.arc(m.pos.x, m.pos.y, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      if (w && !w.crew) {
-        const tip = add(m.pos, fromAngle(m.facing, w.prefers === 'vehicle' ? 9 : 7));
-        ctx.strokeStyle = '#1b1b1b';
-        ctx.lineWidth = w.prefers === 'vehicle' ? 2.2 : 1.3;
-        ctx.beginPath();
-        ctx.moveTo(m.pos.x, m.pos.y);
-        ctx.lineTo(tip.x, tip.y);
-        ctx.stroke();
-      }
+      this.drawSoldier(m.pos, m.facing, sq, w, pinned);
       const hpFrac = m.hp / m.maxHp;
       if (hpFrac < 0.99) {
         ctx.fillStyle = hpFrac > 0.5 ? '#c9f08a' : hpFrac > 0.25 ? '#f2c94c' : '#ff5a4a';
         ctx.fillRect(m.pos.x - 3, m.pos.y + 5.5, 6 * hpFrac, 1.4);
       }
     }
+  }
+
+  /**
+   * One soldier seen from above: helmet, shoulders in the faction's uniform
+   * with a team-coloured edge, a pack on the back and the weapon held forward.
+   * Pinned soldiers lie flat.
+   */
+  private drawSoldier(p: Vec2, facing: number, sq: Squad, w: WeaponDef | undefined, prone: boolean): void {
+    const { ctx } = this;
+    const col = TEAM[sq.team];
+    const kit = UNIFORM[this.world.teams[sq.team].faction.id] ?? UNIFORM.usaffe;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(facing);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(0.8, 1.1, prone ? 5.6 : 4.2, prone ? 3 : 3.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const gun = w && !w.crew ? (w.prefers === 'vehicle' ? 9.5 : 7) : 0;
+    const bodyX = prone ? -2.2 : 0;
+    // Weapon first, so the arms and shoulders sit over its stock.
+    if (gun) {
+      ctx.strokeStyle = '#1a1a17';
+      ctx.lineWidth = w!.prefers === 'vehicle' ? 2.3 : 1.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(bodyX + 0.5, 1.6);
+      ctx.lineTo(gun, 1);
+      ctx.stroke();
+    }
+    // Pack.
+    ctx.fillStyle = kit.pack;
+    ctx.fillRect(bodyX - (prone ? 4.8 : 3.4), -1.8, 2, 3.6);
+    // Shoulders and arms (or the whole body lying down).
+    ctx.fillStyle = kit.cloth;
+    ctx.strokeStyle = col.main;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (prone) ctx.ellipse(bodyX, 0, 4.8, 2.3, 0, 0, Math.PI * 2);
+    else ctx.ellipse(0, 0, 2.4, 4.1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Helmet, with a little light on it.
+    const hx = prone ? 2.6 : 0.4;
+    ctx.fillStyle = kit.helmet;
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.arc(hx, 0, 2.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,230,0.22)';
+    ctx.beginPath();
+    ctx.arc(hx - 0.6, -0.7, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   private drawVehicle(sq: Squad, ui: UIState): void {
