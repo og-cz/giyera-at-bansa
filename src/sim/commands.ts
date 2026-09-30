@@ -26,19 +26,6 @@ export interface CommandResult {
 const OK: CommandResult = { ok: true };
 const fail = (reason: string): CommandResult => ({ ok: false, reason });
 
-/**
- * Everything a side is processing: units being recruited, upgrades on their way
- * and squads reinforcing. They share one queue of ECONOMY.maxQueue slots.
- */
-export function activeJobs(world: World, team: TeamId): number {
-  let n = world.hqOf(team)?.production.length ?? 0;
-  for (const sq of world.squads) if (!sq.dead && sq.team === team && (sq.upgrading || sq.reinforcing)) n++;
-  return n;
-}
-
-const queueFull = (world: World, team: TeamId) => activeJobs(world, team) >= ECONOMY.maxQueue;
-const QUEUE_FULL = fail('Queue full: three jobs at a time');
-
 /** Retreating squads ignore every order until they reach headquarters. */
 const RETREATING = fail('Retreating: orders resume at headquarters');
 
@@ -108,7 +95,6 @@ export function issueReinforce(world: World, sq: Squad): CommandResult {
   if (sq.retreating) return RETREATING;
   if (!canReinforceHere(world, sq)) return fail('Must be near HQ or a supplied friendly point');
   if (world.teams[sq.team].resources.manpower < reinforceCost(sq.def)) return fail('Not enough manpower');
-  if (!sq.reinforcing && queueFull(world, sq.team)) return QUEUE_FULL;
   sq.reinforcing = true;
   sq.reinforceTimer = LOGISTICS.reinforceTime;
   return OK;
@@ -199,7 +185,6 @@ export function issueUpgrade(world: World, sq: Squad, upgradeId: string): Comman
   if (!canReinforceHere(world, sq)) return fail('Must be near HQ or a supplied friendly point');
   const res = world.teams[sq.team].resources;
   if (!canAfford(res, def.cost)) return fail('Not enough munitions');
-  if (queueFull(world, sq.team)) return QUEUE_FULL;
   pay(res, def.cost);
   sq.upgrading = { id: upgradeId, remaining: def.time };
   return OK;
@@ -238,7 +223,7 @@ export function queueProduction(world: World, team: TeamId, unitId: string): Com
   const def = UNITS[unitId];
   if (!hq || hq.dead) return fail('Headquarters destroyed');
   if (!def || !t.faction.roster.includes(unitId)) return fail('Not in roster');
-  if (queueFull(world, team)) return QUEUE_FULL;
+  if (hq.production.length >= ECONOMY.maxQueue) return fail('Production queue full');
   if (popUsed(world, team) + def.pop > ECONOMY.popCap) return fail('Population cap reached');
   if (!canAfford(t.resources, def.cost)) {
     const need = def.cost.fuel > t.resources.fuel ? 'fuel' : def.cost.munitions > t.resources.munitions ? 'munitions' : 'manpower';
