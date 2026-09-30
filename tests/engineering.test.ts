@@ -175,6 +175,25 @@ describe('engineers', () => {
     expect(eng.order.kind).toBe('idle');
   });
 
+  it('engineers do not fight while they repair', () => {
+    const w = battle();
+    const tank = w.spawn(0, 'us_stuart', at(24, 30), 0);
+    tank.models[0].hp = 150;
+    const eng = w.spawn(0, 'us_engineers', at(23, 32), 0);
+    const enemy = w.spawn(1, 'ija_riflemen', at(24, 38), Math.PI);
+    for (const m of enemy.models) m.weapons = [];
+    issueRepair(w, eng, tank);
+    let fired = false;
+    for (let t = 0; t < 5; t += SIM_DT) {
+      w.step(SIM_DT);
+      if (w.events.some((e) => e.type === 'shot' && e.team === 0 && eng.lastFired > 0)) fired = true;
+      w.events.length = 0;
+    }
+    expect(eng.lastFired).toBe(-Infinity);
+    expect(fired).toBe(false);
+    expect(tank.models[0].hp).toBeGreaterThan(150);
+  });
+
   it('only engineers build or repair', () => {
     const w = battle();
     const rifles = w.spawn(0, 'us_riflemen', at(20, 32), 0);
