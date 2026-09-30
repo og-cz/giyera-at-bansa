@@ -1,3 +1,4 @@
+import { Rng } from '../core/rng';
 import { decodeGridRow, encodeGridRow } from './gridCodec';
 import { CALUMPIT_ROWS } from './luzon/calumpit';
 import { ABUCAY_ROWS } from './luzon/abucay';
@@ -57,6 +58,84 @@ function prepareGrid(rows: readonly string[]): string[][] {
     }
   }
   return grid;
+}
+
+/** Ground where shells and field works can go. */
+const SOFT_GROUND = new Set(['.', ',', 'h']);
+
+/**
+ * Turns a peaceful village into a battlefield: hedgerows between the paddies,
+ * ruined houses, shell craters thickest along the front between the two bases,
+ * and short sandbag lines dug in on the approaches to every capture point.
+ * Seeded by the map id, so a map always looks the same.
+ */
+function dressBattlefield(grid: string[][], id: string, bases: readonly Cell[], points: readonly Cell[]): void {
+  const H = grid.length;
+  const W = grid[0].length;
+  let seed = 7;
+  for (const ch of id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const rng = new Rng(seed);
+  const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < W && y < H ? grid[y][x] : '');
+  const nearBase = (x: number, y: number, r: number) => bases.some((b) => Math.abs(b.x - x) <= r && Math.abs(b.y - y) <= r);
+
+  // Hedgerows on the open strips between paddies.
+  const hedges: Cell[] = [];
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (at(x, y) !== '.') continue;
+      const between = (at(x - 1, y) === ',' && at(x + 1, y) === ',') || (at(x, y - 1) === ',' && at(x, y + 1) === ',');
+      if (between && rng.next() < 0.75) hedges.push({ x, y });
+    }
+  }
+  for (const c of hedges) grid[c.y][c.x] = 'h';
+
+  // Ruins: some house edges are only broken walls now.
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (at(x, y) !== '#') continue;
+      const inner = ['#', 'w'].filter((k) => k === at(x - 1, y)).length + ['#', 'w'].filter((k) => k === at(x + 1, y)).length + ['#', 'w'].filter((k) => k === at(x, y - 1)).length + ['#', 'w'].filter((k) => k === at(x, y + 1)).length;
+      if (inner <= 2 && rng.next() < 0.14) grid[y][x] = 'w';
+    }
+  }
+
+  // Shell craters in barrages: clusters of hits, thickest halfway between the bases.
+  const mid = { x: (bases[0].x + bases[1].x) / 2, y: (bases[0].y + bases[1].y) / 2 };
+  const span = Math.max(12, Math.hypot(bases[0].x - bases[1].x, bases[0].y - bases[1].y) * 0.3);
+  const barrages = Math.round((W * H) / 520);
+  for (let n = 0, tries = 0; n < barrages && tries < barrages * 40; tries++) {
+    const x = Math.floor(rng.next() * W);
+    const y = Math.floor(rng.next() * H);
+    if (nearBase(x, y, 8)) continue;
+    const d = Math.hypot(x - mid.x, y - mid.y) / span;
+    if (rng.next() > 0.15 + 0.85 * Math.exp(-d * d)) continue;
+    n++;
+    const hits = 4 + Math.floor(rng.next() * 5);
+    for (let h = 0; h < hits; h++) {
+      const a = rng.next() * Math.PI * 2;
+      const r = rng.next() * 3.5;
+      const cx = Math.round(x + Math.cos(a) * r);
+      const cy = Math.round(y + Math.sin(a) * r);
+      if (SOFT_GROUND.has(at(cx, cy)) && !nearBase(cx, cy, 6)) grid[cy][cx] = 'c';
+    }
+  }
+
+  // Sandbags: a short line facing each base, three tiles out from every point.
+  for (const p of points) {
+    for (const b of bases) {
+      const dx = b.x - p.x;
+      const dy = b.y - p.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const ux = dx / len;
+      const uy = dy / len;
+      const cx = p.x + ux * 3;
+      const cy = p.y + uy * 3;
+      for (let k = -1; k <= 1; k++) {
+        const x = Math.round(cx - uy * k);
+        const y = Math.round(cy + ux * k);
+        if (SOFT_GROUND.has(at(x, y)) || at(x, y) === 'c') grid[y][x] = 's';
+      }
+    }
+  }
 }
 
 /** Open ground for an HQ. */
@@ -204,13 +283,16 @@ function build(src: LuzonMapSource): MapDef {
   const crossing = src.bridge
     ? pick((c, a, b) => bridge(c) === 1 && Math.abs(a - b) <= (a + b) * 0.3, (p) => -Math.abs(dA[p.y * W + p.x] - dB[p.y * W + p.x]), 14)
     : null;
-  const second = crossing ?? firstFit([3, 6, 10, 16], (tol) => pick((_c, a, b) => Math.abs(a - b) <= tol, (p) => houses(p) + spread(p), 16));
+  const second =
+    crossing ??
+    firstFit([3, 6, 10, 16], (tol) => pick((_c, a, b) => Math.abs(a - b) <= tol, (p) => houses(p) + spread(p), 16)) ??
+    firstFit([6, 14, 28], (tol) => pick((_c, a, b) => Math.abs(a - b) <= tol, (p) => houses(p) + spread(p), 9));
   add(second, 'victory', crossing && src.bridge ? src.bridge : src.names.victory[1]);
   // The third balances the second: if the second is nearer one side, the third is as much nearer the other.
   const skew = second ? dA[second.y * W + second.x] - dB[second.y * W + second.x] : 0;
   const third =
     firstFit([2, 4, 8, 14, 22, 34], (tol) => pick((_c, a, b) => Math.abs(a - b + skew) <= tol, (p) => houses(p) + spread(p), 16)) ??
-    firstFit([4, 10, 20], (tol) => pick((_c, a, b) => Math.abs(a - b) <= tol, (p) => houses(p) + spread(p), 12));
+    firstFit([4, 10, 20, 40], (tol) => pick((_c, a, b) => Math.abs(a - b) <= tol, (p) => houses(p) + spread(p), 9));
   add(third, 'victory', src.names.victory[2]);
 
   // Resources: each side gets munitions and fuel at matching distances from its own base.
@@ -228,6 +310,7 @@ function build(src: LuzonMapSource): MapDef {
     add(east, kind, src.names[kind][1]);
   });
 
+  dressBattlefield(grid, src.id, bases, points.map((p) => ({ x: Math.floor(p.x), y: Math.floor(p.y) })));
   const features: MapFeature[] = [{ kind: 'grid', rows: grid.map(encodeGridRow) }];
   return { id: src.id, name: src.name, description: src.description, width: W, height: H, bases: [bases[0], bases[1]], points, features };
 }
@@ -440,6 +523,8 @@ export function missionMap(src: MissionMapSource): MapDef {
     }
     return { ...p, x: best.x + 0.5, y: best.y + 0.5 };
   };
+  const points = src.points.map(snap);
+  dressBattlefield(grid, src.id, src.bases, points.map((p) => ({ x: Math.floor(p.x), y: Math.floor(p.y) })));
   return {
     id: src.id,
     name: src.name,
@@ -447,7 +532,7 @@ export function missionMap(src: MissionMapSource): MapDef {
     width: W,
     height: H,
     bases: [src.bases[0], src.bases[1]],
-    points: src.points.map(snap),
+    points,
     features: [{ kind: 'grid', rows: grid.map(encodeGridRow) }],
   };
 }
