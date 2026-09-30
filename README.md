@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.2 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.3 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -94,8 +94,8 @@ How the mission types work:
 - Machine guns pin infantry inside their firing cone. Flank them or throw a grenade.
 - Mortars need a friendly unit to see the target.
 - Tanks have thin rear armour. Hit them from behind.
-- Retreat (**R**) damaged squads before they're wiped out, then reinforce (**E**) at the HQ. A retreat can't be cancelled: the squad takes no other orders until it gets home.
-- Engineers fortify ground: sandbags give heavy cover, barbed wire stops infantry (tanks crush it), tank traps stop tanks, mines wreck whatever steps on them. They also repair tanks and the HQ.
+- Retreat (**R**) damaged squads before they're wiped out, then reinforce (**E**) at the HQ. A retreat can't be cancelled: the squad takes no other orders until it gets home. Tanks can't retreat: drive them back and have engineers repair them.
+- Engineers fortify ground from the **Build** menu (**Q**): sandbags give heavy cover, barbed wire stops infantry (tanks crush it), tank traps stop tanks, mines wreck whatever steps on them, MG nests fire all round, bunkers hold a machine gun and let squads reinforce, and aid tents heal soldiers nearby. Engineers also repair tanks, structures and the HQ.
 - Give a rifle squad one weapon upgrade (**T / Y**) near the HQ: a bazooka or AT rifle against tanks, a BAR or light MG against infantry.
 
 ## Controls
@@ -112,12 +112,14 @@ How the mission types work:
 | D | Set up / tear down machine gun and mortar teams (shows the firing cone; click to aim) |
 | G | Grenade |
 | B | Mortar barrage |
-| Z / X / C / V | Engineers: sandbags / barbed wire / tank traps / mine (drag to lay a line; Shift keeps placing) |
+| Q | Engineers: open the Build menu (Esc closes it) |
+| Z / X / C / V | Build menu: sandbags / barbed wire / tank traps / mine (drag to lay a line; Shift keeps placing) |
+| B / N / M | Build menu: MG nest / bunker / aid tent |
 | F, then click a damaged tank, HQ or defense | Engineers repair it (right-click works too) |
 | Right-click an unfinished defense | Selected engineers help build it |
 | Click a defense or mine | Show its health and details |
 | T / Y | Weapon upgrade for the selected rifle squad (near HQ or a supplied point) |
-| H | Select HQ (right-click then sets the rally point) |
+| H | Select HQ (right-click then moves the rally flag) |
 | Ctrl + 1–9 / 1–9 | Assign / select control group (double-tap to jump) |
 | Space | Tap: centre on selection. Hold + left-drag: grab and move the map |
 | Arrow keys, screen edge, middle-drag | Scroll |
@@ -157,6 +159,15 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.6.3**
+- **Build menu:** engineers get one Build button (**Q**) that opens their construction menu, so the order panel no longer overflows.
+- **New structures:** MG nest (a machine gun that fires all round), bunker (a sturdy machine gun post where nearby squads can reinforce and pick up upgrades) and aid tent (heals soldiers nearby out of combat). Click one to see its details; engineers repair them. The enemy builds them too.
+- **Rally flag:** the HQ's rally point is shown as a flag on the map, and a Rally Point button sits with the recruits. New units walk to it.
+- **Reinforcements fill the queue:** each Reinforce press queues one soldier in the squad's queue slots, paid up front, three jobs at a time (an upgrade counts). Click a slot to call off a soldier and get the manpower back.
+- **Tanks** can no longer retreat and are not repaired at the HQ: drive them back and have engineers fix them. Tanks slide along walls instead of snagging on corners, new units leave the HQ side by side instead of stacked, and a unit stuck for a few seconds gives up its move or retreat.
+- The land beyond the map edge is now dense jungle and rock instead of a flat colour.
+- Sound fixes: some rifle shots were silent, and explosions and unit sounds are more even in volume.
 
 **0.6.2**
 - Period sounds: typewriter keys for the interface, a crank field telephone for headquarters, morse signals when squads take orders, mechanical clanks for weapon teams and an officer's whistle for a retreat.
