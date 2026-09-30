@@ -11,7 +11,7 @@ export const CONTROLS: [string, string][] = [
   ['D', 'Set up / tear down weapon teams (shows the firing cone; click to aim)'],
   ['G / B', 'Grenade / mortar barrage'],
   ['Z / X / C / V', 'Engineers: sandbags / barbed wire / tank traps / mine (drag to lay a line)'],
-  ['Right-click damaged tank, HQ or defense', 'Engineers repair it'],
+  ['F, then click', 'Engineers repair a damaged tank, HQ or defense (right-click works too)'],
   ['Right-click an unfinished defense', 'More engineers join in and build faster'],
   ['Click a defense or mine', 'Show its health and details'],
   ['T / Y', 'Buy a weapon upgrade for the selected squad (near HQ or a supplied point)'],
@@ -20,7 +20,7 @@ export const CONTROLS: [string, string][] = [
   ['Space', 'Tap: centre camera on selection · Hold + left-drag: grab and move the map'],
   ['Arrows, screen edge, middle-drag', 'Pan camera · Mouse wheel zooms'],
   ['F11 / Alt+Enter', 'Fullscreen (desktop app)'],
-  ['Esc / P', 'Pause'],
+  ['Esc / P', 'Pause (surrender from the pause menu)'],
 ];
 
 export function controlsTable(): HTMLElement {
