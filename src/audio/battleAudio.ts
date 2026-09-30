@@ -74,8 +74,9 @@ export class BattleAudio {
   /**
    * The selected units answer a selection or an order. A voice line is used when
    * one exists for the faction (clips named voice_<faction>_<select|order|retreat>_N.ogg);
-   * otherwise the unit's own sound: gear rattling for infantry, heavier clanks for
-   * weapon teams, an engine rev for tanks and radio static for headquarters.
+   * otherwise period sounds: gear rattling for infantry (and a morse signal when
+   * ordered), mechanical clanks for weapon teams, an engine rev for tanks, the crank
+   * field telephone for headquarters and an officer's whistle for a retreat.
    */
   acknowledge(kind: Acknowledgement, squads: readonly Squad[]): void {
     const lead = squads.find((s) => s.def.kind !== 'structure') ?? squads[0];
@@ -85,20 +86,25 @@ export class BattleAudio {
       audio.play(voice, 0.9, 0, 0.6);
       return;
     }
+    if (kind === 'retreat') {
+      audio.play('whistle', 0.45, 0, 0.8);
+      return;
+    }
     switch (lead.def.kind) {
       case 'structure':
-        audio.play('radio', 0.35, 0, 0.25);
+        audio.play('phone', 0.35, 0, 0.6);
         break;
       case 'vehicle':
         audio.play('tank_rev', kind === 'select' ? 0.3 : 0.45, 0, 0.6);
         break;
       case 'team':
-        audio.play('gear', 0.55, 0, 0.25, 0.82);
+        audio.play('clank', 0.5, 0, 0.25);
+        if (kind === 'order') audio.play('morse', 0.22, 0, 0.4);
         break;
       default:
         audio.play('gear', 0.5, 0, 0.25);
+        if (kind === 'order') audio.play('morse', 0.22, 0, 0.4);
     }
-    if (kind === 'retreat') audio.play('radio', 0.3, 0, 0.25);
   }
 
   /** Engine noise for vehicles on screen: a low idle, louder and higher while moving. */
