@@ -164,6 +164,7 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - **Thirteen new Luzon town maps** for skirmish: Calumpit, Plaridel, Pilar, Orani, Porac, Abucay, San Fernando, Dinalupihan, Hermosa, Guagua, Lingayen, Baliuag and Lubao. River towns with bridges, coastal towns, jungle villages, farmland and a big town, built from Watabou's Village Generator.
 - Bases and capture points on the new maps are placed by driving distance, so both sides have an equal claim; every point has a local name (Poblacion, Simbahan, Palengke, Bodega, Gasolinahan…).
 - **New maps for every campaign and Theater of War mission**, also from Watabou's generators: Intramuros is now a walled city on the bay with Fort Santiago in its walls (from the City Generator); Mount Samat, Route 3 and Layac Junction are new villages with hand-placed objectives; Withdrawal to Bataan is fought at Calumpit and Battle for Luzon at San Fernando.
+- **One queue for everything:** recruiting, weapon upgrades and reinforcements all run in the three queue slots beside the orders, three jobs at a time. Each slot shows its progress (⇪ upgrade, + reinforcing); click one to cancel it.
 - The skirmish battlefield list is a grid of map thumbnails.
 - New app icon: TK with a kris.
 
