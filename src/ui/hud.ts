@@ -35,6 +35,8 @@ interface Tip {
 interface GridButton {
   node: HTMLButtonElement;
   refresh(own: Squad[]): void;
+  /** Available with several units selected (move, stop, retreat); everything else needs one unit. */
+  common?: boolean;
 }
 
 /**
@@ -213,26 +215,34 @@ export class Hud {
 
   private buildOrders(): void {
     const units = (own: Squad[]) => own.filter((s) => s.def.kind !== 'structure');
-    const add = (icon: string, label: string, key: string, tip: () => Tip, action: () => void, refresh: (b: HTMLButtonElement, own: Squad[]) => void) => {
+    const add = (icon: string, label: string, key: string, tip: () => Tip, action: () => void, refresh: (b: HTMLButtonElement, own: Squad[]) => void, common = false) => {
       const node = this.gridButton(this.orderGrid, icon, label, key, action);
       this.tip(node, tip);
-      this.orders.push({ node, refresh: (own) => refresh(node, own) });
+      this.orders.push({ node, refresh: (own) => refresh(node, own), common });
     };
 
     add('⤳', 'Attack-Move', 'A', () => ({ title: 'Attack-Move', body: 'Move and engage anything on the way. Press A, then left-click the destination.', key: 'A' }), () => this.input.attackMoveMode(), (b, own) => {
       b.disabled = units(own).length === 0;
       b.classList.toggle('active', this.ui.mode.kind === 'attackMove');
-    });
-    add('■', 'Stop', 'S', () => ({ title: 'Stop', body: 'Cancel all orders.', key: 'S' }), () => this.input.stop(), (b, own) => (b.disabled = units(own).length === 0));
+    }, true);
+    add('■', 'Stop', 'S', () => ({ title: 'Stop', body: 'Cancel all orders.', key: 'S' }), () => this.input.stop(), (b, own) => (b.disabled = units(own).length === 0), true);
     add('↩', 'Retreat', 'R', () => ({ title: 'Retreat', body: 'Fall back to headquarters. Retreating units run faster, take less fire and cannot be pinned, but they take no other orders until they get there.', key: 'R' }), () => this.input.retreat(), (b, own) => {
       b.disabled = units(own).length === 0;
-    });
+    }, true);
     add('+', 'Reinforce', 'E', () => {
       const soft = this.input.selectedOwn().filter((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) < s.def.models);
       const cost = soft.length === 1 ? { manpower: reinforceCost(soft[0].def), munitions: 0, fuel: 0 } : undefined;
       return { title: 'Reinforce', body: 'Replace casualties one soldier at a time. Must be near headquarters or a supplied friendly point.', key: 'E', cost };
     }, () => this.input.reinforce(), (b, own) => {
       b.disabled = !own.some((s) => (s.def.kind === 'infantry' || s.def.kind === 'team') && aliveCount(s) < s.def.models);
+    });
+    add('⚒', 'Repair', 'F', () => ({
+      title: 'Repair',
+      body: 'Click, then click a damaged tank, the headquarters or a damaged defense. The engineers work until it is fully repaired and do not fight while they work. Shift-click to repair several in a row.',
+      key: 'F',
+    }), () => this.input.repairMode(), (b, own) => {
+      b.style.display = own.some((s) => s.def.canRepair) ? '' : 'none';
+      b.classList.toggle('active', this.ui.mode.kind === 'repair');
     });
     add('◭', 'Set Up', 'D', () => ({
       title: 'Set Up / Tear Down',
@@ -387,7 +397,12 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     this.orderGrid.style.display = building ? 'none' : '';
     this.buildGrid.style.display = building ? '' : 'none';
     this.cardTitle.textContent = building ? `${team.faction.name} Headquarters` : 'Orders';
-    for (const c of this.orders) c.refresh(own);
+    const single = own.filter((s) => s.def.kind !== 'structure').length <= 1;
+    for (const c of this.orders) {
+      c.node.style.display = '';
+      c.refresh(own);
+      if (!single && !c.common) c.node.style.display = 'none';
+    }
     for (const b of this.builds) b.node.disabled = !canAfford(r, UNITS[b.id].cost);
     this.renderQueue();
     this.renderRoster();
