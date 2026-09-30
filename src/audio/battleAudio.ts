@@ -92,7 +92,9 @@ export class BattleAudio {
     }
     switch (lead.def.kind) {
       case 'structure':
-        audio.play('phone', 0.35, 0, 0.6);
+        // The HQ answers on the field telephone; nests and bunkers with a rattle of the gun.
+        if (lead.def.role === 'hq') audio.play('phone', 0.35, 0, 0.6);
+        else audio.play('clank', 0.45, 0, 0.25);
         break;
       case 'vehicle':
         audio.play('tank_rev', kind === 'select' ? 0.3 : 0.45, 0, 0.6);
