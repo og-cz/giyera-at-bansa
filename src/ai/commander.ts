@@ -103,17 +103,20 @@ export class AICommander {
       this.objective.delete(sq.id);
       return;
     }
-    if (sq.reinforcing) return;
     const t = world.teams[this.team];
-    if (
+    // Queue every missing soldier the queue and the manpower allow.
+    let queued = false;
+    while (
       isSoft(sq) &&
-      aliveCount(sq) < sq.def.models &&
+      aliveCount(sq) + sq.reinforceQueued < sq.def.models &&
       canReinforceHere(world, sq) &&
       t.resources.manpower > reinforceCost(sq.def) + 60 &&
-      world.time - sq.lastHurt > 3
+      world.time - sq.lastHurt > 3 &&
+      issueReinforce(world, sq).ok
     ) {
-      if (issueReinforce(world, sq).ok) return;
+      queued = true;
     }
+    if (queued || sq.reinforcing) return;
     this.upgrade(world, sq);
     if (atBase && healthFraction(sq) < 0.8 && sq.order.kind === 'idle' && world.time - sq.lastHurt > 5) return;
 
