@@ -115,7 +115,9 @@ How the mission types work:
 | G | Grenade |
 | B | Mortar barrage |
 | Z / X / C / V | Engineers: sandbags / barbed wire / tank traps / mine (drag to lay a line; Shift keeps placing) |
-| Right-click a damaged tank or HQ | Engineers repair it |
+| Right-click a damaged tank, HQ or defense | Engineers repair it |
+| Right-click an unfinished defense | Selected engineers help build it |
+| Click a defense or mine | Show its health and details |
 | T / Y | Weapon upgrade for the selected rifle squad (near HQ or a supplied point) |
 | H | Select HQ (right-click then sets the rally point) |
 | Ctrl + 1–9 / 1–9 | Assign / select control group (double-tap to jump) |
@@ -158,9 +160,12 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 **0.4.0**
 - **Engineers** (Combat Engineers / Kohei Engineers) build **sandbags**, **barbed wire**, **tank traps** and **mines** (Z / X / C / V; drag to lay a line). An abandoned job is refunded.
-- Engineers **repair** tanks and the HQ: right-click the damaged one.
+- Engineers **repair** tanks, the HQ and damaged defenses: right-click the damaged one.
+- **Defenses have health.** Bullets can't hurt them; explosives wear them down (sandbags take about six mortar hits, tank traps far more, wire much less). Click one to see its health.
+- Several engineer squads can **build together**: select them all, or right-click an unfinished job to join it.
+- The HQ **production queue** is three slots beside the orders; click one to cancel it with a full refund.
+- Reinforcements arrive more slowly (one soldier every 5.5 seconds).
 - **Weapon upgrades** for rifle squads (T / Y): Bazooka or BAR for the Maharlika, Type 99 light MG or Type 97 AT rifle for the Imperial Army. One per squad; reinforcements replace the upgraded weapon first.
-- Construction, repairs and upgrades show in the **In Progress** panel.
 - The AI builds engineers to repair its tanks, and buys upgrades.
 - New Taga Komando logo on the title screen and main menu, a new app icon, and the OGCZ logo on the startup screen.
 - Attacking waves in Theater of War push forward instead of trading fire from long range.
