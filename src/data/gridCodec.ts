@@ -11,6 +11,8 @@ export const GRID_LEGEND: Readonly<Record<string, number>> = {
   '#': T.Building,
   w: T.Wall,
   r: T.Rampart,
+  c: T.Crater,
+  s: T.Sandbag,
 };
 
 /** Run-length encodes one row of tile codes. */
