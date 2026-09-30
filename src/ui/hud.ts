@@ -5,7 +5,7 @@ import type { Resources, TeamId } from '../data/types';
 import { TERRAIN } from '../data/terrain';
 import { UNITS } from '../data/units';
 import { UPGRADES } from '../data/upgrades';
-import { cancelProduction, queueProduction } from '../sim/commands';
+import { cancelProduction, cancelReinforce, cancelUpgrade, queueProduction } from '../sim/commands';
 import { aliveCount, healthFraction, type SimEvent, type Squad, type Tone } from '../sim/entities';
 import { defenseAt } from '../sim/systems/defenses';
 import { canAfford } from '../sim/systems/economy';
@@ -429,42 +429,100 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
 
   // ─── Production queue ────────────────────────────────────────
 
+  /** Everything being processed, in queue order: recruits, then upgrades, then reinforcements. */
+  private queueJobs(): QueueJob[] {
+    const jobs: QueueJob[] = [];
+    const hq = this.world.hqOf(this.player);
+    (hq?.production ?? []).forEach((item, i) => {
+      const def = UNITS[item.unitId];
+      jobs.push({
+        key: `unit:${i}:${item.unitId}`,
+        glyph: ROLE_ICON[def.role],
+        mark: '',
+        running: i === 0,
+        progress: i === 0 ? 1 - item.remaining / def.buildTime : 0,
+        remaining: i === 0 ? item.remaining : null,
+        title: def.name,
+        body: i === 0 ? `Recruiting · ${Math.ceil(item.remaining)}s left.` : 'Waiting for the recruit ahead of it.',
+        action: 'Click to cancel and get the full cost back.',
+        cost: def.cost,
+        click: () => cancelProduction(this.world, this.player, i),
+      });
+    });
+    const own = this.world.squads.filter((s) => s.team === this.player && !s.dead);
+    for (const sq of own) {
+      if (!sq.upgrading) continue;
+      const def = UPGRADES[sq.upgrading.id];
+      jobs.push({
+        key: `upgrade:${sq.id}`,
+        glyph: ROLE_ICON[sq.def.role],
+        mark: '⇪',
+        running: true,
+        progress: 1 - Math.max(0, sq.upgrading.remaining) / def.time,
+        remaining: Math.max(0, sq.upgrading.remaining),
+        title: `${def.name} for ${sq.def.name}`,
+        body: `Weapons on the way · ${Math.ceil(sq.upgrading.remaining)}s left.`,
+        action: 'Click to cancel and get the munitions back.',
+        cost: def.cost,
+        click: () => cancelUpgrade(this.world, sq),
+      });
+    }
+    for (const sq of own) {
+      if (!sq.reinforcing) continue;
+      jobs.push({
+        key: `reinforce:${sq.id}`,
+        glyph: ROLE_ICON[sq.def.role],
+        mark: '+',
+        running: true,
+        progress: reinforceProgress(sq),
+        remaining: Math.max(0, sq.reinforceTimer),
+        title: `Reinforcing ${sq.def.name}`,
+        body: `${aliveCount(sq)}/${sq.def.models} men · next soldier in ${Math.ceil(Math.max(0, sq.reinforceTimer))}s. Each soldier costs ${reinforceCost(sq.def)} MP.`,
+        action: 'Click to stop reinforcing.',
+        click: () => cancelReinforce(this.world, sq),
+      });
+    }
+    return jobs;
+  }
+
   private queueSlot(i: number): HTMLElement {
     const slot = el(
       'button',
       { class: 'qslot' },
       el('span', { class: 'qslot-fill' }),
       el('span', { class: 'qslot-glyph' }),
+      el('span', { class: 'qslot-mark' }),
       el('span', { class: 'qslot-time' }),
     );
     // mousedown: slots refresh every tick and a click could fall between two frames.
     slot.addEventListener('mousedown', (e) => {
       e.stopPropagation();
-      const hq = this.world.hqOf(this.player);
-      if (hq && hq.production[i]) cancelProduction(this.world, this.player, i);
+      this.queueJobs()[i]?.click();
     });
     this.tip(slot, () => {
-      const item = this.world.hqOf(this.player)?.production[i];
-      if (!item) return { title: `Queue slot ${i + 1}`, body: `Units bought at headquarters wait here. Up to ${ECONOMY.maxQueue} at a time.` };
-      const def = UNITS[item.unitId];
-      const status = i === 0 ? `Recruiting · ${Math.ceil(item.remaining)}s left.` : 'Waiting in the queue.';
-      return { title: def.name, body: `${status}\nClick to cancel and get the full cost back.`, cost: def.cost };
+      const job = this.queueJobs()[i];
+      if (!job) {
+        return {
+          title: `Queue slot ${i + 1}`,
+          body: `Recruiting, upgrades and reinforcements all run here, ${ECONOMY.maxQueue} at a time.`,
+        };
+      }
+      return { title: job.title, body: `${job.body}\n${job.action}`, cost: job.cost };
     });
     this.queueSlots.push(slot);
     return slot;
   }
 
   private renderQueue(): void {
-    const production = this.world.hqOf(this.player)?.production ?? [];
+    const jobs = this.queueJobs();
     this.queueSlots.forEach((slot, i) => {
-      const item = production[i];
-      slot.classList.toggle('filled', !!item);
-      slot.classList.toggle('active', i === 0 && !!item);
-      const def = item ? UNITS[item.unitId] : null;
-      (slot.querySelector('.qslot-glyph') as HTMLElement).textContent = def ? ROLE_ICON[def.role] : '';
-      (slot.querySelector('.qslot-time') as HTMLElement).textContent = item && i === 0 ? `${Math.ceil(item.remaining)}s` : '';
-      const progress = item && i === 0 && def ? 1 - item.remaining / def.buildTime : 0;
-      (slot.querySelector('.qslot-fill') as HTMLElement).style.height = `${Math.round(progress * 100)}%`;
+      const job = jobs[i];
+      slot.classList.toggle('filled', !!job);
+      slot.classList.toggle('active', !!job?.running);
+      (slot.querySelector('.qslot-glyph') as HTMLElement).textContent = job?.glyph ?? '';
+      (slot.querySelector('.qslot-mark') as HTMLElement).textContent = job?.mark ?? '';
+      (slot.querySelector('.qslot-time') as HTMLElement).textContent = job && job.remaining !== null ? `${Math.ceil(job.remaining)}s` : '';
+      (slot.querySelector('.qslot-fill') as HTMLElement).style.height = `${Math.round((job?.progress ?? 0) * 100)}%`;
     });
   }
 
@@ -499,7 +557,6 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         { class: 'rc-body' },
         el('div', { class: 'rc-name', text: sq.def.name }),
         el('div', { class: 'rc-bar' }, el('div', { class: 'fill' })),
-        el('div', { class: 'rc-reinforce' }, el('div', { class: 'fill' })),
       ),
       el('div', { class: 'rc-badges' }),
     );
@@ -528,7 +585,6 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     else if (sq.suppState === 'pinned') badges.push('PIN');
     else if (sq.reinforcing) badges.push('+');
     card.classList.toggle('reinforcing', sq.reinforcing);
-    (card.querySelector('.rc-reinforce .fill') as HTMLElement).style.width = `${Math.round(reinforceProgress(sq) * 100)}%`;
     (card.querySelector('.rc-badges') as HTMLElement).textContent = badges.join(' ');
   }
 
@@ -644,16 +700,6 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     return card;
   }
 
-  private reinforceBar(sq: Squad): HTMLElement {
-    const fill = el('div', { class: 'fill' });
-    fill.style.width = `${Math.round(reinforceProgress(sq) * 100)}%`;
-    return el(
-      'div',
-      { class: 'portrait-reinforce' },
-      el('span', { text: `Reinforcing · ${aliveCount(sq)}/${sq.def.models} men` }),
-      el('div', { class: 'job-bar' }, fill),
-    );
-  }
 
   private portraitCard(sq: Squad): HTMLElement {
     const weapons = new Map<string, number>();
@@ -668,7 +714,6 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     }
     if (sq.def.kind === 'team') lines.push(['Weapon', { packed: 'Packed', settingUp: 'Setting up…', deployed: 'Deployed', tearingDown: 'Packing up…' }[sq.setup]]);
     if (sq.def.vetXp.length) lines.push(['Veterancy', sq.vet > 0 ? '★'.repeat(sq.vet) : `${Math.floor(sq.xp)} / ${sq.def.vetXp[0]} xp`]);
-    if (sq.upgrading) lines.push(['Upgrade', `${UPGRADES[sq.upgrading.id].name} in ${Math.ceil(sq.upgrading.remaining)}s`]);
     lines.push(['Weapons', [...weapons].map(([n, c]) => (c > 1 ? `${c}× ${n}` : n)).join(', ') || '—']);
 
     const enemy = sq.team !== this.player;
@@ -690,7 +735,6 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         el('div', { class: 'portrait-faction', text: this.world.teams[sq.team].faction.name + (enemy ? ' · enemy' : '') }),
         el('div', { class: 'portrait-name', text: sq.def.name }),
         el('p', { class: 'portrait-desc', text: sq.def.description }),
-        ...(sq.reinforcing ? [this.reinforceBar(sq)] : []),
         el('dl', {}, ...lines.flatMap(([k, v]) => [el('dt', { text: k }), el('dd', { text: v, class: WIDE_ROWS.has(k) ? 'wide' : '' })])),
       ),
     );
@@ -698,6 +742,22 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
 }
 
 /** How far the next reinforcement is, 0..1. */
+/** One job in the shared queue. */
+interface QueueJob {
+  key: string;
+  glyph: string;
+  /** Small marker for the kind of job: '+' reinforcing, '⇪' upgrade, '' recruiting. */
+  mark: string;
+  running: boolean;
+  progress: number;
+  remaining: number | null;
+  title: string;
+  body: string;
+  action: string;
+  cost?: Resources;
+  click: () => void;
+}
+
 const reinforceProgress = (sq: Squad): number =>
   sq.reinforcing ? 1 - Math.max(0, sq.reinforceTimer) / LOGISTICS.reinforceTime : 0;
 
