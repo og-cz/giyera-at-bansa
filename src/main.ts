@@ -105,12 +105,12 @@ function play(setup: MatchSetup, origin: Origin): void {
 
 installUiSounds();
 // Development only: ?battle=<map> starts a skirmish straight away (for quick checks).
-// &spawn=<unit id> adds one of our units by the HQ, &select=<unit id> selects our first
-// unit of that type, &edge=1 zooms out to the map corner.
+// &spawn=<unit id>[,<unit id>…] adds our units by the HQ, &select=<unit id> selects our
+// first unit of that type, &zoom=<n> zooms in on them, &edge=1 zooms out to the map corner.
 const devBattle = import.meta.env.DEV ? new URLSearchParams(location.search).get('battle') : null;
 if (devBattle) {
   play({ faction: 'usaffe', enemyFaction: 'ija', map: devBattle, difficulty: 'normal', win: 'points' }, { kind: 'skirmish' });
-  window.setTimeout(devSetup, 1200);
+  devSetup();
 } else {
   cinematic(true);
   playIntro(layer, mainMenu);
@@ -119,15 +119,20 @@ if (devBattle) {
 interface DevGame {
   world: import('./sim/world').World;
   input: { select(ids: number[]): void };
-  camera: { zoom: number; minZoom: number; centerOn(p: { x: number; y: number }): void };
+  camera: { zoom: number; minZoom: number; maxZoom: number; centerOn(p: { x: number; y: number }): void };
 }
 
 function devSetup(): void {
   const params = new URLSearchParams(location.search);
   const game = (window as unknown as { game: DevGame }).game;
-  const extra = params.get('spawn');
   const hq = game.world.hqOf(0);
-  if (extra && hq) game.world.spawn(0, extra, { x: hq.pos.x + 70, y: hq.pos.y + 50 });
+  const near = hq ? { x: hq.pos.x + 90, y: hq.pos.y + 20 } : { x: 0, y: 0 };
+  (params.get('spawn') ?? '').split(',').filter(Boolean).forEach((id, i) => game.world.spawn(0, id, { x: near.x + (i % 3) * 45, y: near.y + Math.floor(i / 3) * 45 }));
+  const zoom = Number(params.get('zoom'));
+  if (zoom) {
+    game.camera.zoom = Math.min(game.camera.maxZoom, zoom);
+    game.camera.centerOn({ x: near.x + 45, y: near.y + 20 });
+  }
   const pick = params.get('select');
   const sq = pick ? game.world.squads.find((s) => s.team === 0 && s.def.id === pick) : undefined;
   if (sq) game.input.select([sq.id]);
