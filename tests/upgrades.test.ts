@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { SIM_DT, TILE } from '../src/data/balance';
+import { LOGISTICS, SIM_DT, TILE } from '../src/data/balance';
 import { MAPS } from '../src/data/maps';
 import { UNITS } from '../src/data/units';
 import { UPGRADES } from '../src/data/upgrades';
 import { WEAPONS } from '../src/data/weapons';
 import { cancelReinforce, cancelUpgrade, issueMove, issueReinforce, issueUpgrade, queueProduction } from '../src/sim/commands';
-import { addRecruit } from '../src/sim/systems/logistics';
+import { addRecruit, reinforceCost } from '../src/sim/systems/logistics';
+import { aliveCount } from '../src/sim/entities';
 import { World } from '../src/sim/world';
 
 function run(world: World, seconds: number): void {
@@ -92,7 +93,29 @@ describe('squad upgrades', () => {
     const munitions = w.teams[0].resources.munitions;
     expect(cancelUpgrade(w, rifles).ok).toBe(true);
     expect(w.teams[0].resources.munitions).toBe(munitions + 50);
+    const manpower = w.teams[0].resources.manpower;
     expect(cancelReinforce(w, rifles).ok).toBe(true);
+    expect(rifles.reinforcing).toBe(false);
+    expect(w.teams[0].resources.manpower).toBe(manpower + reinforceCost(rifles.def));
+  });
+
+  it('queues reinforcements one soldier per slot, three jobs at most', () => {
+    const { w, rifles } = atHq();
+    w.teams[0].resources.manpower = 5000;
+    for (let i = 0; i < 4; i++) rifles.models[i].alive = false;
+    const start = w.teams[0].resources.manpower;
+    for (let i = 0; i < 3; i++) expect(issueReinforce(w, rifles).ok).toBe(true);
+    expect(issueReinforce(w, rifles).reason).toMatch(/Queue full/);
+    expect(rifles.reinforceQueued).toBe(3);
+    // Paid up front, one soldier each.
+    expect(w.teams[0].resources.manpower).toBe(start - 3 * reinforceCost(rifles.def));
+    // An upgrade takes a slot too.
+    cancelReinforce(w, rifles);
+    expect(issueUpgrade(w, rifles, 'us_bar').ok).toBe(true);
+    expect(issueReinforce(w, rifles).reason).toMatch(/Queue full/);
+    const alive = aliveCount(rifles);
+    run(w, LOGISTICS.reinforceTime * 2 + 1);
+    expect(aliveCount(rifles)).toBe(alive + 2);
     expect(rifles.reinforcing).toBe(false);
   });
 
