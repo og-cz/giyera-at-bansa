@@ -696,6 +696,10 @@ export class Renderer {
 
   /** Cost of the defense being placed, next to the cursor. */
   private drawBuildCost(ui: UIState): void {
+    if (ui.mode.kind === 'repair' && ui.mouse.onCanvas) {
+      this.cursorLabel(ui, 'Repair · click a damaged tank, HQ or defense', '#cfe8ff');
+      return;
+    }
     if (ui.mode.kind !== 'build' || !ui.mouse.onCanvas) return;
     const def = BUILDABLES[ui.mode.buildId];
     const plan = planBuild(this.world, ui.mode.buildId, ui.buildFrom ?? ui.mouse.world, ui.mouse.world);
@@ -712,6 +716,18 @@ export class Renderer {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(x - 4, y - 13, ctx.measureText(text).width + 8, 18);
     ctx.fillStyle = n > 0 ? '#e9f5d0' : '#ff9a8a';
+    ctx.fillText(text, x, y);
+  }
+
+  private cursorLabel(ui: UIState, text: string, color: string): void {
+    const { ctx } = this;
+    ctx.font = '600 12px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    const x = ui.mouse.x + 16;
+    const y = ui.mouse.y + 26;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(x - 4, y - 13, ctx.measureText(text).width + 8, 18);
+    ctx.fillStyle = color;
     ctx.fillText(text, x, y);
   }
 
