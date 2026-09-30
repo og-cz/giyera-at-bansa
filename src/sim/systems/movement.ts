@@ -222,9 +222,14 @@ function driveVehicle(world: World, sq: Squad, goal: Vec2 | null, dt: number): v
     let want = misalign > 0.6 ? maxSpeed * 0.1 : maxSpeed * (1 - (misalign / 0.6) * 0.7);
     if (sq.path.length === 1) want = Math.min(want, Math.max(10, dist(sq.pos, wp) * 1.5));
     sq.speedNow = approach(sq.speedNow, want, (want > sq.speedNow ? 30 : 90) * dt);
-    const next = add(sq.pos, fromAngle(sq.heading, sq.speedNow * dt * (sq.reversing ? -1 : 1)));
-    if (world.map.worldPassable(next, 'vehicle')) {
-      sq.pos = next;
+    const step = fromAngle(sq.heading, sq.speedNow * dt * (sq.reversing ? -1 : 1));
+    const next = add(sq.pos, step);
+    // Clipping the corner of a house or wall: slide along it instead of stopping dead.
+    const slide = [next, { x: sq.pos.x + step.x, y: sq.pos.y }, { x: sq.pos.x, y: sq.pos.y + step.y }].find((p) =>
+      world.map.worldPassable(p, 'vehicle'),
+    );
+    if (slide && (slide === next || Math.hypot(slide.x - sq.pos.x, slide.y - sq.pos.y) > 0.01)) {
+      sq.pos = slide;
       sq.blockedTime = 0;
     } else {
       sq.speedNow = 0;
@@ -237,13 +242,42 @@ function driveVehicle(world: World, sq: Squad, goal: Vec2 | null, dt: number): v
     }
     sq.moving = sq.speedNow > 1;
     if (sq.path.length === 1 && dist(sq.pos, wp) < 10) onArrive(world, sq);
+    else giveUpIfStuck(world, sq, dt);
     crush(world, sq);
   } else {
+    sq.stuckTime = 0;
+    sq.stuckFrom = null;
     if (goal) onArrive(world, sq);
     sq.speedNow = approach(sq.speedNow, 0, 90 * dt);
   }
   hull.pos = { x: sq.pos.x, y: sq.pos.y };
   hull.facing = sq.heading;
+}
+
+/** Seconds without real headway before a vehicle drops its order (a retreat is cancelled too). */
+const STUCK_LIMIT = 6;
+
+function giveUpIfStuck(world: World, sq: Squad, dt: number): void {
+  if (!sq.stuckFrom || dist(sq.pos, sq.stuckFrom) > TILE) {
+    sq.stuckFrom = { ...sq.pos };
+    sq.stuckTime = 0;
+    return;
+  }
+  sq.stuckTime += dt;
+  if (sq.stuckTime < STUCK_LIMIT) return;
+  const wasRetreating = sq.retreating;
+  sq.retreating = false;
+  sq.stuckTime = 0;
+  sq.stuckFrom = null;
+  sq.queue.length = 0;
+  finishOrder(sq);
+  world.emit({
+    type: 'notify',
+    team: sq.team,
+    text: wasRetreating ? `${sq.def.name} is stuck: retreat cancelled` : `${sq.def.name} is stuck and cannot get there`,
+    tone: 'bad',
+    pos: { ...sq.pos },
+  });
 }
 
 /** Tanks flatten hedgerows and sandbags they drive through. */
