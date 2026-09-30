@@ -23,7 +23,8 @@ export function updateCombat(world: World, dt: number): void {
   for (const sq of world.squads) {
     if (sq.dead) continue;
     tickWeapons(sq, dt);
-    if (sq.retreating) {
+    // Retreating squads, and engineers busy repairing or building, do not fight.
+    if (sq.retreating || sq.order.kind === 'repair' || sq.order.kind === 'build') {
       sq.targetId = null;
       if (sq.def.vehicle) aimTurret(sq, null, dt);
       continue;
