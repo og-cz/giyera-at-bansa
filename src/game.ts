@@ -80,7 +80,7 @@ export class Game {
     this.hud.onHelp = () => this.toggleHelp();
     window.addEventListener('resize', this.onResize);
     this.resize();
-    this.camera.zoom = 1.1;
+    this.camera.zoom = 1.4;
     const hold = scenario?.defense ? this.world.points[scenario.defense.hold[0]].pos : null;
     this.camera.centerOn(hold ?? this.world.teams[PLAYER].spawn);
     this.input.select(this.world.squads.filter((s) => s.team === PLAYER && (s.def.kind === 'infantry' || s.def.kind === 'team')).map((s) => s.id));
@@ -177,10 +177,21 @@ export class Game {
       this.paused
         ? pauseOverlay(
             () => this.togglePause(),
-            () => this.exit({ won: false, action: 'menu' }),
+            () => this.surrender(),
           )
         : null,
     );
+  }
+
+  /** Give up: the enemy wins and the defeat screen is shown. */
+  private surrender(): void {
+    if (this.ended) return;
+    this.paused = false;
+    this.showOverlay(null);
+    this.world.winner = PLAYER === 0 ? 1 : 0;
+    this.world.endReason = `${this.world.teams[PLAYER].faction.name} surrendered`;
+    this.ended = true;
+    this.showResult();
   }
 
   private toggleHelp(): void {
