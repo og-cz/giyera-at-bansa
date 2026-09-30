@@ -83,7 +83,8 @@ function acquireTarget(world: World, sq: Squad, dt: number): Squad | null {
     let score = Math.max(d, 1);
     if (prefers === 'vehicle') score *= armored ? 0.4 : 1.6;
     else if (prefers === 'infantry' && armored) score *= 1.6;
-    if (e.def.kind === 'structure') score *= 2.5;
+    // The HQ is a last resort; a nest or bunker that is shooting at us is fair game.
+    if (e.def.kind === 'structure') score *= e.def.role === 'fort' ? 1.3 : 2.5;
     if (e === cur) score *= 0.8;
     if (score < bestScore) {
       bestScore = score;
@@ -195,6 +196,8 @@ export function hitChance(world: World, sq: Squad, w: WeaponDef, d: number, targ
 
 /** How hard a weapon hits this kind of target (see WeaponDef.vs). */
 export function damageVs(w: WeaponDef, target: Squad): number {
+  // Engineer structures have their own column; otherwise they count as structures.
+  if (target.def.role === 'fort') return w.vs.fort ?? w.vs.structure ?? 1;
   return w.vs[target.def.kind] ?? 1;
 }
 
