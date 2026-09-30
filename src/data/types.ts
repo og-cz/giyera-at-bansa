@@ -181,7 +181,9 @@ export type MapFeature =
   | { kind: 'rect'; terrain: number; x: number; y: number; w: number; h: number }
   | { kind: 'line'; terrain: number; points: readonly (readonly [number, number])[]; width: number }
   | { kind: 'circle'; terrain: number; x: number; y: number; r: number }
-  | { kind: 'scatter'; terrain: number; x: number; y: number; w: number; h: number; count: number; seed: number };
+  | { kind: 'scatter'; terrain: number; x: number; y: number; w: number; h: number; count: number; seed: number }
+  /** A whole tile grid, one run-length encoded string per row (see gridCodec.ts). */
+  | { kind: 'grid'; rows: readonly string[] };
 
 export interface MapPointDef {
   x: number;
