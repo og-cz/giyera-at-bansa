@@ -1,7 +1,24 @@
+import { audio, type Channel } from '../audio/audio';
 import type { TeamId } from '../data/types';
 import type { World } from '../sim/world';
 import { el, formatTime } from './dom';
 import { controlsTable } from './menu';
+
+/** Master, music and effects volume, saved between sessions. */
+export function volumeControls(): HTMLElement {
+  const row = (channel: Channel, label: string) => {
+    const input = el('input');
+    Object.assign(input, { type: 'range', min: '0', max: '100', step: '1' });
+    input.value = String(Math.round(audio.getVolume(channel) * 100));
+    const value = el('span', { class: 'volume-value', text: `${input.value}%` });
+    input.addEventListener('input', () => {
+      audio.setVolume(channel, Number(input.value) / 100);
+      value.textContent = `${input.value}%`;
+    });
+    return el('label', { class: 'volume-row' }, el('span', { text: label }), input, value);
+  };
+  return el('div', { class: 'volume' }, el('h2', { text: 'Sound' }), row('master', 'Master'), row('music', 'Music'), row('effects', 'Effects'));
+}
 
 export function pauseOverlay(onResume: () => void, onQuit: () => void): HTMLElement {
   const resume = el('button', { class: 'deploy', text: 'Resume' });
@@ -11,7 +28,7 @@ export function pauseOverlay(onResume: () => void, onQuit: () => void): HTMLElem
   return el(
     'div',
     { class: 'overlay dim' },
-    el('div', { class: 'menu-box small' }, el('h1', { text: 'Paused' }), controlsTable(), el('div', { class: 'row' }, quit, resume)),
+    el('div', { class: 'menu-box small' }, el('h1', { text: 'Paused' }), volumeControls(), controlsTable(), el('div', { class: 'row' }, quit, resume)),
   );
 }
 
