@@ -84,7 +84,10 @@ export interface Squad {
   kills: number;
   cooldowns: Record<string, number>;
   channel: AbilityChannel | null;
+  /** True while soldiers are queued to join the squad. */
   reinforcing: boolean;
+  /** Soldiers paid for and waiting to arrive, one at a time. */
+  reinforceQueued: number;
   reinforceTimer: number;
   production: ProductionItem[];
   rally: Vec2 | null;
@@ -262,6 +265,7 @@ export function createSquad(nextId: () => number, team: TeamId, def: UnitDef, po
     cooldowns: {},
     channel: null,
     reinforcing: false,
+    reinforceQueued: 0,
     reinforceTimer: 0,
     production: [],
     rally: null,
