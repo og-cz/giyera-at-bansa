@@ -13,6 +13,69 @@ function shade(hex: string, amount: number): string {
   return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`;
 }
 
+const SURROUND = 384;
+
+/** One seamless tile of dense canopy with rocky outcrops, for the land outside the map. */
+function surroundTile(): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = SURROUND;
+  const c = canvas.getContext('2d')!;
+  c.fillStyle = '#1f3919';
+  c.fillRect(0, 0, SURROUND, SURROUND);
+  // Draw each blob at every wrapped position so the tile repeats without seams.
+  const wrapped = (x: number, y: number, r: number, paint: (x: number, y: number) => void) => {
+    for (const dx of [-SURROUND, 0, SURROUND]) {
+      for (const dy of [-SURROUND, 0, SURROUND]) {
+        if (x + dx + r < 0 || x + dx - r > SURROUND || y + dy + r < 0 || y + dy - r > SURROUND) continue;
+        paint(x + dx, y + dy);
+      }
+    }
+  };
+  // Rock outcrops and scree under the trees.
+  for (let i = 0; i < 7; i++) {
+    const x = hash2(i, 91) * SURROUND;
+    const y = hash2(91, i) * SURROUND;
+    const r = 22 + hash2(i, i, 5) * 26;
+    wrapped(x, y, r, (px, py) => {
+      c.fillStyle = shade('#57544a', (hash2(i, 7) - 0.5) * 0.1);
+      c.beginPath();
+      for (let k = 0; k < 7; k++) {
+        const a = (k / 7) * Math.PI * 2;
+        const rr = r * (0.7 + hash2(i, k, 3) * 0.4);
+        if (k === 0) c.moveTo(px + Math.cos(a) * rr, py + Math.sin(a) * rr);
+        else c.lineTo(px + Math.cos(a) * rr, py + Math.sin(a) * rr);
+      }
+      c.closePath();
+      c.fill();
+      c.fillStyle = 'rgba(255,255,240,0.08)';
+      c.beginPath();
+      c.ellipse(px - r * 0.2, py - r * 0.25, r * 0.45, r * 0.25, -0.5, 0, Math.PI * 2);
+      c.fill();
+    });
+  }
+  // Layers of canopy, darker underneath.
+  for (let layer = 0; layer < 3; layer++) {
+    for (let i = 0; i < 90; i++) {
+      const x = hash2(i, layer, 11) * SURROUND;
+      const y = hash2(layer, i, 13) * SURROUND;
+      const r = 10 + hash2(i, layer, 17) * 16;
+      // Leave the rocks showing through in places.
+      if (layer === 2 && hash2(i, 29) < 0.35) continue;
+      wrapped(x, y, r, (px, py) => {
+        c.fillStyle = shade(['#1a3115', '#24421c', '#2d5122'][layer], (hash2(i, layer, 19) - 0.5) * 0.08);
+        c.beginPath();
+        c.arc(px, py, r, 0, Math.PI * 2);
+        c.fill();
+        c.fillStyle = 'rgba(0,0,0,0.18)';
+        c.beginPath();
+        c.arc(px + r * 0.25, py + r * 0.3, r * 0.8, 0, Math.PI * 2);
+        c.fill();
+      });
+    }
+  }
+  return canvas;
+}
+
 /**
  * Pre-rendered terrain at 2px per world unit. Only tiles that change (craters,
  * crushed hedges) are redrawn, together with their neighbours for edge detail.
@@ -20,6 +83,7 @@ function shade(hex: string, amount: number): string {
 export class TerrainLayer {
   readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
+  private surround: CanvasPattern | null = null;
 
   constructor(private readonly map: GameMap) {
     this.canvas = document.createElement('canvas');
@@ -42,6 +106,29 @@ export class TerrainLayer {
     }
     changes.length = 0;
     for (const i of redo) this.drawTile(i % this.map.w, Math.floor(i / this.map.w));
+  }
+
+  /**
+   * The land beyond the edge of the battlefield: thick jungle and rock that no
+   * one can enter, dimmed so the playable area stands out. Fills the visible
+   * world rectangle; call before draw().
+   */
+  drawSurround(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number): void {
+    const w = this.map.pixelWidth;
+    const h = this.map.pixelHeight;
+    if (x0 >= 0 && y0 >= 0 && x1 <= w && y1 <= h) return;
+    this.surround ??= ctx.createPattern(surroundTile(), 'repeat');
+    ctx.fillStyle = this.surround ?? '#1c2a17';
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.fillStyle = 'rgba(6,10,6,0.42)';
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    // A dark rim where the battlefield ends.
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(-5, -5, w + 10, h + 10);
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 24;
+    ctx.strokeRect(-12, -12, w + 24, h + 24);
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
