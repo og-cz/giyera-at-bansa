@@ -43,7 +43,8 @@ export function updateLogistics(world: World, dt: number): void {
 
     const calm = world.time - sq.lastHurt > LOGISTICS.combatCooldown;
     if (calm && hq && !hq.dead && dist(sq.pos, hq.pos) <= LOGISTICS.healRadius) {
-      const rate = sq.def.kind === 'vehicle' ? LOGISTICS.repairRate : LOGISTICS.healRate;
+      // Soldiers heal at headquarters; tanks are only repaired by engineers.
+      const rate = sq.def.kind === 'vehicle' ? 0 : LOGISTICS.healRate;
       for (const m of sq.models) if (m.alive) m.hp = Math.min(m.maxHp, m.hp + rate * dt);
     }
 
