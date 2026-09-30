@@ -6,7 +6,9 @@ export type Mode =
   | { kind: 'ability'; abilityId: string }
   | { kind: 'setup' }
   | { kind: 'build'; buildId: string }
-  | { kind: 'repair' };
+  | { kind: 'repair' }
+  /** HQ selected: the next left click sets where new units go. */
+  | { kind: 'rally' };
 
 /** Something on the ground that was clicked to see its info: a defense tile, a construction job or one of our mines. */
 export type Inspect = { kind: 'defense'; tx: number; ty: number } | { kind: 'construction'; id: number } | { kind: 'mine'; id: number };
@@ -25,6 +27,8 @@ export interface UIState {
   buildFrom: Vec2 | null;
   /** Clicked defense, construction or mine shown on the unit card (only while no unit is selected). */
   inspect: Inspect | null;
+  /** The engineers' Build submenu is open on the command grid. */
+  buildMenu: boolean;
 }
 
 export interface FaceDrag {
@@ -49,5 +53,6 @@ export function createUIState(): UIState {
     faceDrag: null,
     buildFrom: null,
     inspect: null,
+    buildMenu: false,
   };
 }
