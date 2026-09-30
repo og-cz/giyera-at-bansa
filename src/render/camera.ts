@@ -8,7 +8,7 @@ export class Camera {
   viewW = 1;
   viewH = 1;
   readonly minZoom = 0.45;
-  readonly maxZoom = 2.6;
+  readonly maxZoom = 4;
 
   constructor(
     private readonly worldW: number,
