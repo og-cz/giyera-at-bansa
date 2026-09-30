@@ -506,84 +506,124 @@ export class Renderer {
     ctx.textBaseline = 'alphabetic';
   }
 
-  /** Engineer structures: MG nest, bunker and aid tent. */
+  /**
+   * Engineer structures, drawn small and plain from above: a ring of sandbags
+   * round a machine-gun pit, an earth-covered bunker with a firing slit, and a
+   * canvas aid tent. The plate above each one shows whose it is.
+   */
   private drawFort(sq: Squad, ui: UIState): void {
     const { ctx } = this;
-    const col = TEAM[sq.team];
     const r = sq.def.radius;
     const { x, y } = sq.pos;
-    const edge = ui.selected.has(sq.id) ? '#9dff7a' : col.main;
     const target = this.world.get(sq.targetId);
     const aim = target && !target.dead ? Math.atan2(target.pos.y - y, target.pos.x - x) : sq.heading;
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    const seed = sq.id * 7.13;
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
     ctx.beginPath();
-    ctx.ellipse(x + 3, y + 4, r + 2, r + 1, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 2, y + 3, r + 1, r * 0.9, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.lineWidth = 2;
+
     if (sq.def.id === 'mg_nest') {
-      // A ring of sandbags with the gun in the middle.
-      ctx.fillStyle = '#8c7c5a';
-      ctx.strokeStyle = edge;
+      // Dug-in pit.
+      ctx.fillStyle = '#3a3226';
       ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.arc(x, y, r - 2.5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = '#6f6246';
-      for (let i = 0; i < 8; i++) {
-        const a = (i / 8) * Math.PI * 2;
+      // Sandbags laid round it, each a little different.
+      const bags = 11;
+      ctx.lineWidth = 0.7;
+      for (let i = 0; i < bags; i++) {
+        const a = (i / bags) * Math.PI * 2 + seed;
+        const shade = 0.9 + 0.2 * Math.abs(Math.sin(seed + i * 1.7));
+        ctx.fillStyle = `rgb(${Math.round(176 * shade)},${Math.round(158 * shade)},${Math.round(116 * shade)})`;
+        ctx.strokeStyle = 'rgba(70,58,38,0.8)';
         ctx.beginPath();
-        ctx.ellipse(x + Math.cos(a) * (r - 3), y + Math.sin(a) * (r - 3), 4, 2.6, a + Math.PI / 2, 0, Math.PI * 2);
+        ctx.ellipse(x + Math.cos(a) * (r - 1.8), y + Math.sin(a) * (r - 1.8), 3.1, 1.9, a + Math.PI / 2, 0, Math.PI * 2);
         ctx.fill();
-      }
-      ctx.fillStyle = '#4b4332';
-      ctx.beginPath();
-      ctx.arc(x, y, r - 7, 0, Math.PI * 2);
-      ctx.fill();
-      this.barrel(x, y, aim, r + 4, '#1d1d1d', 2.5);
-    } else if (sq.def.id === 'bunker') {
-      // Log-and-earth box with a firing slit towards its target.
-      ctx.fillStyle = '#5d5a4c';
-      ctx.strokeStyle = edge;
-      ctx.beginPath();
-      ctx.roundRect(x - r, y - r, r * 2, r * 2, 6);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = '#6c7250';
-      ctx.beginPath();
-      ctx.roundRect(x - r + 4, y - r + 4, r * 2 - 8, r * 2 - 8, 4);
-      ctx.fill();
-      ctx.strokeStyle = '#4a3a26';
-      ctx.lineWidth = 1.5;
-      for (let i = -1; i <= 1; i++) {
-        ctx.beginPath();
-        ctx.moveTo(x - r + 5, y + i * 6);
-        ctx.lineTo(x + r - 5, y + i * 6);
         ctx.stroke();
       }
-      this.barrel(x, y, aim, r + 3, '#161616', 3);
-    } else {
-      // Canvas tent with a white cross.
-      ctx.fillStyle = '#c9c2a4';
-      ctx.strokeStyle = edge;
+      // The gun on its tripod.
+      ctx.strokeStyle = '#2b2b27';
+      ctx.lineWidth = 0.9;
+      for (const leg of [aim + Math.PI, aim + 2.3, aim - 2.3]) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(leg) * 4, y + Math.sin(leg) * 4);
+        ctx.stroke();
+      }
+      this.barrel(x, y, aim, r + 2, '#1c1c1a', 1.6);
+      ctx.fillStyle = '#26261f';
+      ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+    } else if (sq.def.id === 'bunker') {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(aim);
+      // Earth piled over logs, grass growing back on top.
+      ctx.fillStyle = '#56523b';
       ctx.beginPath();
-      ctx.moveTo(x - r, y + r * 0.7);
-      ctx.lineTo(x, y - r * 0.8);
-      ctx.lineTo(x + r, y + r * 0.7);
-      ctx.closePath();
+      ctx.roundRect(-r, -r * 0.85, r * 2, r * 1.7, 5);
       ctx.fill();
-      ctx.stroke();
-      ctx.strokeStyle = '#9d957a';
-      ctx.lineWidth = 1;
+      ctx.fillStyle = '#65703f';
       ctx.beginPath();
-      ctx.moveTo(x, y - r * 0.8);
-      ctx.lineTo(x, y + r * 0.7);
+      ctx.roundRect(-r + 2.5, -r * 0.85 + 2.5, r * 2 - 5, r * 1.7 - 5, 4);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(40,36,24,0.35)';
+      ctx.lineWidth = 0.8;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-r + 4, i * 3.5);
+        ctx.lineTo(r - 6, i * 3.5 + 0.8);
+        ctx.stroke();
+      }
+      // Concrete face with the firing slit, towards whatever it is shooting at.
+      ctx.fillStyle = '#8b877a';
+      ctx.fillRect(r - 4, -r * 0.6, 4, r * 1.2);
+      ctx.fillStyle = '#121212';
+      ctx.fillRect(r - 2.2, -3.5, 2.2, 7);
+      ctx.restore();
+      this.barrel(x + Math.cos(aim) * (r - 2), y + Math.sin(aim) * (r - 2), aim, 4, '#1c1c1a', 1.5);
+    } else {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(sq.heading);
+      const hw = r;
+      const hh = r * 0.66;
+      // Guy lines out to the pegs.
+      ctx.strokeStyle = 'rgba(210,200,170,0.45)';
+      ctx.lineWidth = 0.6;
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        ctx.beginPath();
+        ctx.moveTo(sx * hw * 0.8, sy * hh);
+        ctx.lineTo(sx * (hw + 2), sy * (hh + 3));
+        ctx.stroke();
+      }
+      // Two sloping halves of olive canvas, lit from one side, and the ridge pole.
+      ctx.fillStyle = '#86825b';
+      ctx.fillRect(-hw, -hh, hw * 2, hh);
+      ctx.fillStyle = '#6b6847';
+      ctx.fillRect(-hw, 0, hw * 2, hh);
+      ctx.strokeStyle = '#4f4c34';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
+      ctx.beginPath();
+      ctx.moveTo(-hw, 0);
+      ctx.lineTo(hw, 0);
       ctx.stroke();
-      ctx.fillStyle = col.main;
-      ctx.fillRect(x - 6, y - 1, 12, 5);
-      ctx.fillRect(x - 2.5, y - 4.5, 5, 12);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(x - 4.5, y + 0.5, 9, 2);
-      ctx.fillRect(x - 1, y - 3, 2, 9);
+      // White medical marking on the roof.
+      ctx.fillStyle = '#e9e5d8';
+      ctx.fillRect(-3.5, -hh + 1.5, 7, 7);
+      ctx.fillStyle = '#b3261e';
+      ctx.fillRect(-0.9, -hh + 2.5, 1.8, 5);
+      ctx.fillRect(-2.5, -hh + 4.1, 5, 1.8);
+      ctx.restore();
+    }
+
+    if (ui.selected.has(sq.id)) {
+      ctx.strokeStyle = '#9dff7a';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(x, y, r + 3, r + 2.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
     }
   }
 
