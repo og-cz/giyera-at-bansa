@@ -16,6 +16,7 @@ import { hasLineOfSight } from '../los';
 import type { World } from '../world';
 import { coverAt } from './cover';
 import { startSetup } from './setup';
+import { damageDefenses } from './defenses';
 import { applySuppression, suppressionAccuracy } from './suppression';
 
 export function updateCombat(world: World, dt: number): void {
@@ -279,11 +280,13 @@ export function explode(world: World, pos: Vec2, w: WeaponDef, source: Squad | n
       applySuppression(world, sq, w.suppression * COVER[coverAt(world.map, sq.pos, pos)].suppression);
     }
   }
+  // Defenses have hit points; they only break when those run out.
+  damageDefenses(world, pos, w);
   if (w.craterChance > 0 && world.rng.chance(w.craterChance)) {
     const tx = Math.floor(pos.x / TILE);
     const ty = Math.floor(pos.y / TILE);
     const t = world.map.get(tx, ty);
-    if (t === T.Open || t === T.Road || t === T.Paddy || t === T.Hedge || t === T.Sandbag || t === T.Wire) world.map.set(tx, ty, T.Crater);
+    if (t === T.Open || t === T.Road || t === T.Paddy || t === T.Hedge) world.map.set(tx, ty, T.Crater);
   }
 }
 
