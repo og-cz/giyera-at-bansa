@@ -61,9 +61,10 @@ export interface WeaponDef {
   /**
    * Damage multiplier by target type. This is what makes the roster a web of
    * counters rather than a ladder: mortars wreck weapon teams, rifles bully
-   * crews, anti-tank weapons are wasted on infantry, and so on.
+   * crews, anti-tank weapons are wasted on infantry, and so on. `fort` covers
+   * engineer structures (nests, bunkers, tents); `structure` the headquarters.
    */
-  vs: Readonly<Partial<Record<UnitKind, number>>>;
+  vs: Readonly<Partial<Record<UnitKind | 'fort', number>>>;
 }
 
 export interface LoadoutEntry {
