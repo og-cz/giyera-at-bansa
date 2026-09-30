@@ -1,4 +1,6 @@
 import { AICommander } from './ai/commander';
+import { audio } from './audio/audio';
+import { BattleAudio } from './audio/battleAudio';
 import { DIFFICULTY, SIM_DT } from './data/balance';
 import { ALL_MAPS } from './data/theaterMaps';
 import type { Difficulty, ScenarioDef, TeamId, WinCondition } from './data/types';
@@ -35,6 +37,7 @@ export class Game {
   private readonly ai: AICommander | null;
   private readonly camera: Camera;
   private readonly renderer: Renderer;
+  private readonly sound: BattleAudio;
   private readonly input: Input;
   private readonly hud: Hud;
   private readonly minimap: Minimap;
@@ -69,6 +72,8 @@ export class Game {
     this.ai = skirmishRules ? new AICommander(1) : null;
     this.camera = new Camera(this.world.map.pixelWidth, this.world.map.pixelHeight);
     this.renderer = new Renderer(canvas, this.world, this.camera, PLAYER);
+    this.sound = new BattleAudio(this.world, this.camera, PLAYER);
+    audio.playMusic('battle');
     this.input = new Input(canvas, this.world, this.camera, this.ui, PLAYER, {
       toast: (t) => this.hud.toast(t, 'bad'),
       togglePause: () => this.togglePause(),
@@ -123,6 +128,8 @@ export class Game {
       this.input.update(dt);
       this.renderer.draw(this.ui, this.paused ? 0 : dt);
       this.hud.consume(this.world.events);
+      this.sound.consume(this.world.events);
+      this.sound.update();
       this.world.events.length = 0;
       this.hud.update(dt);
       this.minimap.draw();
@@ -212,6 +219,7 @@ export class Game {
 
   private exit(result: MatchResult): void {
     this.running = false;
+    this.sound.dispose();
     this.input.dispose();
     this.minimap.dispose();
     window.removeEventListener('resize', this.onResize);
