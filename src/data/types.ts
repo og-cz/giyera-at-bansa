@@ -279,4 +279,28 @@ export interface ScenarioDef {
   owners?: Readonly<Record<number, Owner>>;
   defense?: DefenseRules;
   offensive?: OffensiveRules;
+  /** Campaign: story scenes shown before the briefing (skippable). */
+  story?: readonly StoryPage[];
+  /** Campaign: story scenes shown after the mission is won. */
+  aftermath?: readonly StoryPage[];
+}
+
+/** One scene of a campaign story: a line of narration or dialogue. */
+export interface StoryPage {
+  /** Who is speaking; narration when unset. */
+  speaker?: string;
+  text: string;
+  /** Optional voice-over file in audio/story/ (e.g. "m1-01.ogg"). */
+  voice?: string;
+}
+
+/** A campaign mission: one story told over two playable parts. */
+export interface CampaignMission {
+  id: string;
+  chapter: string;
+  name: string;
+  date: string;
+  location: string;
+  tagline: string;
+  parts: readonly ScenarioDef[];
 }
