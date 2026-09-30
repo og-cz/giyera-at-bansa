@@ -397,7 +397,9 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     this.orderGrid.style.display = building ? 'none' : '';
     this.buildGrid.style.display = building ? '' : 'none';
     this.cardTitle.textContent = building ? `${team.faction.name} Headquarters` : 'Orders';
-    const single = own.filter((s) => s.def.kind !== 'structure').length <= 1;
+    // One unit type selected (one squad or several of the same kind): its abilities show; a mixed group only gets the common orders.
+    const kinds = new Set(own.filter((s) => s.def.kind !== 'structure').map((s) => s.def.id));
+    const single = kinds.size <= 1;
     for (const c of this.orders) {
       c.node.style.display = '';
       c.refresh(own);
