@@ -7,6 +7,7 @@ import { issueBuild, issueHelpBuild, issueMove, issueRepair, issueRepairDefense 
 import { explode } from '../src/sim/systems/combat';
 import { defenseAt } from '../src/sim/systems/defenses';
 import { planBuild } from '../src/sim/systems/engineering';
+import { canReinforceHere } from '../src/sim/systems/logistics';
 import { World } from '../src/sim/world';
 
 const at = (tx: number, ty: number) => ({ x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE });
@@ -201,5 +202,52 @@ describe('engineers', () => {
     tank.models[0].hp = 100;
     expect(issueBuild(w, rifles, 'sandbags', at(19, 30), at(22, 30)).ok).toBe(false);
     expect(issueRepair(w, rifles, tank).ok).toBe(false);
+  });
+});
+
+describe('engineer structures', () => {
+  it('builds an MG nest that fires on enemies by itself', () => {
+    const w = battle();
+    w.teams[0].resources.manpower = 2000;
+    w.teams[0].resources.munitions = 200;
+    const eng = w.spawn(0, 'us_engineers', at(20, 32), 0);
+    expect(issueBuild(w, eng, 'mg_nest', at(22, 30), at(22, 30)).ok).toBe(true);
+    // No second structure on top of the first.
+    expect(planBuild(w, 'bunker', at(23, 30), at(23, 30)).tiles[0].valid).toBe(false);
+    run(w, 25);
+    const nest = w.squads.find((s) => s.def.id === 'mg_nest');
+    expect(nest?.team).toBe(0);
+    expect(eng.order.kind).toBe('idle');
+    const enemy = w.spawn(1, 'ija_riflemen', at(28, 30), 0);
+    const hp = enemy.models.reduce((s, m) => s + m.hp, 0);
+    run(w, 4);
+    expect(enemy.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0)).toBeLessThan(hp);
+  });
+
+  it('lets squads near a bunker reinforce, and heals soldiers near an aid tent', () => {
+    const w = battle();
+    // No friendly points or HQ nearby: only the bunker supplies this spot.
+    for (const p of w.points) p.owner = -1;
+    w.hqOf(0)!.pos = { x: 0, y: 0 };
+    const bunker = w.spawn(0, 'bunker', at(24, 30), 0);
+    const tent = w.spawn(0, 'aid_tent', at(20, 30), 0);
+    const far = w.spawn(0, 'us_riflemen', at(24, 32), 0);
+    expect(canReinforceHere(w, far)).toBe(true);
+    bunker.dead = true;
+    expect(canReinforceHere(w, far)).toBe(false);
+    const hurt = w.spawn(0, 'us_riflemen', at(21, 31), 0);
+    hurt.models[0].hp = 20;
+    run(w, 12);
+    expect(hurt.models[0].hp).toBeGreaterThan(40);
+    expect(tent.dead).toBe(false);
+  });
+
+  it('only the headquarters takes a rally point', () => {
+    const w = battle();
+    const nest = w.spawn(0, 'mg_nest', at(22, 30), 0);
+    expect(issueMove(w, nest, at(25, 30)).ok).toBe(false);
+    const hq = w.hqOf(0)!;
+    expect(issueMove(w, hq, at(25, 30)).ok).toBe(true);
+    expect(hq.rally).toEqual(at(25, 30));
   });
 });
