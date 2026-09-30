@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SIM_DT, TILE } from '../src/data/balance';
 import { MAPS } from '../src/data/maps';
 import { T } from '../src/data/terrain';
-import { issueBuild, issueMove, issueRepair } from '../src/sim/commands';
+import { issueBuild, issueHelpBuild, issueMove, issueRepair } from '../src/sim/commands';
 import { planBuild } from '../src/sim/systems/engineering';
 import { World } from '../src/sim/world';
 
@@ -61,6 +61,38 @@ describe('engineers', () => {
     run(w, 0.1);
     expect(w.constructions).toHaveLength(0);
     expect(w.teams[0].resources.manpower).toBeGreaterThanOrEqual(start - 1);
+  });
+
+  it('a second engineer squad helps and the job finishes faster', () => {
+    const timeToBuild = (helpers: number) => {
+      const w = battle();
+      const lead = w.spawn(0, 'us_engineers', at(20, 32), 0);
+      issueBuild(w, lead, 'tanktrap', at(19, 30), at(24, 30));
+      const id = lead.order.targetId!;
+      for (let i = 0; i < helpers; i++) expect(issueHelpBuild(w, w.spawn(0, 'us_engineers', at(22, 32), 0), id).ok).toBe(true);
+      let t = 0;
+      while (w.constructions.length > 0 && t < 60) {
+        run(w, 0.5);
+        t += 0.5;
+      }
+      expect([19, 20, 21, 22, 23, 24].every((x) => w.map.get(x, 30) === T.TankTrap)).toBe(true);
+      return t;
+    };
+    expect(timeToBuild(1)).toBeLessThan(timeToBuild(0) * 0.75);
+  });
+
+  it('a job is only cancelled when every squad on it leaves', () => {
+    const w = battle();
+    const lead = w.spawn(0, 'us_engineers', at(20, 32), 0);
+    const helper = w.spawn(0, 'us_engineers', at(22, 32), 0);
+    issueBuild(w, lead, 'sandbags', at(19, 30), at(24, 30));
+    issueHelpBuild(w, helper, lead.order.targetId!);
+    issueMove(w, lead, at(25, 33));
+    run(w, 0.2);
+    expect(w.constructions).toHaveLength(1);
+    issueMove(w, helper, at(25, 33));
+    run(w, 0.2);
+    expect(w.constructions).toHaveLength(0);
   });
 
   it('wire stops infantry but tanks crush it; tank traps stop tanks', () => {
