@@ -128,6 +128,11 @@ const LIST: WeaponDef[] = [
     range: 200, accuracy: [0.4, 0.25], damage: 8, cooldown: 0.25, clip: 30, reload: 4, suppression: 0.02,
   }),
 
+  weapon('nest_mg', 'Emplaced MG', {
+    vs: { team: 0.75, structure: 0.1 },
+    range: 220, accuracy: [0.42, 0.25], damage: 9, cooldown: 0.16, clip: 40, reload: 4.5, suppression: 0.03,
+  }),
+
   // A buried mine: built by engineers, set off by enemies stepping on it.
   weapon('mine', 'Mine', {
     vs: { infantry: 0.4, team: 0.4 },
