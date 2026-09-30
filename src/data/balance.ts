@@ -34,6 +34,8 @@ export const LOGISTICS = {
   reinforceHqRadius: 280,
   reinforcePointRadius: 110,
   reinforceTime: 5.5,
+  /** A squad's own queue: reinforcements and an upgrade, this many jobs at a time. */
+  squadQueue: 3,
   reinforceCostMult: 1.1,
   combatCooldown: 4,
 };
