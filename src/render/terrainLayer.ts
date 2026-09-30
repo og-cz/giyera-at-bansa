@@ -13,68 +13,10 @@ function shade(hex: string, amount: number): string {
   return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`;
 }
 
-const SURROUND = 384;
-
-/** One seamless tile of dense canopy with rocky outcrops, for the land outside the map. */
-function surroundTile(): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = SURROUND;
-  const c = canvas.getContext('2d')!;
-  c.fillStyle = '#1f3919';
-  c.fillRect(0, 0, SURROUND, SURROUND);
-  // Draw each blob at every wrapped position so the tile repeats without seams.
-  const wrapped = (x: number, y: number, r: number, paint: (x: number, y: number) => void) => {
-    for (const dx of [-SURROUND, 0, SURROUND]) {
-      for (const dy of [-SURROUND, 0, SURROUND]) {
-        if (x + dx + r < 0 || x + dx - r > SURROUND || y + dy + r < 0 || y + dy - r > SURROUND) continue;
-        paint(x + dx, y + dy);
-      }
-    }
-  };
-  // Rock outcrops and scree under the trees.
-  for (let i = 0; i < 7; i++) {
-    const x = hash2(i, 91) * SURROUND;
-    const y = hash2(91, i) * SURROUND;
-    const r = 22 + hash2(i, i, 5) * 26;
-    wrapped(x, y, r, (px, py) => {
-      c.fillStyle = shade('#57544a', (hash2(i, 7) - 0.5) * 0.1);
-      c.beginPath();
-      for (let k = 0; k < 7; k++) {
-        const a = (k / 7) * Math.PI * 2;
-        const rr = r * (0.7 + hash2(i, k, 3) * 0.4);
-        if (k === 0) c.moveTo(px + Math.cos(a) * rr, py + Math.sin(a) * rr);
-        else c.lineTo(px + Math.cos(a) * rr, py + Math.sin(a) * rr);
-      }
-      c.closePath();
-      c.fill();
-      c.fillStyle = 'rgba(255,255,240,0.08)';
-      c.beginPath();
-      c.ellipse(px - r * 0.2, py - r * 0.25, r * 0.45, r * 0.25, -0.5, 0, Math.PI * 2);
-      c.fill();
-    });
-  }
-  // Layers of canopy, darker underneath.
-  for (let layer = 0; layer < 3; layer++) {
-    for (let i = 0; i < 90; i++) {
-      const x = hash2(i, layer, 11) * SURROUND;
-      const y = hash2(layer, i, 13) * SURROUND;
-      const r = 10 + hash2(i, layer, 17) * 16;
-      // Leave the rocks showing through in places.
-      if (layer === 2 && hash2(i, 29) < 0.35) continue;
-      wrapped(x, y, r, (px, py) => {
-        c.fillStyle = shade(['#1a3115', '#24421c', '#2d5122'][layer], (hash2(i, layer, 19) - 0.5) * 0.08);
-        c.beginPath();
-        c.arc(px, py, r, 0, Math.PI * 2);
-        c.fill();
-        c.fillStyle = 'rgba(0,0,0,0.18)';
-        c.beginPath();
-        c.arc(px + r * 0.25, py + r * 0.3, r * 0.8, 0, Math.PI * 2);
-        c.fill();
-      });
-    }
-  }
-  return canvas;
-}
+/** How far past the map edge the land is drawn (world units). */
+const SURROUND_MARGIN = 900;
+/** Resolution of the surround, in canvas pixels per world unit: it is blurred anyway. */
+const SURROUND_SCALE = 0.5;
 
 /**
  * Pre-rendered terrain at 2px per world unit. Only tiles that change (craters,
@@ -83,7 +25,7 @@ function surroundTile(): HTMLCanvasElement {
 export class TerrainLayer {
   readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
-  private surround: CanvasPattern | null = null;
+  private surround: HTMLCanvasElement | null = null;
 
   constructor(private readonly map: GameMap) {
     this.canvas = document.createElement('canvas');
@@ -109,26 +51,62 @@ export class TerrainLayer {
   }
 
   /**
-   * The land beyond the edge of the battlefield: thick jungle and rock that no
-   * one can enter, dimmed so the playable area stands out. Fills the visible
-   * world rectangle; call before draw().
+   * The land beyond the edge of the battlefield: the map's own terrain carried
+   * on past the edge (mirrored, so it joins without a seam), blurred, faded and
+   * darkening with distance, so it reads as country you cannot enter. Fills the
+   * visible world rectangle; call before draw().
    */
   drawSurround(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number): void {
     const w = this.map.pixelWidth;
     const h = this.map.pixelHeight;
     if (x0 >= 0 && y0 >= 0 && x1 <= w && y1 <= h) return;
-    this.surround ??= ctx.createPattern(surroundTile(), 'repeat');
-    ctx.fillStyle = this.surround ?? '#1c2a17';
+    this.surround ??= this.buildSurround();
+    ctx.fillStyle = '#0c0f0b';
     ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-    ctx.fillStyle = 'rgba(6,10,6,0.42)';
-    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
-    // A dark rim where the battlefield ends.
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-    ctx.lineWidth = 10;
-    ctx.strokeRect(-5, -5, w + 10, h + 10);
-    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-    ctx.lineWidth = 24;
-    ctx.strokeRect(-12, -12, w + 24, h + 24);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.surround, -SURROUND_MARGIN, -SURROUND_MARGIN, w + SURROUND_MARGIN * 2, h + SURROUND_MARGIN * 2);
+  }
+
+  private buildSurround(): HTMLCanvasElement {
+    const w = this.map.pixelWidth;
+    const h = this.map.pixelHeight;
+    const m = SURROUND_MARGIN;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil((w + m * 2) * SURROUND_SCALE);
+    canvas.height = Math.ceil((h + m * 2) * SURROUND_SCALE);
+    const c = canvas.getContext('2d')!;
+    const world = () => c.setTransform(SURROUND_SCALE, 0, 0, SURROUND_SCALE, m * SURROUND_SCALE, m * SURROUND_SCALE);
+    c.filter = 'blur(2.5px) saturate(0.6) brightness(0.72) sepia(0.15)';
+    for (const i of [-1, 0, 1]) {
+      for (const j of [-1, 0, 1]) {
+        if (i === 0 && j === 0) continue;
+        world();
+        // Mirror the map across the edge it borders.
+        c.translate(i === 1 ? 2 * w : 0, j === 1 ? 2 * h : 0);
+        c.scale(i === 0 ? 1 : -1, j === 0 ? 1 : -1);
+        c.drawImage(this.canvas, 0, 0, w, h);
+      }
+    }
+    c.filter = 'none';
+    world();
+    // Darker the further from the battlefield, like haze over distant country.
+    const fade = (gx0: number, gy0: number, gx1: number, gy1: number, rx: number, ry: number, rw: number, rh: number) => {
+      const g = c.createLinearGradient(gx0, gy0, gx1, gy1);
+      g.addColorStop(0, 'rgba(8,11,8,0.28)');
+      g.addColorStop(0.35, 'rgba(8,11,8,0.6)');
+      g.addColorStop(1, 'rgba(8,11,8,0.92)');
+      c.fillStyle = g;
+      c.fillRect(rx, ry, rw, rh);
+    };
+    fade(0, 0, -m, 0, -m, -m, m, h + 2 * m);
+    fade(w, 0, w + m, 0, w, -m, m, h + 2 * m);
+    fade(0, 0, 0, -m, 0, -m, w, m);
+    fade(0, h, 0, h + m, 0, h, w, m);
+    // A soft shadow line where the battlefield ends.
+    c.strokeStyle = 'rgba(0,0,0,0.5)';
+    c.lineWidth = 6;
+    c.strokeRect(-3, -3, w + 6, h + 6);
+    return canvas;
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
