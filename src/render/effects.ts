@@ -4,7 +4,10 @@ import type { SimEvent, Tone } from '../sim/entities';
 import type { Camera } from './camera';
 
 interface Tracer { from: Vec2; to: Vec2; life: number; max: number; heavy: boolean; team: TeamId }
-interface Shell { from: Vec2; to: Vec2; t: number; flight: number; kind: 'shell' | 'rocket' }
+/** Weapons whose round explodes on impact, with the size of the burst. */
+export const IMPACT_BLAST: Readonly<Record<string, number>> = { bazooka: 16, m6_37mm: 11, type97_57mm: 14 };
+
+interface Shell { from: Vec2; to: Vec2; t: number; flight: number; kind: 'shell' | 'rocket'; blast: number }
 interface Blast { pos: Vec2; radius: number; life: number }
 interface Smoke { pos: Vec2; r: number; life: number; max: number; drift: Vec2 }
 interface Mark { pos: Vec2; life: number; wreck: boolean; heading: number }
@@ -29,7 +32,7 @@ export class Effects {
         case 'shot': {
           if (!visible(e.from) && !visible(e.to)) break;
           if (e.projectile === 'shell' || e.projectile === 'rocket') {
-            this.shells.push({ from: e.from, to: e.to, t: 0, flight: Math.max(0.08, dist(e.from, e.to) / 900), kind: e.projectile });
+            this.shells.push({ from: e.from, to: e.to, t: 0, flight: Math.max(0.08, dist(e.from, e.to) / 900), kind: e.projectile, blast: IMPACT_BLAST[e.weapon] ?? 0 });
             this.flashes.push({ pos: e.from, life: 0.12 });
             this.smokes.push({ pos: { ...e.from }, r: 6, life: 1.2, max: 1.2, drift: { x: 0, y: -4 } });
           } else {
@@ -68,6 +71,21 @@ export class Effects {
     }
   }
 
+  /** A small explosion: flash, then smoke drifting off. */
+  private burst(pos: Vec2, radius: number): void {
+    this.blasts.push({ pos: { ...pos }, radius, life: 0.35 });
+    for (let i = 0; i < 3; i++) {
+      const a = Math.random() * Math.PI * 2;
+      this.smokes.push({
+        pos: { x: pos.x + Math.cos(a) * 3, y: pos.y + Math.sin(a) * 3 },
+        r: radius * 0.45 + 2,
+        life: 1.6,
+        max: 1.6,
+        drift: { x: Math.cos(a) * 4, y: Math.sin(a) * 4 - 3 },
+      });
+    }
+  }
+
   puff(pos: Vec2): void {
     this.smokes.push({ pos: { x: pos.x, y: pos.y }, r: 4, life: 2, max: 2, drift: { x: 3, y: -7 } });
   }
@@ -86,7 +104,13 @@ export class Effects {
       s.r += 6 * dt;
     }
     for (const f of this.floats) f.pos.y -= 14 * dt;
-    this.shells = this.shells.filter((s) => (s.t += dt) < s.flight);
+    this.shells = this.shells.filter((s) => {
+      s.t += dt;
+      if (s.t < s.flight) return true;
+      // Rockets and high-explosive shells burst where they land.
+      if (s.blast > 0) this.burst(s.to, s.blast);
+      return false;
+    });
   }
 
   /** Ground-level marks drawn beneath units. */
