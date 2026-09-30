@@ -178,7 +178,7 @@ export class Input {
   }
 
   /**
-   * Like CoH2: several units of the same type share their abilities and special
+   * Several units of the same type share their abilities and special
    * orders; a mixed selection only gets the common orders (move, attack, stop, retreat).
    */
   oneUnitType(): boolean {
