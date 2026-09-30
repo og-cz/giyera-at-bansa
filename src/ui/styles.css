@@ -421,6 +421,12 @@ button:disabled {
   color: #c9c3b1;
 }
 
+.portrait-hint {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--accent);
+}
+
 .portrait-card dl {
   display: grid;
   grid-template-columns: auto 1fr auto 1fr;
@@ -609,82 +615,63 @@ button:disabled {
   color: #9cc4f5;
 }
 
-/* Jobs panel: production and reinforcement progress above the command card */
-.jobs {
-  position: absolute;
-  right: 6px;
-  bottom: 186px;
-  width: 380px;
-  max-height: 40vh;
-  display: none;
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px;
-  overflow-y: auto;
-  background: rgba(14, 16, 12, 0.92);
-  border: 1px solid var(--panel-edge);
-  border-top: 2px solid var(--accent);
-  border-radius: 3px;
-}
-
-.jobs.show {
-  display: flex;
-}
-
-.jobs-title {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
-
-.job-list {
+/* HQ production queue: three slots beside the orders */
+.queue-panel {
+  width: 62px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 5px;
 }
 
-.job {
+.qslot {
+  position: relative;
+  flex: 1;
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  place-items: center;
+  overflow: hidden;
+  padding: 0;
+  font: 700 15px var(--font);
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
   border-radius: 2px;
+  cursor: default;
 }
 
-.job.reinforce,
-.job.build,
-.job.repair,
-.job.upgrade {
+.qslot.filled {
+  background: rgba(58, 110, 190, 0.35);
+  border: 1px solid rgba(140, 180, 240, 0.55);
   cursor: pointer;
 }
 
-.job.reinforce:hover,
-.job.build:hover,
-.job.repair:hover,
-.job.upgrade:hover {
-  border-color: rgba(217, 180, 90, 0.6);
+.qslot.filled:hover {
+  border-color: var(--accent);
 }
 
-.job-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
+.qslot.filled:not(.active) {
+  opacity: 0.7;
 }
 
-.job-title {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.qslot-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0;
+  background: linear-gradient(0deg, rgba(217, 180, 90, 0.55), rgba(217, 180, 90, 0.2));
+  transition: height 0.1s linear;
 }
 
-.job-time {
-  font-variant-numeric: tabular-nums;
+.qslot-glyph {
+  position: relative;
+}
+
+.qslot-time {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font: 600 10px var(--font);
   color: var(--accent);
 }
 
@@ -701,38 +688,6 @@ button:disabled {
   height: 100%;
   background: linear-gradient(90deg, #b8912f, var(--accent));
   transition: width 0.1s linear;
-}
-
-.job.repair .job-bar .fill {
-  background: linear-gradient(90deg, #4a7fb8, #7fb2e8);
-}
-
-.job.upgrade .job-bar .fill {
-  background: linear-gradient(90deg, #a0522d, #e08a4f);
-}
-
-.job.reinforce .job-bar .fill {
-  background: linear-gradient(90deg, #6fa04f, #9ad06b);
-}
-
-.job-detail {
-  font-size: 11px;
-  color: var(--ink-dim);
-}
-
-.job-cancel {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  font-size: 12px;
-  color: #ff9a8a;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 120, 100, 0.4);
-  border-radius: 2px;
-}
-
-.job-cancel:hover {
-  background: rgba(200, 50, 40, 0.35);
 }
 
 /* Reinforcement progress on roster cards and the unit card */
@@ -978,8 +933,7 @@ button:disabled {
 }
 
 @media (max-width: 1100px) {
-  .command-card,
-  .jobs { width: 320px; }
+  .command-card { width: 320px; }
   .roster { width: 170px; }
   .tickets .bar { width: 100px; }
 }
