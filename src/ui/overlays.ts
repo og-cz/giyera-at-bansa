@@ -5,7 +5,7 @@ import { controlsTable } from './menu';
 
 export function pauseOverlay(onResume: () => void, onQuit: () => void): HTMLElement {
   const resume = el('button', { class: 'deploy', text: 'Resume' });
-  const quit = el('button', { class: 'secondary', text: 'Surrender & return to menu' });
+  const quit = el('button', { class: 'secondary', text: 'Surrender' });
   resume.addEventListener('click', onResume);
   quit.addEventListener('click', onQuit);
   return el(
