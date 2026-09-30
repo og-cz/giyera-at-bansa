@@ -51,6 +51,22 @@ describe('scenario data', () => {
     }
   });
 
+  it.each([...THEATER, ...CAMPAIGN].map((s) => s.id))('%s: the enemy HQ can be reached and destroying it wins', (id) => {
+    const world = worldFor(id);
+    const hq = world.hqOf(1)!;
+    expect(hq, 'enemy HQ').toBeDefined();
+    for (const mover of ['infantry', 'vehicle'] as const) {
+      const goal = world.map.nearestPassable(hq.pos, mover);
+      const end = findPath(world.map, world.teams[0].spawn, goal, mover).at(-1) ?? world.teams[0].spawn;
+      // Close enough to shoot at it.
+      expect(Math.hypot(end.x - hq.pos.x, end.y - hq.pos.y), mover).toBeLessThan(hq.def.radius + TILE * 6);
+    }
+    for (const m of hq.models) m.alive = false;
+    hq.dead = true;
+    run(world, 0.1);
+    expect(world.winner).toBe(0);
+  });
+
   it('wave spawns can reach the hold point', () => {
     for (const s of [...THEATER, ...CAMPAIGN]) {
       if (!s.defense) continue;
