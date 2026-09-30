@@ -4,7 +4,7 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.4.1 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.5.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -159,6 +159,12 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Mount Samat, Route 3, Intramuros.
 
 ## Changelog
+
+**0.5.0**
+- **Thirteen new Luzon town maps** for skirmish: Calumpit, Plaridel, Pilar, Orani, Porac, Abucay, San Fernando, Dinalupihan, Hermosa, Guagua, Lingayen, Baliuag and Lubao. River towns with bridges, coastal towns, jungle villages, farmland and a big town, built from Watabou's Village Generator.
+- Bases and capture points on the new maps are placed by driving distance, so both sides have an equal claim; every point has a local name (Poblacion, Simbahan, Palengke, Bodega, Gasolinahan…).
+- The skirmish battlefield list is a grid of map thumbnails.
+- New app icon: TK with a kris.
 
 **0.4.1** (0.4.0 was not released; everything since 0.3.5 is here)
 - **Engineers** (Combat Engineers / Kohei Engineers) build **sandbags**, **barbed wire**, **tank traps** and **mines** (Z / X / C / V; drag to lay a line). An abandoned job is refunded.
