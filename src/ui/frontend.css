@@ -1112,3 +1112,171 @@ body.cinematic #game {
   .screen-head,
   .screen-body { padding-left: 20px; padding-right: 20px; }
 }
+
+/* ─── Campaign story scenes ───────────────────────── */
+
+.story {
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(40, 34, 24, 0.55), rgba(0, 0, 0, 0.94) 70%), rgba(5, 5, 5, 0.9);
+  animation: fadeIn 0.8s ease both;
+}
+
+.story-box {
+  position: relative;
+  width: min(760px, 100%);
+}
+
+.story-title {
+  margin: 10px 0 26px;
+  font: 400 clamp(34px, 5vw, 60px) / 1 var(--fe-display);
+  color: var(--fe-ink);
+  animation: titleIn 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.story-card {
+  min-height: 150px;
+  padding: 22px 26px;
+  cursor: pointer;
+  background: var(--fe-panel);
+  border: 1px solid var(--fe-line);
+  border-left: 3px solid var(--fe-gold);
+}
+
+.story-card.narration {
+  border-left-color: var(--fe-dim);
+}
+
+.story-card.turn {
+  animation: fadeUp 0.45s ease both;
+}
+
+.story-speaker {
+  min-height: 18px;
+  margin-bottom: 8px;
+  font: 600 14px var(--fe-font);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fe-gold);
+}
+
+.story-text {
+  margin: 0;
+  font: 400 19px/1.65 var(--fe-font-body);
+  color: #e2dccd;
+}
+
+.story-card.narration .story-text {
+  font-style: italic;
+  color: #cfc8b7;
+}
+
+.story-row {
+  margin-top: 18px;
+  align-items: center;
+}
+
+.story-count {
+  margin-left: auto;
+  font: 400 13px var(--fe-font-body);
+  letter-spacing: 0.1em;
+  color: var(--fe-dim);
+}
+
+.story-skip {
+  padding: 8px 14px;
+  font: 600 13px var(--fe-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fe-dim);
+  background: none;
+  border: 1px solid var(--fe-line);
+  cursor: pointer;
+}
+
+.story-skip:hover {
+  color: var(--fe-ink);
+  border-color: var(--fe-dim);
+}
+
+/* Campaign: chapter headings and the parts of a mission. */
+.tl-chapter {
+  margin: 14px 0 4px 44px;
+  font: 600 12px var(--fe-font);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fe-gold);
+}
+
+.tl-chapter:first-child {
+  margin-top: 0;
+}
+
+.mission-parts {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.mission-part {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  text-align: left;
+  color: var(--fe-ink);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--fe-line);
+  cursor: pointer;
+}
+
+.mission-part:hover:not(:disabled),
+.mission-part.picked {
+  border-color: var(--fe-gold);
+  background: rgba(210, 169, 78, 0.08);
+}
+
+.mission-part:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.mp-no {
+  font: 600 12px var(--fe-font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fe-gold);
+}
+
+.mp-name {
+  font: 600 16px var(--fe-font);
+}
+
+.mp-tag {
+  font: 400 13px var(--fe-font-body);
+  color: var(--fe-dim);
+}
+
+.mp-state {
+  font: 600 12px var(--fe-font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fe-dim);
+}
+
+.mission-part.done .mp-state {
+  color: var(--fe-gold);
+}
+
+.detail-sub {
+  margin: 6px 0 8px;
+  font: 600 15px var(--fe-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fe-ink);
+}
