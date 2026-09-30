@@ -27,10 +27,15 @@ import type { World } from '../sim/world';
 import type { Camera } from '../render/camera';
 import type { Inspect, UIState } from './uiState';
 
+/** What the selected units were just told: used for their spoken or audible response. */
+export type Acknowledgement = 'select' | 'order' | 'retreat';
+
 export interface InputCallbacks {
   toast(text: string): void;
   togglePause(): void;
   toggleHelp(): void;
+  /** The selected units respond (a sound or voice line). */
+  acknowledge?(kind: Acknowledgement, squads: Squad[]): void;
 }
 
 const EDGE = 14;
@@ -151,15 +156,18 @@ export class Input {
 
   // ─── Actions (also used by HUD buttons) ────────────────────────
 
-  private report(results: CommandResult[]): void {
+  private report(results: CommandResult[], kind: Acknowledgement = 'order'): void {
     if (results.length > 0 && results.every((r) => !r.ok)) this.cb.toast(results[0].reason ?? 'Cannot do that');
+    else if (results.some((r) => r.ok)) this.cb.acknowledge?.(kind, this.selectedOwn());
   }
 
   select(ids: number[], additive = false): void {
+    const before = [...this.ui.selected].join(',');
     if (!additive) this.ui.selected.clear();
     this.ui.inspect = null;
     for (const id of ids) this.ui.selected.add(id);
     this.ui.mode = { kind: 'none' };
+    if (ids.length > 0 && [...this.ui.selected].join(',') !== before) this.cb.acknowledge?.('select', this.selectedOwn());
   }
 
   selectHq(): void {
@@ -174,7 +182,7 @@ export class Input {
   }
 
   retreat(): void {
-    this.report(this.selectedOwn().filter(notStructure).map((s) => issueRetreat(this.world, s)));
+    this.report(this.selectedOwn().filter(notStructure).map((s) => issueRetreat(this.world, s)), 'retreat');
   }
 
   /**
