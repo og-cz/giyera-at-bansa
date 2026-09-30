@@ -1,5 +1,6 @@
 import './ui/styles.css';
 import './ui/frontend.css';
+import { audio } from './audio/audio';
 import { CAMPAIGN } from './data/scenarios';
 import { Game, type MatchSetup } from './game';
 import { MenuBattle } from './ui/frontend/background';
@@ -22,6 +23,7 @@ let background: MenuBattle | null = null;
 
 function cinematic(on: boolean): void {
   document.body.classList.toggle('cinematic', on);
+  if (on) audio.playMusic('menu');
   if (on && !background) background = new MenuBattle(canvas);
   if (!on && background) {
     background.dispose();
