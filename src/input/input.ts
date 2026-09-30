@@ -1,4 +1,5 @@
 import { ABILITIES } from '../data/abilities';
+import { TILE } from '../data/balance';
 import { BUILDABLES } from '../data/buildables';
 import type { TeamId } from '../data/types';
 import { UPGRADES } from '../data/upgrades';
@@ -12,6 +13,7 @@ import {
   issueMove,
   issueReinforce,
   issueRepair,
+  issueRepairDefense,
   issueRetreat,
   issueSetup,
   issueStop,
@@ -19,10 +21,11 @@ import {
   type CommandResult,
 } from '../sim/commands';
 import type { Squad } from '../sim/entities';
+import { defenseAt } from '../sim/systems/defenses';
 import { constructionAt } from '../sim/systems/engineering';
 import type { World } from '../sim/world';
 import type { Camera } from '../render/camera';
-import type { UIState } from './uiState';
+import type { Inspect, UIState } from './uiState';
 
 export interface InputCallbacks {
   toast(text: string): void;
@@ -154,6 +157,7 @@ export class Input {
 
   select(ids: number[], additive = false): void {
     if (!additive) this.ui.selected.clear();
+    this.ui.inspect = null;
     for (const id of ids) this.ui.selected.add(id);
     this.ui.mode = { kind: 'none' };
   }
@@ -303,6 +307,17 @@ export class Input {
     }
     const hull = target?.models.find((m) => m.alive);
     const repairers = own.filter((s) => s.def.canRepair);
+    // Right-click a damaged defense: engineers patch it up.
+    const tx = Math.floor(p.x / TILE);
+    const ty = Math.floor(p.y / TILE);
+    const defense = target ? null : defenseAt(this.world, tx, ty);
+    if (defense && defense.hp < defense.maxHp && repairers.length > 0) {
+      this.report(repairers.map((s) => issueRepairDefense(this.world, s, tx, ty)));
+      const others = own.filter((s) => notStructure(s) && !s.def.canRepair);
+      const spots = this.formationTargets(others, p);
+      for (const s of others) issueMove(this.world, s, spots.get(s.id)!, shift);
+      return;
+    }
     if (target && target.def.armor && hull && hull.hp < hull.maxHp && repairers.length > 0) {
       this.report(repairers.map((s) => issueRepair(this.world, s, target)));
       const others = own.filter((s) => notStructure(s) && !s.def.canRepair);
@@ -422,7 +437,10 @@ export class Input {
     const sq = this.pick(p);
     const now = performance.now();
     if (!sq) {
-      if (!shift) this.select([]);
+      if (!shift) {
+        this.select([]);
+        this.ui.inspect = this.inspectAt(p);
+      }
       return;
     }
     if (sq.team === this.player && now - this.lastClick.time < 350 && this.lastClick.id === sq.id) {
@@ -438,6 +456,18 @@ export class Input {
       this.select([sq.id]);
     }
     this.lastClick = { time: now, id: sq.id };
+  }
+
+  /** What a click on empty ground shows: our construction job, our mine, or a defense tile. */
+  private inspectAt(p: Vec2): Inspect | null {
+    const job = constructionAt(this.world, this.player, p);
+    if (job) return { kind: 'construction', id: job.id };
+    const mine = this.world.mines.find((m) => m.team === this.player && dist(m.pos, p) < 9);
+    if (mine) return { kind: 'mine', id: mine.id };
+    const tx = Math.floor(p.x / TILE);
+    const ty = Math.floor(p.y / TILE);
+    if (defenseAt(this.world, tx, ty) && this.world.vision.isVisible(this.player, p)) return { kind: 'defense', tx, ty };
+    return null;
   }
 
   private onWheel(e: WheelEvent): void {
