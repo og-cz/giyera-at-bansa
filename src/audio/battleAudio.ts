@@ -74,9 +74,9 @@ export class BattleAudio {
   /**
    * The selected units answer a selection or an order. A voice line is used when
    * one exists for the faction (clips named voice_<faction>_<select|order|retreat>_N.ogg);
-   * otherwise period sounds: gear rattling for infantry (and a morse signal when
-   * ordered), mechanical clanks for weapon teams, an engine rev for tanks, the crank
-   * field telephone for headquarters and an officer's whistle for a retreat.
+   * otherwise field sounds: gear rattling for infantry (heavier when they fall back),
+   * mechanical clanks for weapon teams, an engine rev for tanks and the crank field
+   * telephone for headquarters.
    */
   acknowledge(kind: Acknowledgement, squads: readonly Squad[]): void {
     const lead = squads.find((s) => s.def.kind !== 'structure') ?? squads[0];
@@ -87,7 +87,8 @@ export class BattleAudio {
       return;
     }
     if (kind === 'retreat') {
-      audio.play('whistle', 0.45, 0, 0.8);
+      audio.play('gear', 0.6, 0, 0.2);
+      audio.play('gear', 0.45, 0, 0);
       return;
     }
     switch (lead.def.kind) {
@@ -101,11 +102,9 @@ export class BattleAudio {
         break;
       case 'team':
         audio.play('clank', 0.5, 0, 0.25);
-        if (kind === 'order') audio.play('morse', 0.22, 0, 0.4);
         break;
       default:
-        audio.play('gear', 0.5, 0, 0.25);
-        if (kind === 'order') audio.play('morse', 0.22, 0, 0.4);
+        audio.play('gear', kind === 'order' ? 0.55 : 0.45, 0, 0.25);
     }
   }
 
