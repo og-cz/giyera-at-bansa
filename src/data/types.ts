@@ -2,7 +2,7 @@ export type TeamId = 0 | 1;
 export type Owner = TeamId | -1;
 export type CoverType = 'negative' | 'none' | 'light' | 'heavy';
 export type UnitKind = 'infantry' | 'team' | 'vehicle' | 'structure';
-export type UnitRole = 'hq' | 'line' | 'mg' | 'mortar' | 'at' | 'tank' | 'engineer';
+export type UnitRole = 'hq' | 'line' | 'mg' | 'mortar' | 'at' | 'tank' | 'engineer' | 'fort';
 export type PointKind = 'victory' | 'munitions' | 'fuel' | 'manpower';
 export type Mover = 'infantry' | 'vehicle';
 export type Difficulty = 'easy' | 'normal' | 'hard';
@@ -116,6 +116,11 @@ export interface UnitDef {
   canRepair: boolean;
   /** Weapon upgrades this squad can buy; it may own one of them. */
   upgrades: readonly string[];
+  /** Structures: heals friendly soldiers within this range (hit points per second in `healRate`). */
+  healRadius: number;
+  healRate: number;
+  /** Structures: friendly squads nearby can reinforce and upgrade here. */
+  supplies: boolean;
 }
 
 /** A weapon upgrade: some of the squad's basic soldiers swap their rifles for something heavier. */
@@ -142,8 +147,11 @@ export interface BuildableDef {
   cost: Resources;
   /** Seconds of work for a full squad, per tile or item. */
   buildTime: number;
-  shape: 'line' | 'point';
-  /** Terrain laid down when a tile is finished; null for mines. */
+  /** A line of tiles, a single item (mine), or a structure that becomes its own unit. */
+  shape: 'line' | 'point' | 'structure';
+  /** The structure's unit, for shape 'structure'. */
+  unit?: string;
+  /** Terrain laid down when a tile is finished; null for mines and structures. */
   terrain: number | null;
   maxLength: number;
   /** Hit points of each finished tile (0 for mines). Only explosions wear defenses down. */
