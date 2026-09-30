@@ -12,6 +12,18 @@ export const GRID_LEGEND: Readonly<Record<string, number>> = {
   w: T.Wall,
 };
 
+/** Run-length encodes one row of tile codes. */
+export function encodeGridRow(row: readonly string[]): string {
+  let out = '';
+  for (let i = 0; i < row.length; ) {
+    let n = 1;
+    while (i + n < row.length && row[i + n] === row[i]) n++;
+    out += (n > 1 ? n : '') + row[i];
+    i += n;
+  }
+  return out;
+}
+
 /** Expands one run-length encoded row ("12.3=#": twelve open tiles, three road, one building). */
 export function decodeGridRow(row: string): string[] {
   const out: string[] = [];
