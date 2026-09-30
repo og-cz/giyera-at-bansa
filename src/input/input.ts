@@ -165,6 +165,7 @@ export class Input {
     const before = [...this.ui.selected].join(',');
     if (!additive) this.ui.selected.clear();
     this.ui.inspect = null;
+    this.ui.buildMenu = false;
     for (const id of ids) this.ui.selected.add(id);
     this.ui.mode = { kind: 'none' };
     if (ids.length > 0 && [...this.ui.selected].join(',') !== before) this.cb.acknowledge?.('select', this.selectedOwn());
@@ -235,6 +236,19 @@ export class Input {
     if (!this.selectedOwn().some((s) => s.def.builds.includes(buildId))) return;
     this.ui.mode = { kind: 'build', buildId };
     this.ui.buildFrom = null;
+    this.ui.buildMenu = false;
+  }
+
+  /** Open or close the engineers' Build submenu. */
+  toggleBuildMenu(): void {
+    if (!this.ui.buildMenu && (!this.oneUnitType() || !this.selectedOwn().some((s) => s.def.builds.length > 0))) return;
+    this.ui.buildMenu = !this.ui.buildMenu;
+    this.ui.mode = { kind: 'none' };
+  }
+
+  /** HQ selected: click the map to set where new units go. */
+  rallyMode(): void {
+    if (this.selectedOwn().some((s) => s.def.role === 'hq')) this.ui.mode = { kind: 'rally' };
   }
 
   private buildHotkey(key: string): boolean {
@@ -325,7 +339,7 @@ export class Input {
     const units = own.filter(notStructure);
     const targets = this.formationTargets(units, p, facing);
     this.report(units.map((s) => issueMove(this.world, s, targets.get(s.id)!, shift, facing)));
-    for (const hq of own.filter((s) => !notStructure(s))) issueMove(this.world, hq, p);
+    for (const hq of own.filter((s) => s.def.role === 'hq')) issueMove(this.world, hq, p);
   }
 
   private commandAt(p: Vec2, shift: boolean): void {
@@ -369,7 +383,7 @@ export class Input {
     const units = own.filter(notStructure);
     const targets = this.formationTargets(units, p);
     this.report(units.map((s) => issueMove(this.world, s, targets.get(s.id)!, shift)));
-    for (const hq of own.filter((s) => !notStructure(s))) issueMove(this.world, hq, p);
+    for (const hq of own.filter((s) => s.def.role === 'hq')) issueMove(this.world, hq, p);
   }
 
   // ─── Event handlers ────────────────────────────────────────────
@@ -406,6 +420,12 @@ export class Input {
     }
     if (mode.kind === 'build') {
       this.ui.buildFrom = p;
+      return;
+    }
+    if (mode.kind === 'rally') {
+      for (const hq of this.selectedOwn().filter((s) => s.def.role === 'hq')) issueMove(this.world, hq, p);
+      this.cb.acknowledge?.('order', this.selectedOwn());
+      this.ui.mode = { kind: 'none' };
       return;
     }
     if (mode.kind === 'repair') {
@@ -550,9 +570,13 @@ export class Input {
       return;
     }
 
+    // In the Build submenu the letter keys pick what to build.
+    if (this.ui.buildMenu && key !== 'escape' && this.buildHotkey(key)) return;
+
     switch (key) {
       case 'escape':
         if (this.ui.mode.kind !== 'none') this.ui.mode = { kind: 'none' };
+        else if (this.ui.buildMenu) this.ui.buildMenu = false;
         else if (this.ui.selected.size > 0) this.select([]);
         else this.cb.togglePause();
         break;
@@ -574,6 +598,9 @@ export class Input {
       case 'g':
       case 'b':
         this.abilityMode(key);
+        break;
+      case 'q':
+        this.toggleBuildMenu();
         break;
       case 'z':
       case 'x':
