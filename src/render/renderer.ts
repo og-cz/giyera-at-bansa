@@ -2,6 +2,7 @@ import { ABILITIES } from '../data/abilities';
 import { BUILDABLES } from '../data/buildables';
 import { CAPTURE, TILE } from '../data/balance';
 import type { TeamId, WeaponDef } from '../data/types';
+import { UNITS } from '../data/units';
 import { WEAPONS } from '../data/weapons';
 import { add, angleTo, fromAngle, rotate, type Vec2 } from '../core/vec';
 import { aliveCount, formationOffset, healthFraction, maxRange, type Squad } from '../sim/entities';
@@ -324,17 +325,42 @@ export class Renderer {
       }
       if (sq.def.kind === 'structure' && sq.rally) {
         ctx.strokeStyle = 'rgba(155,226,155,0.7)';
+        ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
         ctx.moveTo(sq.pos.x, sq.pos.y);
         ctx.lineTo(sq.rally.x, sq.rally.y);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = '#9be29b';
-        ctx.fillRect(sq.rally.x - 1, sq.rally.y - 12, 2, 12);
-        ctx.fillRect(sq.rally.x, sq.rally.y - 12, 8, 5);
       }
     }
+    // The HQ's rally pin stays on the map so you always know where new units go.
+    const hq = this.world.hqOf(this.player);
+    if (hq && !hq.dead && hq.rally) this.drawRallyPin(hq.rally, ui.selected.has(hq.id));
+  }
+
+  private drawRallyPin(p: Vec2, selected: boolean): void {
+    const { ctx } = this;
+    ctx.globalAlpha = selected ? 1 : 0.7;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y, 6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#9be29b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(p.x, p.y, 9, 4.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#2b2b2b';
+    ctx.fillRect(p.x - 1, p.y - 22, 2, 22);
+    ctx.fillStyle = '#9be29b';
+    ctx.beginPath();
+    ctx.moveTo(p.x + 1, p.y - 22);
+    ctx.lineTo(p.x + 15, p.y - 17.5);
+    ctx.lineTo(p.x + 1, p.y - 13);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   private ring(p: Vec2, r: number, color: string): void {
@@ -442,6 +468,10 @@ export class Renderer {
   }
 
   private drawStructure(sq: Squad, ui: UIState): void {
+    if (sq.def.role !== 'hq') {
+      this.drawFort(sq, ui);
+      return;
+    }
     const { ctx } = this;
     const col = TEAM[sq.team];
     const r = sq.def.radius;
@@ -471,6 +501,97 @@ export class Renderer {
     ctx.textBaseline = 'middle';
     ctx.fillText('HQ', x, y);
     ctx.textBaseline = 'alphabetic';
+  }
+
+  /** Engineer structures: MG nest, bunker and aid tent. */
+  private drawFort(sq: Squad, ui: UIState): void {
+    const { ctx } = this;
+    const col = TEAM[sq.team];
+    const r = sq.def.radius;
+    const { x, y } = sq.pos;
+    const edge = ui.selected.has(sq.id) ? '#9dff7a' : col.main;
+    const target = this.world.get(sq.targetId);
+    const aim = target && !target.dead ? Math.atan2(target.pos.y - y, target.pos.x - x) : sq.heading;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(x + 3, y + 4, r + 2, r + 1, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    if (sq.def.id === 'mg_nest') {
+      // A ring of sandbags with the gun in the middle.
+      ctx.fillStyle = '#8c7c5a';
+      ctx.strokeStyle = edge;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#6f6246';
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.ellipse(x + Math.cos(a) * (r - 3), y + Math.sin(a) * (r - 3), 4, 2.6, a + Math.PI / 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#4b4332';
+      ctx.beginPath();
+      ctx.arc(x, y, r - 7, 0, Math.PI * 2);
+      ctx.fill();
+      this.barrel(x, y, aim, r + 4, '#1d1d1d', 2.5);
+    } else if (sq.def.id === 'bunker') {
+      // Log-and-earth box with a firing slit towards its target.
+      ctx.fillStyle = '#5d5a4c';
+      ctx.strokeStyle = edge;
+      ctx.beginPath();
+      ctx.roundRect(x - r, y - r, r * 2, r * 2, 6);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#6c7250';
+      ctx.beginPath();
+      ctx.roundRect(x - r + 4, y - r + 4, r * 2 - 8, r * 2 - 8, 4);
+      ctx.fill();
+      ctx.strokeStyle = '#4a3a26';
+      ctx.lineWidth = 1.5;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x - r + 5, y + i * 6);
+        ctx.lineTo(x + r - 5, y + i * 6);
+        ctx.stroke();
+      }
+      this.barrel(x, y, aim, r + 3, '#161616', 3);
+    } else {
+      // Canvas tent with a white cross.
+      ctx.fillStyle = '#c9c2a4';
+      ctx.strokeStyle = edge;
+      ctx.beginPath();
+      ctx.moveTo(x - r, y + r * 0.7);
+      ctx.lineTo(x, y - r * 0.8);
+      ctx.lineTo(x + r, y + r * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = '#9d957a';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, y - r * 0.8);
+      ctx.lineTo(x, y + r * 0.7);
+      ctx.stroke();
+      ctx.fillStyle = col.main;
+      ctx.fillRect(x - 6, y - 1, 12, 5);
+      ctx.fillRect(x - 2.5, y - 4.5, 5, 12);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(x - 4.5, y + 0.5, 9, 2);
+      ctx.fillRect(x - 1, y - 3, 2, 9);
+    }
+  }
+
+  private barrel(x: number, y: number, angle: number, length: number, color: string, width: number): void {
+    const { ctx } = this;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(angle) * length, y + Math.sin(angle) * length);
+    ctx.stroke();
   }
 
   private drawProjectiles(): void {
@@ -661,6 +782,24 @@ export class Renderer {
       ctx.lineWidth = lw;
       ctx.fillRect(t.tx * TILE, t.ty * TILE, TILE, TILE);
       ctx.strokeRect(t.tx * TILE + 0.5, t.ty * TILE + 0.5, TILE - 1, TILE - 1);
+    }
+    // Structures: show what the finished one will cover (gun range or healing area).
+    const def = BUILDABLES[ui.mode.buildId];
+    const tile = plan.tiles[0];
+    if (def.shape === 'structure' && tile) {
+      const unit = UNITS[def.unit!];
+      const center = world.map.tileCenter(tile.tx, tile.ty);
+      const reach = unit.healRadius || Math.max(0, ...unit.loadout.flatMap((l) => l.weapons.map((w) => WEAPONS[w].range)));
+      ctx.strokeStyle = tile.valid ? 'rgba(120,230,120,0.5)' : 'rgba(240,80,60,0.5)';
+      ctx.lineWidth = lw;
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, reach, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, unit.radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 
