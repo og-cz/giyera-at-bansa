@@ -1,6 +1,7 @@
 import type { TeamId } from '../data/types';
 import type { Camera } from '../render/camera';
-import type { SimEvent } from '../sim/entities';
+import type { Acknowledgement } from '../input/input';
+import type { SimEvent, Squad } from '../sim/entities';
 import type { World } from '../sim/world';
 import { audio, type Loop } from './audio';
 import { BLAST, DEFAULT_BLAST, ENGINE, FIRE, WRECK, type SoundSpec } from './sounds';
@@ -68,6 +69,36 @@ export class BattleAudio {
           break;
       }
     }
+  }
+
+  /**
+   * The selected units answer a selection or an order. A voice line is used when
+   * one exists for the faction (clips named voice_<faction>_<select|order|retreat>_N.ogg);
+   * otherwise the unit's own sound: gear rattling for infantry, heavier clanks for
+   * weapon teams, an engine rev for tanks and radio static for headquarters.
+   */
+  acknowledge(kind: Acknowledgement, squads: readonly Squad[]): void {
+    const lead = squads.find((s) => s.def.kind !== 'structure') ?? squads[0];
+    if (!lead) return;
+    const voice = `voice_${this.world.teams[lead.team].faction.id}_${kind}`;
+    if (audio.has(voice)) {
+      audio.play(voice, 0.9, 0, 0.6);
+      return;
+    }
+    switch (lead.def.kind) {
+      case 'structure':
+        audio.play('radio', 0.35, 0, 0.25);
+        break;
+      case 'vehicle':
+        audio.play('tank_rev', kind === 'select' ? 0.3 : 0.45, 0, 0.6);
+        break;
+      case 'team':
+        audio.play('gear', 0.55, 0, 0.25, 0.82);
+        break;
+      default:
+        audio.play('gear', 0.5, 0, 0.25);
+    }
+    if (kind === 'retreat') audio.play('radio', 0.3, 0, 0.25);
   }
 
   /** Engine noise for vehicles on screen: a low idle, louder and higher while moving. */
