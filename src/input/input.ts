@@ -178,21 +178,22 @@ export class Input {
   }
 
   /**
-   * Like CoH2: with several units selected only the common orders (move, attack,
-   * stop, retreat) are available. Abilities and unit-specific orders need one unit.
+   * Like CoH2: several units of the same type share their abilities and special
+   * orders; a mixed selection only gets the common orders (move, attack, stop, retreat).
    */
-  singleUnit(): boolean {
-    return this.selectedOwn().filter(notStructure).length === 1;
+  oneUnitType(): boolean {
+    const units = this.selectedOwn().filter(notStructure);
+    return units.length > 0 && units.every((s) => s.def.id === units[0].def.id);
   }
 
   reinforce(): void {
-    if (!this.singleUnit()) return;
+    if (!this.oneUnitType()) return;
     this.report(this.selectedOwn().filter((s) => s.def.kind === 'infantry' || s.def.kind === 'team').map((s) => issueReinforce(this.world, s)));
   }
 
   /** Buy the upgrade on `hotkey` (T or Y) for every selected squad that can still take it. */
   upgrade(hotkey: string): void {
-    if (!this.singleUnit()) return;
+    if (!this.oneUnitType()) return;
     const results: CommandResult[] = [];
     for (const sq of this.selectedOwn()) {
       const id = sq.def.upgrades.find((u) => UPGRADES[u].hotkey === hotkey.toUpperCase());
@@ -202,7 +203,7 @@ export class Input {
   }
 
   setupMode(): void {
-    if (!this.singleUnit()) return;
+    if (!this.oneUnitType()) return;
     const teams = this.selectedOwn().filter((s) => s.def.kind === 'team');
     if (teams.length === 0) return;
     const deployed = teams.filter((s) => s.setup === 'deployed' || s.setup === 'settingUp');
@@ -219,7 +220,7 @@ export class Input {
 
   /** Enter placement mode for a defense, if an engineer that can build it is selected. */
   buildMode(buildId: string): void {
-    if (!this.singleUnit()) return;
+    if (!this.oneUnitType()) return;
     if (!this.selectedOwn().some((s) => s.def.builds.includes(buildId))) return;
     this.ui.mode = { kind: 'build', buildId };
     this.ui.buildFrom = null;
@@ -249,7 +250,7 @@ export class Input {
 
   /** Engineers' Repair order: click it, then click the damaged tank, HQ or defense. */
   repairMode(): void {
-    if (!this.singleUnit() || !this.selectedOwn().some((s) => s.def.canRepair)) return;
+    if (!this.oneUnitType() || !this.selectedOwn().some((s) => s.def.canRepair)) return;
     this.ui.mode = { kind: 'repair' };
   }
 
@@ -267,7 +268,7 @@ export class Input {
   }
 
   abilityMode(hotkey: string): void {
-    if (!this.singleUnit()) return;
+    if (!this.oneUnitType()) return;
     const own = this.selectedOwn();
     for (const sq of own) {
       const id = sq.def.abilities.find((a) => ABILITIES[a].hotkey === hotkey.toUpperCase());
