@@ -63,7 +63,7 @@ export class Hud {
   private readonly buildGrid: HTMLElement;
   private readonly orders: GridButton[] = [];
   private readonly builds: { id: string; node: HTMLButtonElement }[] = [];
-  /** The HQ's production queue: three slots beside the orders, like a CoH2 building queue. */
+  /** The HQ's production queue: three slots beside the orders. */
   private readonly queueSlots: HTMLElement[] = [];
   private readonly toasts: HTMLElement;
   private readonly tooltip: HTMLElement;
@@ -452,7 +452,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
   }
 
   /**
-   * The queue of whatever is selected, like a CoH2 building or squad: the HQ's
+   * The queue of whatever is selected: the HQ's
    * recruits when the HQ (or nothing) is selected, otherwise the selected
    * squads' own upgrades and reinforcements.
    */
@@ -670,7 +670,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     this.unitPanel.replaceChildren(el('div', { class: 'multi' }, ...squads.map((s) => this.miniCard(s))));
   }
 
-  /** Info card for a clicked defense tile, construction job or mine (CoH2-style). */
+  /** Info card for a clicked defense tile, construction job or mine. */
   private inspectCard(): { key: string; node: HTMLElement } | null {
     const ins = this.ui.inspect;
     if (!ins) return null;
