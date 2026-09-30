@@ -16,7 +16,8 @@ export function canReinforceHere(world: World, sq: Squad): boolean {
     if (p.owner !== sq.team || !world.territory.isSupplied(sq.team, p.sector)) continue;
     if (dist(sq.pos, p.pos) <= LOGISTICS.reinforcePointRadius) return true;
   }
-  return false;
+  // Bunkers are forward supply posts.
+  return world.squads.some((s) => !s.dead && s.team === sq.team && s.def.supplies && dist(sq.pos, s.pos) <= LOGISTICS.reinforcePointRadius);
 }
 
 /** Which loadout slot a new recruit should fill (e.g. replace the lost bazooka first). */
@@ -52,6 +53,10 @@ export function updateLogistics(world: World, dt: number): void {
       // Soldiers heal at headquarters; tanks are only repaired by engineers.
       const rate = sq.def.kind === 'vehicle' ? 0 : LOGISTICS.healRate;
       for (const m of sq.models) if (m.alive) m.hp = Math.min(m.maxHp, m.hp + rate * dt);
+    } else if (calm && sq.def.kind !== 'vehicle') {
+      // Aid tents patch up soldiers nearby.
+      const tent = world.squads.find((s) => !s.dead && s.team === sq.team && s.def.healRate > 0 && dist(sq.pos, s.pos) <= s.def.healRadius);
+      if (tent) for (const m of sq.models) if (m.alive) m.hp = Math.min(m.maxHp, m.hp + tent.def.healRate * dt);
     }
 
     if (!sq.reinforcing) continue;
