@@ -684,7 +684,23 @@ button:disabled {
   color: #9ad06b;
 }
 
-/* A squad that is reinforcing (its progress is in the queue) */
+/* A squad's own job on its roster card: reinforcing (green) or an upgrade on its way (orange) */
+.rc-job {
+  height: 2px;
+  margin-top: 1px;
+}
+
+.rc-job .fill {
+  height: 100%;
+  width: 0;
+  background: #9ad06b;
+}
+
+.roster-card.upgrading:not(.reinforcing) .rc-job .fill {
+  background: #e08a4f;
+}
+
+/* A squad that is reinforcing */
 .roster-card.reinforcing {
   border-left-color: #9ad06b;
 }
