@@ -1,6 +1,5 @@
-import { decodeGridRow } from './gridCodec';
+import { decodeGridRow, encodeGridRow } from './gridCodec';
 import { CALUMPIT_ROWS } from './luzon/calumpit';
-import { T } from './terrain';
 import type { MapDef, MapFeature, MapPointDef, PointKind } from './types';
 
 /**
@@ -15,8 +14,8 @@ interface LuzonMapSource {
   name: string;
   description: string;
   rows: readonly string[];
-  /** The map has a river: one victory point goes on a bridge. */
-  river?: boolean;
+  /** Name for a victory point on a bridge, used when a bridge is fair to both sides. */
+  bridge?: string;
   names: { victory: readonly [string, string, string]; munitions: readonly [string, string]; fuel: readonly [string, string] };
 }
 
@@ -32,29 +31,54 @@ function build(src: LuzonMapSource): MapDef {
   const H = grid.length;
   const W = grid[0].length;
   const drivable = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && !UNDRIVABLE.has(grid[y][x]);
-  const features: MapFeature[] = [{ kind: 'grid', rows: src.rows }];
 
-  // Bases: where a road leaves the map on the west and east edges, nearest the middle.
-  const bases = ([0, W - 1] as const).map((edge) => {
-    let bestY = Math.floor(H / 2);
-    let best = Infinity;
-    for (let y = BASE_CLEAR + 1; y < H - BASE_CLEAR - 1; y++) {
-      if (!drivable(edge, y)) continue;
-      const score = Math.abs(y - H / 2) + (grid[y][edge] === '=' ? 0 : 1000);
-      if (score < best) {
-        best = score;
-        bestY = y;
+  // Units never squeeze diagonally between two blocked tiles, so a road (or bridge) that only
+  // touches corner to corner would be a dead end. Widen it at every such step.
+  for (let y = 0; y < H - 1; y++) {
+    for (let x = 0; x < W; x++) {
+      if (grid[y][x] !== '=') continue;
+      for (const dx of [-1, 1]) {
+        const nx = x + dx;
+        if (nx < 0 || nx >= W || grid[y + 1][nx] !== '=') continue;
+        if (!drivable(nx, y) && !drivable(x, y + 1)) grid[y + 1][x] = '=';
       }
     }
-    const x = edge === 0 ? BASE_CLEAR + 2 : W - BASE_CLEAR - 3;
-    // Clear room for the HQ and a road out to the map edge.
-    features.push({ kind: 'rect', terrain: T.Open, x: x - BASE_CLEAR, y: bestY - BASE_CLEAR, w: BASE_CLEAR * 2 + 1, h: BASE_CLEAR * 2 + 1 });
-    features.push({ kind: 'rect', terrain: T.Road, x: Math.min(edge, x), y: bestY, w: Math.abs(x - edge) + 1, h: 1 });
-    for (let y = bestY - BASE_CLEAR; y <= bestY + BASE_CLEAR; y++) {
-      for (let xx = x - BASE_CLEAR; xx <= x + BASE_CLEAR; xx++) if (y >= 0 && y < H && xx >= 0 && xx < W) grid[y][xx] = '.';
+  }
+
+  const around = (c: Cell, r: number, test: (ch: string) => boolean) => {
+    let n = 0;
+    for (let y = c.y - r; y <= c.y + r; y++) for (let x = c.x - r; x <= c.x + r; x++) if (y >= 0 && y < H && x >= 0 && x < W && test(grid[y][x])) n++;
+    return n;
+  };
+
+  // Bases: one near the west edge and one near the east edge, on solid land, preferring where a road
+  // comes in near the middle. The ground around each HQ is cleared so it has room.
+  const landAround = (x: number, y: number) => {
+    let n = 0;
+    for (let yy = y - BASE_CLEAR; yy <= y + BASE_CLEAR; yy++) {
+      for (let xx = x - BASE_CLEAR; xx <= x + BASE_CLEAR; xx++) if (yy >= 0 && yy < H && xx >= 0 && xx < W && grid[yy][xx] !== '~') n++;
     }
-    for (let xx = Math.min(edge, x); xx <= Math.max(edge, x); xx++) grid[bestY][xx] = '=';
-    return { x, y: bestY };
+    return n;
+  };
+  const bases = ([0, 1] as const).map((side) => {
+    let best: Cell = { x: side === 0 ? BASE_CLEAR + 2 : W - BASE_CLEAR - 3, y: Math.floor(H / 2) };
+    let bestScore = Infinity;
+    for (let inset = BASE_CLEAR + 2; inset < W / 4; inset++) {
+      const x = side === 0 ? inset : W - 1 - inset;
+      for (let y = BASE_CLEAR + 1; y < H - BASE_CLEAR - 1; y++) {
+        if (!drivable(x, y) || landAround(x, y) < (BASE_CLEAR * 2 + 1) ** 2 - 3) continue;
+        const road = around({ x, y }, 2, (ch) => ch === '=') > 0;
+        const score = inset * 3 + Math.abs(y - H / 2) * 0.6 + (road ? 0 : 12);
+        if (score < bestScore) {
+          bestScore = score;
+          best = { x, y };
+        }
+      }
+    }
+    for (let y = best.y - BASE_CLEAR; y <= best.y + BASE_CLEAR; y++) {
+      for (let x = best.x - BASE_CLEAR; x <= best.x + BASE_CLEAR; x++) if (y >= 0 && y < H && x >= 0 && x < W) grid[y][x] = '.';
+    }
+    return best;
   });
 
   // Driving distance (in tiles) from each base.
@@ -77,11 +101,6 @@ function build(src: LuzonMapSource): MapDef {
   const dA = distanceFrom(bases[0]);
   const dB = distanceFrom(bases[1]);
 
-  const around = (c: Cell, r: number, test: (ch: string) => boolean) => {
-    let n = 0;
-    for (let y = c.y - r; y <= c.y + r; y++) for (let x = c.x - r; x <= c.x + r; x++) if (y >= 0 && y < H && x >= 0 && x < W && test(grid[y][x])) n++;
-    return n;
-  };
   const houses = (c: Cell) => around(c, 6, (ch) => ch === '#');
   const bridge = (c: Cell) => (grid[c.y][c.x] === '=' && around(c, 1, (ch) => ch === '~') > 0 ? 1 : 0);
   const chosen: Cell[] = [...bases];
@@ -93,8 +112,8 @@ function build(src: LuzonMapSource): MapDef {
   const pick = (ok: (c: Cell, a: number, b: number) => boolean, score: (c: Cell) => number, min = 13): Cell | null => {
     let best: Cell | null = null;
     let bestScore = -Infinity;
-    for (let y = 2; y < H - 2; y++) {
-      for (let x = 2; x < W - 2; x++) {
+    for (let y = 4; y < H - 4; y++) {
+      for (let x = 4; x < W - 4; x++) {
         const a = dA[y * W + x];
         const b = dB[y * W + x];
         if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
@@ -128,11 +147,11 @@ function build(src: LuzonMapSource): MapDef {
   add(heart, 'victory', src.names.victory[0]);
   // Then a river crossing if the map has one (the most even one), else another contested spot away from the first.
   const spread = (p: Cell) => (heart ? Math.hypot(heart.x - p.x, heart.y - p.y) * 0.3 : 0);
-  const crossing = src.river
+  const crossing = src.bridge
     ? pick((c, a, b) => bridge(c) === 1 && Math.abs(a - b) <= (a + b) * 0.3, (p) => -Math.abs(dA[p.y * W + p.x] - dB[p.y * W + p.x]), 14)
     : null;
   const second = crossing ?? firstFit([3, 6, 10, 16], (tol) => pick((_c, a, b) => Math.abs(a - b) <= tol, (p) => houses(p) + spread(p), 16));
-  add(second, 'victory', src.names.victory[1]);
+  add(second, 'victory', crossing && src.bridge ? src.bridge : src.names.victory[1]);
   // The third balances the second: if the second is nearer one side, the third is as much nearer the other.
   const skew = second ? dA[second.y * W + second.x] - dB[second.y * W + second.x] : 0;
   const third = firstFit([2, 4, 8, 14], (tol) => pick((_c, a, b) => Math.abs(a - b + skew) <= tol, (p) => houses(p) + spread(p), 16));
@@ -150,6 +169,7 @@ function build(src: LuzonMapSource): MapDef {
     add(east, kind, src.names[kind][1]);
   });
 
+  const features: MapFeature[] = [{ kind: 'grid', rows: grid.map(encodeGridRow) }];
   return { id: src.id, name: src.name, description: src.description, width: W, height: H, bases: [bases[0], bases[1]], points, features };
 }
 
@@ -159,9 +179,9 @@ const SOURCES: LuzonMapSource[] = [
     name: 'Calumpit',
     description: 'A river town on the Pampanga, two bridges over a winding river, paddies all around. Whoever holds the crossings holds the road to Bataan.',
     rows: CALUMPIT_ROWS,
-    river: true,
+    bridge: 'Calumpit Bridge',
     names: {
-      victory: ['Poblacion', 'Calumpit Bridge', 'Barrio San Jose'],
+      victory: ['Poblacion', 'Barrio San Jose', 'Sitio Longos'],
       munitions: ['Bodega', 'Rice Mill'],
       fuel: ['Motor Pool', 'Gasolinahan'],
     },
