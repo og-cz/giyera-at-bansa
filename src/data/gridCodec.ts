@@ -10,6 +10,7 @@ export const GRID_LEGEND: Readonly<Record<string, number>> = {
   '~': T.Water,
   '#': T.Building,
   w: T.Wall,
+  r: T.Rampart,
 };
 
 /** Run-length encodes one row of tile codes. */
