@@ -182,7 +182,10 @@ export class Input {
   }
 
   retreat(): void {
-    this.report(this.selectedOwn().filter(notStructure).map((s) => issueRetreat(this.world, s)), 'retreat');
+    // Tanks cannot retreat; in a mixed group only the soldiers fall back.
+    const units = this.selectedOwn().filter(notStructure);
+    const soldiers = units.filter((s) => s.def.kind !== 'vehicle');
+    this.report((soldiers.length > 0 ? soldiers : units).map((s) => issueRetreat(this.world, s)), 'retreat');
   }
 
   /**
