@@ -115,7 +115,7 @@ export interface Construction {
   id: number;
   team: TeamId;
   buildId: string;
-  /** The engineer squad doing the work; if it takes another order the job is cancelled. */
+  /** The engineer squad that started the job. Others may help; once nobody works on it, it is cancelled. */
   ownerId: number;
   tiles: { tx: number; ty: number; progress: number; done: boolean }[];
 }
