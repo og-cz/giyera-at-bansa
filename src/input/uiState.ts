@@ -7,6 +7,9 @@ export type Mode =
   | { kind: 'setup' }
   | { kind: 'build'; buildId: string };
 
+/** Something on the ground that was clicked to see its info: a defense tile, a construction job or one of our mines. */
+export type Inspect = { kind: 'defense'; tx: number; ty: number } | { kind: 'construction'; id: number } | { kind: 'mine'; id: number };
+
 /** Presentation-side state shared by input, renderer and HUD. Never read by the simulation. */
 export interface UIState {
   selected: Set<number>;
@@ -19,6 +22,8 @@ export interface UIState {
   faceDrag: FaceDrag | null;
   /** Start of a defense line being dragged out in build mode (world point). */
   buildFrom: Vec2 | null;
+  /** Clicked defense, construction or mine shown on the unit card (only while no unit is selected). */
+  inspect: Inspect | null;
 }
 
 export interface FaceDrag {
@@ -42,5 +47,6 @@ export function createUIState(): UIState {
     groups: new Map(),
     faceDrag: null,
     buildFrom: null,
+    inspect: null,
   };
 }
