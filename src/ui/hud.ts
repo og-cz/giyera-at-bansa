@@ -20,6 +20,9 @@ import { el, formatTime } from './dom';
 import { icon, unitIcon } from './icons';
 import type { Minimap } from './minimap';
 
+/** "Pangkat Luna · Rifle Squad", or just the unit type when it has no call name. */
+const titleOf = (sq: Squad): string => (sq.callsign ? `${sq.callsign} · ${sq.def.name}` : sq.def.name);
+
 /** Icon for a unit (its role, or what a structure is). */
 const glyphOf = (def: UnitDef): SVGSVGElement => icon(unitIcon(def));
 
@@ -642,6 +645,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       'button',
       { class: 'roster-card' },
       glyphOf(sq.def),
+      el('span', { class: 'rc-name', text: sq.shortName || sq.def.name }),
       el('span', { class: 'rc-group' }),
       el('span', { class: 'rc-state' }),
       el('span', { class: 'rc-count' }),
@@ -654,7 +658,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       this.input.select([sq.id], e.shiftKey);
     });
     card.addEventListener('dblclick', () => this.input.centerOnSelection());
-    this.tip(card, () => ({ title: sq.def.name, body: this.statusLine(sq) }));
+    this.tip(card, () => ({ title: titleOf(sq), body: this.statusLine(sq) }));
     return card;
   }
 
@@ -788,7 +792,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     const card = el('button', { class: `mini t${sq.team}` }, glyphOf(sq.def), el('div', { class: 'hp' }, fill));
     if (sq.suppState !== 'normal') card.classList.add(sq.suppState);
     card.addEventListener('mousedown', (e) => this.input.select([sq.id], e.shiftKey));
-    this.tip(card, () => ({ title: sq.def.name, body: this.statusLine(sq) }));
+    this.tip(card, () => ({ title: titleOf(sq), body: this.statusLine(sq) }));
     return card;
   }
 
@@ -819,7 +823,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         }))
       : null;
     const portrait = el('div', { class: 'portrait' }, icon(unitIcon(sq.def), 'ico portrait-icon'), el('span', { class: 'portrait-vet', text: '★'.repeat(sq.vet) }));
-    this.tip(portrait, () => ({ title: sq.def.name, body: sq.def.description, strong: sq.def.strongVs, weak: sq.def.weakVs }));
+    this.tip(portrait, () => ({ title: titleOf(sq), body: sq.def.description, strong: sq.def.strongVs, weak: sq.def.weakVs }));
     return el(
       'div',
       { class: `portrait-card t${sq.team}` },
@@ -827,7 +831,8 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       el(
         'div',
         { class: 'portrait-text' },
-        el('div', { class: 'portrait-name', text: sq.def.name + (enemy ? ' · enemy' : '') }),
+        el('div', { class: 'portrait-name', text: sq.callsign || sq.def.name }),
+        el('div', { class: 'portrait-type', text: (sq.callsign ? sq.def.name : this.world.teams[sq.team].faction.name) + (enemy ? ' · enemy' : '') }),
         el('div', { class: 'hpbar big' }, fill),
         ...(pips ? [pips] : []),
         el('div', { class: 'chips' }, ...chips.map(([text, tone]) => el('span', { class: `chip ${tone}`, text }))),
