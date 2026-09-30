@@ -925,3 +925,35 @@ button:disabled {
   .roster { width: 170px; }
   .tickets .bar { width: 100px; }
 }
+
+/* Volume sliders in the pause menu */
+.volume {
+  margin: 0 0 12px;
+}
+
+.volume h2 {
+  margin: 0 0 6px;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.volume-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+  font-size: 13px;
+}
+
+.volume-row input {
+  accent-color: var(--accent);
+}
+
+.volume-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+}
