@@ -16,7 +16,6 @@ const RULES: [string, string][] = [
   ['Queue', 'The queue slots beside the orders show the selected unit’s own jobs: the HQ’s recruits (up to three), or a squad’s weapon upgrade and reinforcements. Roster cards at the top right show squads reinforcing (+) or upgrading (⇪). Click a slot to cancel that job; purchases are refunded.'],
   ['Theater of War', 'Defense: hold the marked point against every wave. Offensive: take the sectors in order before the clock runs out.'],
   ['Counters', 'No unit is simply the strongest. Machine guns beat infantry from the front but turn slowly, so flank them. Mortars break set-up guns but cannot hit close targets. Anti-tank squads kill tanks but lose to infantry. Check Strong vs / Weak vs on each unit.'],
-  ['About the factions', 'Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.'],
 ];
 
 export function showHowToPlay(layer: HTMLElement, onBack: () => void): void {
