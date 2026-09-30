@@ -4,7 +4,7 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.5.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.5.1 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -159,6 +159,11 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.5.1**
+- Tighter, more focused maps: every town and mission map is zoomed in (houses are two or three tiles across) and cropped around the town, close to the size of the original battlefields.
+- The towns look fought over: shell craters in clusters along the front, sandbag lines dug in around the capture points, hedgerows between the paddies and ruined houses.
+- Mission objectives, spawns and starting positions re-placed for the new layouts.
 
 **0.5.0**
 - **Thirteen new Luzon town maps** for skirmish: Calumpit, Plaridel, Pilar, Orani, Porac, Abucay, San Fernando, Dinalupihan, Hermosa, Guagua, Lingayen, Baliuag and Lubao. River towns with bridges, coastal towns, jungle villages, farmland and a big town, built from Watabou's Village Generator.
