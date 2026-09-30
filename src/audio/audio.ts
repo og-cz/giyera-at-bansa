@@ -14,6 +14,23 @@ export type Channel = 'master' | 'music' | 'effects';
 const MAX_VOICES = 32;
 const STORAGE_KEY = 'tagakomando.volume';
 const FADE_SECONDS = 1.5;
+/**
+ * Music loops by crossfading into a second copy of the track shortly before the
+ * end, so a track that fades out (or ends mid-phrase) never cuts or jumps.
+ */
+const LOOP_CROSSFADE = 4;
+/** Where a track's music really ends: the menu theme closes on a long fade. */
+const TRACK_END_TRIM: Record<Track, number> = { menu: 3, battle: 0 };
+
+/** One music track: two copies of the same file take turns so it can loop with a crossfade. */
+interface MusicTrack {
+  copies: [HTMLAudioElement, HTMLAudioElement];
+  current: 0 | 1;
+  /** Track loudness 0..1: fades when switching between tracks. */
+  level: number;
+  /** When the crossfade into the other copy started (seconds, performance clock), or null. */
+  crossingSince: number | null;
+}
 
 export interface Loop {
   set(gain: number, pan: number, rate: number): void;
@@ -29,9 +46,9 @@ class AudioSystem {
   /** Clips started so far (for checking in development). */
   played = 0;
   private readonly volume: Record<Channel, number> = { master: 0.8, music: 0.5, effects: 0.8 };
-  private readonly music = new Map<Track, HTMLAudioElement>();
+  private readonly music = new Map<Track, MusicTrack>();
   private wanted: Track | null = null;
-  private fadeTimer = 0;
+  private musicTimer = 0;
 
   constructor() {
     try {
@@ -97,7 +114,6 @@ class AudioSystem {
 
   private applyVolume(): void {
     if (this.effects) this.effects.gain.value = this.volume.master * this.volume.effects;
-    for (const [track, el] of this.music) if (track === this.wanted) el.volume = this.musicLevel();
   }
 
   private musicLevel(): number {
@@ -162,26 +178,57 @@ class AudioSystem {
     this.wanted = track;
     if (!this.ctx) return;
     if (track && !this.music.has(track)) {
-      const el = new Audio(`audio/${track}.ogg`);
-      el.loop = true;
-      el.volume = 0;
-      this.music.set(track, el);
+      const copy = () => {
+        const el = new Audio(`audio/${track}.ogg`);
+        el.preload = 'auto';
+        el.volume = 0;
+        return el;
+      };
+      this.music.set(track, { copies: [copy(), copy()], current: 0, level: 0, crossingSince: null });
     }
-    const target = track ? this.music.get(track)! : null;
-    if (target && target.paused) void target.play().catch(() => {});
-    window.clearInterval(this.fadeTimer);
+    const t = track ? this.music.get(track)! : null;
+    if (t && t.copies[t.current].paused) void t.copies[t.current].play().catch(() => {});
+    if (!this.musicTimer) this.musicTimer = window.setInterval(() => this.tickMusic(), 50);
+  }
+
+  /** Fades between tracks and loops each one by crossfading its two copies. */
+  private tickMusic(): void {
+    const now = performance.now() / 1000;
     const step = 0.05 / FADE_SECONDS;
-    this.fadeTimer = window.setInterval(() => {
-      let busy = false;
-      for (const [t, el] of this.music) {
-        const goal = t === this.wanted ? this.musicLevel() : 0;
-        const next = el.volume + Math.sign(goal - el.volume) * Math.min(step, Math.abs(goal - el.volume));
-        el.volume = Math.min(1, Math.max(0, next));
-        if (Math.abs(el.volume - goal) > 0.001) busy = true;
-        else if (goal === 0 && !el.paused) el.pause();
+    let active = false;
+    for (const [name, t] of this.music) {
+      const goal = name === this.wanted ? 1 : 0;
+      t.level += Math.sign(goal - t.level) * Math.min(step, Math.abs(goal - t.level));
+      const cur = t.copies[t.current];
+      const next = t.copies[1 - t.current];
+      if (t.level <= 0.001 && goal === 0) {
+        for (const c of t.copies) if (!c.paused) c.pause();
+        t.crossingSince = null;
+        continue;
       }
-      if (!busy) window.clearInterval(this.fadeTimer);
-    }, 50);
+      active = true;
+      // Start the second copy a few seconds before the first runs out.
+      const end = (Number.isFinite(cur.duration) ? cur.duration : Infinity) - TRACK_END_TRIM[name];
+      if (t.crossingSince === null && !cur.paused && cur.currentTime >= end - LOOP_CROSSFADE) {
+        next.currentTime = 0;
+        void next.play().catch(() => {});
+        t.crossingSince = now;
+      }
+      const x = t.crossingSince === null ? 0 : Math.min(1, (now - t.crossingSince) / LOOP_CROSSFADE);
+      const base = this.musicLevel() * t.level;
+      cur.volume = Math.max(0, Math.min(1, base * Math.cos((x * Math.PI) / 2)));
+      next.volume = Math.max(0, Math.min(1, base * Math.sin((x * Math.PI) / 2)));
+      if (x >= 1) {
+        cur.pause();
+        cur.currentTime = 0;
+        t.current = t.current === 0 ? 1 : 0;
+        t.crossingSince = null;
+      }
+    }
+    if (!active && !this.wanted) {
+      window.clearInterval(this.musicTimer);
+      this.musicTimer = 0;
+    }
   }
 }
 
