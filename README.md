@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.5 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.6 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -165,6 +165,10 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 ## Changelog
 
+**0.6.6**
+- New battle music: a fully orchestral war theme (strings, brass and war drums) replaces the old battle track.
+- Unit voices are taken out for now; units answer with field sounds again.
+
 **0.6.5**
 - **Unit voices:** squads answer in Tagalog (Hukbong Maharlika) or Japanese (Imperial Army) when selected, ordered or sent back, and tank crews have lines of their own.
 - **New HUD:** clear icons instead of text. Orders are square icon buttons with the hotkey in the corner; names, costs and details are in the tooltips. The selected unit shows a portrait, health, one pip per soldier and a few short status tags. Resources sit at the top right with the army as icon cards below them, and units on the map carry small icon plates instead of letters.
@@ -277,8 +281,7 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Town maps: generated with Watabou's **Village Generator** (https://watabou.itch.io/village-generator) and **Medieval Fantasy City Generator** (https://watabou.itch.io/medieval-fantasy-city-generator) and converted into battlefields. Watabou's maps are free to use; thank you.
 - Sound effects (all CC0, from OpenGameArt): **The Free Firearm Sound Library** (gunfire), "25 CC0 bang / firework SFX" by rubberduck, "Explosions" by EZduzziteh, "Cannon fire" and "Cannon hit" by Thimras, "Generator (loop)" by YCbCr, "Rocket launch" by qubodup.
 - Interface and unit sounds (CC0, from OpenGameArt): "Typewriter sounds" by Cassie-OrbitGames, "Crank movie telephone ringtone" by cyberdyne, "Mechanical Sounds" by BMacZero, "Equipment Clicks II" and "equipment clicks III" by LFA, "Car engine start 01" by looneybits.
-- Unit voices: made with Microsoft neural text-to-speech (Filipino voice Angelo, Japanese voice Keita) and given a field-radio sound; placeholders until they are recorded. To replace them, drop recordings into `src/audio/sfx` with the same names (`voice_<faction>_<select|order|retreat>_<n>.ogg`, tank crews `voice_<faction>_tank_<select|order>_<n>.ogg`).
-- Music (CC0, from OpenGameArt): "Laments of the War" by Cethiel (menus), "QaziJamJam (orchestral battle theme)" by Emma_MA (battle).
+- Music: "Laments of the War" by Cethiel (menus, CC0, from OpenGameArt) and "Five Armies" by Kevin MacLeod (incompetech.com) for battle, licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Both credits ship with the game in `licenses/Music-credits.txt`.
 - Display font: **Quiapo Free** by Aaron Amar (http://be.net/aaronamar), used under the SIL Open Font License 1.1. The licence text ships with the game in `licenses/Quiapo-OFL.txt`.
 
 ## Troubleshooting
