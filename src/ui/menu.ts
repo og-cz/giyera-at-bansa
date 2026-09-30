@@ -20,7 +20,7 @@ export const CONTROLS: [string, string][] = [
   ['Space', 'Tap: centre camera on selection · Hold + left-drag: grab and move the map'],
   ['Arrows, screen edge, middle-drag', 'Pan camera · Mouse wheel zooms'],
   ['F11 / Alt+Enter', 'Fullscreen (desktop app)'],
-  ['Esc / P', 'Pause (surrender from the pause menu)'],
+  ['Esc / P', 'Pause (volume and surrender are in the pause menu)'],
 ];
 
 export function controlsTable(): HTMLElement {
