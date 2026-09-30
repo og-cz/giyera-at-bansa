@@ -104,5 +104,35 @@ function play(setup: MatchSetup, origin: Origin): void {
 }
 
 installUiSounds();
-cinematic(true);
-playIntro(layer, mainMenu);
+// Development only: ?battle=<map> starts a skirmish straight away (for quick checks).
+// &spawn=<unit id> adds one of our units by the HQ, &select=<unit id> selects our first
+// unit of that type, &edge=1 zooms out to the map corner.
+const devBattle = import.meta.env.DEV ? new URLSearchParams(location.search).get('battle') : null;
+if (devBattle) {
+  play({ faction: 'usaffe', enemyFaction: 'ija', map: devBattle, difficulty: 'normal', win: 'points' }, { kind: 'skirmish' });
+  window.setTimeout(devSetup, 1200);
+} else {
+  cinematic(true);
+  playIntro(layer, mainMenu);
+}
+
+interface DevGame {
+  world: import('./sim/world').World;
+  input: { select(ids: number[]): void };
+  camera: { zoom: number; minZoom: number; centerOn(p: { x: number; y: number }): void };
+}
+
+function devSetup(): void {
+  const params = new URLSearchParams(location.search);
+  const game = (window as unknown as { game: DevGame }).game;
+  const extra = params.get('spawn');
+  const hq = game.world.hqOf(0);
+  if (extra && hq) game.world.spawn(0, extra, { x: hq.pos.x + 70, y: hq.pos.y + 50 });
+  const pick = params.get('select');
+  const sq = pick ? game.world.squads.find((s) => s.team === 0 && s.def.id === pick) : undefined;
+  if (sq) game.input.select([sq.id]);
+  if (params.get('edge')) {
+    game.camera.zoom = game.camera.minZoom;
+    game.camera.centerOn({ x: 0, y: 0 });
+  }
+}
