@@ -69,6 +69,10 @@ function movementGoal(world: World, sq: Squad): Vec2 | null {
       return workSpot(world, sq, c);
     }
     case 'repair': {
+      if (o.targetId === undefined && o.dest) {
+        // A defense tile: work from beside it.
+        return dist(sq.pos, o.dest) <= WORK_RANGE - 4 ? null : world.map.nearestPassable(o.dest, 'infantry');
+      }
       const t = world.get(o.targetId);
       if (!t || t.dead) {
         finishOrder(sq);
