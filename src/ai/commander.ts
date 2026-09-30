@@ -1,5 +1,6 @@
 import { ABILITIES } from '../data/abilities';
-import { LOGISTICS } from '../data/balance';
+import { BUILDABLES } from '../data/buildables';
+import { LOGISTICS, TILE } from '../data/balance';
 import type { TeamId, UnitRole } from '../data/types';
 import { UNITS } from '../data/units';
 import { UPGRADES } from '../data/upgrades';
@@ -8,6 +9,7 @@ import { dist, lerpVec, type Vec2 } from '../core/vec';
 import {
   issueAbility,
   issueAttackMove,
+  issueBuild,
   issueMove,
   issueReinforce,
   issueRepair,
@@ -57,7 +59,7 @@ export class AICommander {
     const hq = world.hqOf(this.team);
     if (!hq || hq.production.length > 0) return;
     const t = world.teams[this.team];
-    const counts: Record<UnitRole, number> = { hq: 0, line: 0, mg: 0, mortar: 0, at: 0, tank: 0, engineer: 0 };
+    const counts: Record<UnitRole, number> = { hq: 0, line: 0, mg: 0, mortar: 0, at: 0, tank: 0, engineer: 0, fort: 0 };
     for (const sq of own) counts[sq.def.role]++;
     const unitFor = (role: UnitRole) => t.faction.roster.find((id) => UNITS[id].role === role);
     const threats = this.seenVehicles.size;
@@ -121,6 +123,7 @@ export class AICommander {
     if (atBase && healthFraction(sq) < 0.8 && sq.order.kind === 'idle' && world.time - sq.lastHurt > 5) return;
 
     if (sq.def.canRepair && this.repair(world, sq, own)) return;
+    if (sq.def.builds.length > 0 && this.fortify(world, sq)) return;
     this.useAbilities(world, sq);
     if (sq.order.kind === 'ability') return;
 
@@ -158,6 +161,28 @@ export class AICommander {
     if (candidates.length === 0) return false;
     candidates.sort((a, b) => healthFraction(a) - healthFraction(b));
     return issueRepair(world, sq, candidates[0]).ok;
+  }
+
+  /** Engineers dig in at a quiet point we hold: an MG nest first, a bunker once munitions are short. */
+  private fortify(world: World, sq: Squad): boolean {
+    if (sq.order.kind === 'build') return true;
+    // Idle, or passing one of our quiet points on the way somewhere.
+    if (sq.order.kind !== 'idle' && sq.order.kind !== 'attackMove') return false;
+    const res = world.teams[this.team].resources;
+    const enemyBase = world.teams[this.team === 0 ? 1 : 0].base;
+    for (const p of world.points) {
+      if (p.owner !== this.team || this.threatened(world, p) || dist(sq.pos, p.pos) > 240) continue;
+      if (world.squads.some((s) => !s.dead && s.team === this.team && s.def.role === 'fort' && dist(s.pos, p.pos) < 200)) continue;
+      const id = sq.def.builds.find((b) => b === 'mg_nest' && res.munitions >= 60) ?? sq.def.builds.find((b) => b === 'bunker');
+      if (!id || !canAfford(res, BUILDABLES[id].cost)) return false;
+      // In front of the point, facing the enemy's side of the map.
+      const ahead = Math.atan2(enemyBase.y - p.pos.y, enemyBase.x - p.pos.x);
+      for (const [d, turn] of [[3, 0], [3, 0.6], [3, -0.6], [2, 1.2], [2, -1.2]]) {
+        const spot = { x: p.pos.x + Math.cos(ahead + turn) * TILE * d, y: p.pos.y + Math.sin(ahead + turn) * TILE * d };
+        if (issueBuild(world, sq, id, spot, spot).ok) return true;
+      }
+    }
+    return false;
   }
 
   private shouldRetreat(sq: Squad): boolean {
