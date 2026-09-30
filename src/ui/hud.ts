@@ -18,9 +18,9 @@ import type { UIState } from '../input/uiState';
 import { el, formatTime } from './dom';
 import type { Minimap } from './minimap';
 
-const DEFENSE_ICON: Record<string, string> = { sandbags: '▤', wire: '⌇', tanktrap: '✕', mine: '●' };
+const DEFENSE_ICON: Record<string, string> = { sandbags: '▤', wire: '⌇', tanktrap: '✕', mine: '●', mg_nest: '◉', bunker: '▣', aid_tent: '✚' };
 
-const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN' };
+const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN', fort: 'F' };
 
 interface Tip {
   title: string;
@@ -37,6 +37,8 @@ interface GridButton {
   refresh(own: Squad[]): void;
   /** Available with several units selected (move, stop, retreat); everything else needs one unit. */
   common?: boolean;
+  /** Buttons on the engineers' Build submenu page instead of the main orders. */
+  buildPage?: boolean;
 }
 
 /**
@@ -63,6 +65,7 @@ export class Hud {
   private readonly buildGrid: HTMLElement;
   private readonly orders: GridButton[] = [];
   private readonly builds: { id: string; node: HTMLButtonElement }[] = [];
+  private rallyNode: HTMLButtonElement | null = null;
   /** The HQ's production queue: three slots beside the orders. */
   private readonly queueSlots: HTMLElement[] = [];
   private readonly toasts: HTMLElement;
@@ -133,6 +136,7 @@ export class Hud {
     this.buildDefenseButtons();
     this.buildUpgradeButtons();
     for (const id of team.faction.roster) this.buildButton(id);
+    this.rallyButton();
     const queue = el('div', { class: 'panel queue-panel' });
     for (let i = 0; i < ECONOMY.maxQueue; i++) queue.append(this.queueSlot(i));
     this.cardTitle = el('div', { class: 'panel-title' });
@@ -279,27 +283,36 @@ export class Hud {
     }
   }
 
-  /** Engineer construction buttons, shown only when a selected squad can build them. */
+  /** The Build button, and the engineer construction buttons on its submenu page. */
   private buildDefenseButtons(): void {
-    const icons: Record<string, string> = { sandbags: '▤', wire: '⌇', tanktrap: '✕', mine: '●' };
+    const builders = (own: Squad[]) => own.some((s) => s.def.builds.length > 0);
+    const open = this.gridButton(this.orderGrid, '⌂', 'Build', 'Q', () => this.input.toggleBuildMenu());
+    this.tip(open, () => ({ title: 'Build', body: 'Open the engineers’ construction menu: sandbags, barbed wire, tank traps, mines, MG nests, bunkers and aid tents.', key: 'Q' }));
+    this.orders.push({ node: open, refresh: (own) => (open.style.display = builders(own) ? '' : 'none') });
     for (const id of BUILDABLE_IDS) {
       const def = BUILDABLES[id];
-      const node = this.gridButton(this.orderGrid, icons[id] ?? '◆', def.name, def.hotkey, () => this.input.buildMode(id));
+      const node = this.gridButton(this.orderGrid, DEFENSE_ICON[id] ?? '◆', def.name, def.hotkey, () => this.input.buildMode(id));
+      const how = def.shape === 'line' ? `Click and drag to lay a line of up to ${def.maxLength} tiles. Cost is per tile.` : 'Click to place.';
       this.tip(node, () => ({
         title: def.name,
-        body: `${def.description}\n\n${def.shape === 'line' ? `Click and drag to lay a line of up to ${def.maxLength} tiles. Cost is per tile.` : 'Click to place.'} ${def.buildTime}s of work each.`,
+        body: `${def.description}\n\n${how} ${def.buildTime}s of work${def.shape === 'line' ? ' each' : ''} for one squad; more engineers build faster.`,
         key: def.hotkey,
         cost: def.cost,
       }));
       this.orders.push({
+        buildPage: true,
         node,
         refresh: (own) => {
           const can = own.some((s) => s.def.builds.includes(id));
           node.style.display = can ? '' : 'none';
+          node.disabled = !canAfford(this.world.teams[this.player].resources, def.cost);
           node.classList.toggle('active', this.ui.mode.kind === 'build' && this.ui.mode.buildId === id);
         },
       });
     }
+    const back = this.gridButton(this.orderGrid, '↶', 'Back', 'Esc', () => (this.ui.buildMenu = false));
+    this.tip(back, () => ({ title: 'Back', body: 'Close the Build menu.', key: 'Esc' }));
+    this.orders.push({ buildPage: true, node: back, refresh: () => {} });
   }
 
   /** Weapon upgrade buttons (T, Y), shown when a selected squad can still take one. */
@@ -340,6 +353,19 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         },
       });
     }
+  }
+
+  /** HQ: set the rally point where new units go. */
+  private rallyButton(): void {
+    const node = this.gridButton(this.buildGrid, '⚑', 'Rally Point', '', () => {
+      if (!this.input.selectedOwn().some((s) => s.def.role === 'hq')) this.input.selectHq();
+      this.input.rallyMode();
+    });
+    this.tip(node, () => ({
+      title: 'Rally Point',
+      body: 'Click, then click the map: new units walk to the flag once recruited. With the HQ selected you can also right-click the map to move it.',
+    }));
+    this.rallyNode = node;
   }
 
   private buildButton(id: string): void {
@@ -394,11 +420,13 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
 
     const own = this.input.selectedOwn();
     const units = own.filter((s) => s.def.kind !== 'structure');
-    // Units selected → their orders; HQ or nothing selected → the build menu.
-    const building = units.length === 0;
-    this.orderGrid.style.display = building ? 'none' : '';
+    // Units selected → their orders; HQ or nothing selected → the recruit menu; a nest, bunker or tent → nothing to order.
+    const fort = units.length === 0 ? own.find((s) => s.def.role === 'fort') : undefined;
+    const building = units.length === 0 && !fort;
+    if (this.ui.buildMenu && !own.some((s) => s.def.builds.length > 0)) this.ui.buildMenu = false;
+    this.orderGrid.style.display = building || fort ? 'none' : '';
     this.buildGrid.style.display = building ? '' : 'none';
-    this.cardTitle.textContent = building ? `${team.faction.name} Headquarters` : 'Orders';
+    this.cardTitle.textContent = fort ? fort.def.name : building ? `${team.faction.name} Headquarters` : this.ui.buildMenu ? 'Build' : 'Orders';
     // One unit type selected (one squad or several of the same kind): its abilities show; a mixed group only gets the common orders.
     const kinds = new Set(own.filter((s) => s.def.kind !== 'structure').map((s) => s.def.id));
     const single = kinds.size <= 1;
@@ -406,8 +434,10 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       c.node.style.display = '';
       c.refresh(own);
       if (!single && !c.common) c.node.style.display = 'none';
+      if (!!c.buildPage !== this.ui.buildMenu) c.node.style.display = 'none';
     }
     for (const b of this.builds) b.node.disabled = !canAfford(r, UNITS[b.id].cost);
+    this.rallyNode?.classList.toggle('active', this.ui.mode.kind === 'rally');
     this.renderQueue();
     this.renderRoster();
     this.renderUnitPanel();
