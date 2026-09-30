@@ -228,14 +228,11 @@ export class Input {
   private placeBuild(buildId: string, from: Vec2, to: Vec2): void {
     const builders = this.selectedOwn().filter((s) => s.def.builds.includes(buildId));
     if (builders.length === 0) return;
+    // One squad takes the job: a free one if there is one, the nearest otherwise.
+    // Others only help when ordered to (right-click the unfinished job).
     builders.sort((a, b) => dist(a.pos, from) - dist(b.pos, from));
-    // Shift-placing a series hands each job to a squad that is still free; otherwise every selected squad pitches in.
-    const queueing = this.keys.has('shift');
-    const lead = (queueing && builders.find((s) => s.order.kind !== 'build')) || builders[0];
-    const result = issueBuild(this.world, lead, buildId, from, to);
-    this.report([result]);
-    if (!result.ok || queueing || lead.order.kind !== 'build') return;
-    for (const s of builders) if (s !== lead) issueHelpBuild(this.world, s, lead.order.targetId!);
+    const lead = builders.find((s) => s.order.kind !== 'build') ?? builders[0];
+    this.report([issueBuild(this.world, lead, buildId, from, to)]);
   }
 
   abilityMode(hotkey: string): void {
