@@ -15,6 +15,7 @@ const RULES: [string, string][] = [
   ['Several units', 'Several units of the same type share their abilities, upgrades and special orders. A mixed group can only move, attack-move, stop and retreat; select one type to use its abilities.'],
   ['Queue', 'The queue slots beside the orders show the selected unit’s own jobs: the HQ’s recruits (up to three), or a squad’s weapon upgrade and reinforcements. Roster cards at the top right show squads reinforcing (+) or upgrading (⇪). Click a slot to cancel that job; purchases are refunded.'],
   ['Rally point', 'Select the HQ and right-click the map, or press Rally Point: a flag marks where new units walk once recruited.'],
+  ['Campaign', 'Nine missions, each fought in two parts. Story scenes play before each part: Next (Enter or Space) reads on, Skip (Esc) goes straight to the briefing. Win Part 1 to unlock Part 2, and both to unlock the next mission.'],
   ['Theater of War', 'Defense: hold the marked point against every wave. Offensive: take the sectors in order before the clock runs out.'],
   ['Counters', 'No unit is simply the strongest. Machine guns beat infantry from the front but turn slowly, so flank them. Mortars break set-up guns but cannot hit close targets. Anti-tank squads kill tanks but lose to infantry. Check Strong vs / Weak vs on each unit.'],
 ];
