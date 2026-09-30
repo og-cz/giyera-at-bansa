@@ -152,6 +152,17 @@ export function issueBuild(world: World, sq: Squad, buildId: string, from: Vec2,
   return OK;
 }
 
+/** Engineers: join another squad's construction job and speed it up. */
+export function issueHelpBuild(world: World, sq: Squad, constructionId: number): CommandResult {
+  const c = world.constructions.find((k) => k.id === constructionId);
+  if (!commandable(sq) || !c || !sq.def.builds.includes(c.buildId)) return fail('Only engineers can help build');
+  if (sq.retreating) return RETREATING;
+  if (c.team !== sq.team) return fail('Not our construction');
+  sq.channel = null;
+  setOrder(sq, { kind: 'build', targetId: c.id });
+  return OK;
+}
+
 /** Engineers: repair a friendly vehicle or structure. */
 export function issueRepair(_world: World, sq: Squad, target: Squad): CommandResult {
   if (!commandable(sq) || !sq.def.canRepair) return fail('Only engineers can repair');
