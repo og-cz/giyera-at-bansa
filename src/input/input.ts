@@ -8,6 +8,7 @@ import {
   issueAttack,
   issueAttackMove,
   issueBuild,
+  issueHelpBuild,
   issueMove,
   issueReinforce,
   issueRepair,
@@ -18,6 +19,7 @@ import {
   type CommandResult,
 } from '../sim/commands';
 import type { Squad } from '../sim/entities';
+import { constructionAt } from '../sim/systems/engineering';
 import type { World } from '../sim/world';
 import type { Camera } from '../render/camera';
 import type { UIState } from './uiState';
@@ -223,7 +225,13 @@ export class Input {
     const builders = this.selectedOwn().filter((s) => s.def.builds.includes(buildId));
     if (builders.length === 0) return;
     builders.sort((a, b) => dist(a.pos, from) - dist(b.pos, from));
-    this.report([issueBuild(this.world, builders[0], buildId, from, to)]);
+    // Shift-placing a series hands each job to a squad that is still free; otherwise every selected squad pitches in.
+    const queueing = this.keys.has('shift');
+    const lead = (queueing && builders.find((s) => s.order.kind !== 'build')) || builders[0];
+    const result = issueBuild(this.world, lead, buildId, from, to);
+    this.report([result]);
+    if (!result.ok || queueing || lead.order.kind !== 'build') return;
+    for (const s of builders) if (s !== lead) issueHelpBuild(this.world, s, lead.order.targetId!);
   }
 
   abilityMode(hotkey: string): void {
@@ -281,6 +289,16 @@ export class Input {
     const target = this.pick(p);
     if (target && target.team !== this.player) {
       this.report(own.filter(notStructure).map((s) => issueAttack(this.world, s, target)));
+      return;
+    }
+    // Right-click one of our unfinished constructions: engineers join the work.
+    const job = target ? undefined : constructionAt(this.world, this.player, p);
+    const helpers = job ? own.filter((s) => s.def.builds.includes(job.buildId)) : [];
+    if (job && helpers.length > 0) {
+      this.report(helpers.map((s) => issueHelpBuild(this.world, s, job.id)));
+      const others = own.filter((s) => notStructure(s) && !helpers.includes(s));
+      const spots = this.formationTargets(others, p);
+      for (const s of others) issueMove(this.world, s, spots.get(s.id)!, shift);
       return;
     }
     const hull = target?.models.find((m) => m.alive);
