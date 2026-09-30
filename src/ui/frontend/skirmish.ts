@@ -52,10 +52,18 @@ export function showSkirmish(layer: HTMLElement, onStart: (setup: MatchSetup) =>
     const f = FACTIONS[id];
     return el('button', { class: 'card' }, el('h3', { text: f.name }), el('div', { class: 'sub', text: f.longName }), el('p', { text: f.description }));
   });
-  const maps = pick(MAP_IDS, () => map, (v) => (map = v), (id) => {
+  // Many battlefields: a grid of thumbnails, with the chosen one described underneath.
+  const mapInfo = el('p', { class: 'map-info' });
+  const describe = () => (mapInfo.textContent = `${MAPS[map].name}: ${MAPS[map].description}`);
+  const maps = pick(MAP_IDS, () => map, (v) => {
+    map = v;
+    describe();
+  }, (id) => {
     const m = MAPS[id];
-    return el('button', { class: 'card map-card' }, mapThumbnail(m), el('div', {}, el('h3', { text: m.name }), el('p', { text: m.description })));
+    return el('button', { class: 'card map-tile', title: m.description }, mapThumbnail(m), el('h3', { text: m.name }));
   });
+  maps.classList.add('map-grid');
+  describe();
 
   const start = el('button', { class: 'deploy', text: 'Deploy' });
   start.addEventListener('click', () => {
@@ -77,6 +85,7 @@ export function showSkirmish(layer: HTMLElement, onStart: (setup: MatchSetup) =>
       factions,
       el('h2', { text: 'Battlefield' }),
       maps,
+      mapInfo,
       el('h2', { text: 'Victory condition' }),
       pick(
         WIN_OPTIONS.map(([id]) => id),
