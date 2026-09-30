@@ -4,7 +4,7 @@ Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.4.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.4.1 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -158,11 +158,11 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 ## Changelog
 
-**0.4.0**
+**0.4.1** (0.4.0 was not released; everything since 0.3.5 is here)
 - **Engineers** (Combat Engineers / Kohei Engineers) build **sandbags**, **barbed wire**, **tank traps** and **mines** (Z / X / C / V; drag to lay a line). An abandoned job is refunded.
 - Engineers **repair** tanks, the HQ and damaged defenses: right-click the damaged one.
 - **Defenses have health.** Bullets can't hurt them; explosives wear them down (sandbags take about six mortar hits, tank traps far more, wire much less). Click one to see its health.
-- Several engineer squads can **build together**: select them all, or right-click an unfinished job to join it.
+- Several engineer squads can **build together**: select more engineers and right-click an unfinished job to send them to help.
 - The HQ **production queue** is three slots beside the orders; click one to cancel it with a full refund.
 - Reinforcements arrive more slowly (one soldier every 5.5 seconds).
 - **Weapon upgrades** for rifle squads (T / Y): Bazooka or BAR for the Maharlika, Type 99 light MG or Type 97 AT rifle for the Imperial Army. One per squad; reinforcements replace the upgraded weapon first.
