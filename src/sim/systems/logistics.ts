@@ -35,10 +35,16 @@ export function addRecruit(world: World, sq: Squad): void {
   sq.models.push(m);
 }
 
+/** Call off every soldier still waiting to join and give the manpower back. */
+export function dropReinforcements(world: World, sq: Squad): void {
+  if (sq.reinforceQueued > 0) world.teams[sq.team].resources.manpower += reinforceCost(sq.def) * sq.reinforceQueued;
+  sq.reinforceQueued = 0;
+  sq.reinforcing = false;
+}
+
 export function updateLogistics(world: World, dt: number): void {
   for (const sq of world.squads) {
     if (sq.dead || sq.def.kind === 'structure') continue;
-    const team = world.teams[sq.team];
     const hq = world.hqOf(sq.team);
 
     const calm = world.time - sq.lastHurt > LOGISTICS.combatCooldown;
@@ -50,19 +56,18 @@ export function updateLogistics(world: World, dt: number): void {
 
     if (!sq.reinforcing) continue;
     if (aliveCount(sq) >= sq.def.models || sq.retreating || !canReinforceHere(world, sq)) {
-      sq.reinforcing = false;
+      // Full, retreating or out of supply: the soldiers still waiting are called off and refunded.
+      if (!sq.retreating && aliveCount(sq) < sq.def.models) {
+        world.emit({ type: 'notify', team: sq.team, text: `${sq.def.name}: reinforcements called off (out of supply)`, tone: 'bad' });
+      }
+      dropReinforcements(world, sq);
       continue;
     }
     sq.reinforceTimer -= dt;
     if (sq.reinforceTimer > 0) continue;
-    const cost = reinforceCost(sq.def);
-    if (team.resources.manpower < cost) {
-      sq.reinforcing = false;
-      world.emit({ type: 'notify', team: sq.team, text: 'Not enough manpower to reinforce', tone: 'bad' });
-      continue;
-    }
-    team.resources.manpower -= cost;
     addRecruit(world, sq);
+    sq.reinforceQueued--;
+    sq.reinforcing = sq.reinforceQueued > 0;
     sq.reinforceTimer = LOGISTICS.reinforceTime;
   }
 }
