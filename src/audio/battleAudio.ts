@@ -81,8 +81,11 @@ export class BattleAudio {
   acknowledge(kind: Acknowledgement, squads: readonly Squad[]): void {
     const lead = squads.find((s) => s.def.kind !== 'structure') ?? squads[0];
     if (!lead) return;
-    const voice = `voice_${this.world.teams[lead.team].faction.id}_${kind}`;
-    if (audio.has(voice)) {
+    const faction = this.world.teams[lead.team].faction.id;
+    // Tank crews have their own lines (voice_<faction>_tank_<kind>); everyone else shares the squad lines.
+    const crew = `voice_${faction}_tank_${kind}`;
+    const voice = lead.def.kind === 'vehicle' && audio.has(crew) ? crew : `voice_${faction}_${kind}`;
+    if (lead.def.kind !== 'structure' && audio.has(voice)) {
       audio.play(voice, 0.9, 0, 0.6);
       return;
     }
