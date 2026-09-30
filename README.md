@@ -2,8 +2,6 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-*Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
-
 Version 0.5.4 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
@@ -161,17 +159,17 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 ## Changelog
 
 **0.5.4**
-- Several units of the **same type** keep their shared abilities and special orders, like CoH2; only a mixed group is limited to attack-move, stop and retreat.
+- Several units of the **same type** keep their shared abilities and special orders; only a mixed group is limited to attack-move, stop and retreat.
 - The README shows the Taga Komando logo.
 
 **0.5.3**
 - **Repair order** for engineers (F): click it, then click the damaged tank, HQ or defense. Engineers do not fight while they repair or build.
-- With a **mixed group selected**, only the common orders show (attack-move, stop, retreat), like CoH2.
+- With a **mixed group selected**, only the common orders show (attack-move, stop, retreat).
 - **Surrender** from the pause menu ends the battle on the defeat screen.
 - The camera starts closer and zooms in further.
 
 **0.5.2**
-- Queues belong to units again, like CoH2: the queue slots show the selected unit's own jobs. Select the HQ (or nothing) for its recruits, or a squad for its upgrade and reinforcements. The HQ recruits up to three units at a time; squads upgrade and reinforce on their own.
+- Queues belong to units again: the queue slots show the selected unit's own jobs. Select the HQ (or nothing) for its recruits, or a squad for its upgrade and reinforcements. The HQ recruits up to three units at a time; squads upgrade and reinforce on their own.
 - Roster cards at the top right show a squad reinforcing (+, green bar) or upgrading (⇪, orange bar).
 
 **0.5.1**
