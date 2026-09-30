@@ -1,4 +1,5 @@
 import { TILE } from '../data/balance';
+import { decodeGridRow, GRID_LEGEND } from '../data/gridCodec';
 import { T, TERRAIN } from '../data/terrain';
 import type { MapDef, MapFeature, Mover, TerrainDef } from '../data/types';
 import { Rng } from '../core/rng';
@@ -156,6 +157,14 @@ export class GameMap {
         }
         break;
       }
+      case 'grid':
+        f.rows.forEach((row, y) => {
+          decodeGridRow(row).forEach((c, x) => {
+            const terrain = GRID_LEGEND[c];
+            if (terrain !== undefined) this.set(x, y, terrain);
+          });
+        });
+        break;
       case 'scatter': {
         const rng = new Rng(f.seed);
         for (let i = 0; i < f.count; i++) {
