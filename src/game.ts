@@ -78,6 +78,7 @@ export class Game {
       toast: (t) => this.hud.toast(t, 'bad'),
       togglePause: () => this.togglePause(),
       toggleHelp: () => this.toggleHelp(),
+      acknowledge: (kind, squads) => this.sound.acknowledge(kind, squads),
     });
     this.minimap = new Minimap(this.world, this.camera, PLAYER);
     this.hud = new Hud(layer, this.world, this.ui, this.input, PLAYER, this.minimap);
