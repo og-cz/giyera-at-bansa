@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.3 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.4 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -38,14 +38,19 @@ Version 0.6.3 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 Pick a mode from the main menu.
 
-**Campaign**: the defence and liberation of Luzon, played in order. Each mission unlocks the next.
+**Campaign**: the defence and liberation of Luzon, told through one company. Nine missions in four chapters, each fought in two parts, with story scenes before every part (skip them with Esc). Win Part 1 to unlock Part 2, and both to unlock the next mission.
 
-| # | Mission | Date | Type |
-| --- | --- | --- | --- |
-| 1 | Withdrawal to Bataan | December 1941 | Annihilation: destroy the enemy vanguard |
-| 2 | Layac Junction | 6 January 1942 | Defense: hold the stone bridge against 6 waves |
-| 3 | Mount Samat | April 1942 | Defense: hold the summit against 10 waves |
-| 4 | The Road to Manila | January 1945 | Offensive: take Route 3 town by town to the Calumpit bridge |
+| # | Chapter | Mission | Part 1 | Part 2 |
+| --- | --- | --- | --- | --- |
+| 1 | The Invasion | The Beaches of Lingayen | Stand at the Plaza (defense) | Break Contact (annihilation) |
+| 2 | The Invasion | Withdrawal to Bataan | The Calumpit Bridges (annihilation) | Plaridel Crossroads (points) |
+| 3 | The Invasion | Rearguard | The Walled City (defense) | The Last Bridge at Guagua (defense) |
+| 4 | The Invasion | The Door to Bataan | Delaying Action at Lubao (points) | Layac Junction (defense) |
+| 5 | Bataan | The Abucay Line | Hold the Line (defense) | Counterattack at Pilar (offensive) |
+| 6 | Bataan | The Fall of Bataan | Mount Samat (defense) | The Last Boats (defense) |
+| 7 | The Hills | Mga Gerilya | Raid on Porac (annihilation) | Ambush at Dinalupihan (points) |
+| 8 | Liberation | The Return | Back to Lingayen (offensive) | The Road to Manila (offensive) |
+| 9 | Liberation | San Fernando | Take the Town (offensive) | The Counterattack (defense) |
 
 **Theater of War**: four operations you can replay on any difficulty. Win on Easy, Normal and Hard for Bronze, Silver and Gold medals.
 
@@ -160,6 +165,12 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 ## Changelog
 
+**0.6.4**
+- **A much bigger campaign:** nine missions across four chapters (The Invasion, Bataan, The Hills, Liberation), from the Lingayen landings in 1941 to San Fernando in 1945. Every mission is fought in two parts, each on its own battlefield or with a new objective.
+- **Story:** each part opens with story scenes about one company and its people, and each mission ends with an aftermath. Press Next (or Enter / Space) to read on, or Skip (Esc) to go straight to the briefing. Scenes can carry voice-over files in `audio/story/`.
+- **New music:** orchestral war music for the menus and for battle.
+- Units no longer answer with a whistle or morse beeps; infantry answer with the rattle of their gear.
+
 **0.6.3**
 - **Build menu:** engineers get one Build button (**Q**) that opens their construction menu, so the order panel no longer overflows.
 - **New structures:** MG nest (a machine gun that fires all round), bunker (a sturdy machine gun post where nearby squads can reinforce and pick up upgrades) and aid tent (heals soldiers nearby out of combat). Click one to see its details; engineers repair them. The enemy builds them too.
@@ -260,8 +271,8 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 - Town maps: generated with Watabou's **Village Generator** (https://watabou.itch.io/village-generator) and **Medieval Fantasy City Generator** (https://watabou.itch.io/medieval-fantasy-city-generator) and converted into battlefields. Watabou's maps are free to use; thank you.
 - Sound effects (all CC0, from OpenGameArt): **The Free Firearm Sound Library** (gunfire), "25 CC0 bang / firework SFX" by rubberduck, "Explosions" by EZduzziteh, "Cannon fire" and "Cannon hit" by Thimras, "Generator (loop)" by YCbCr, "Rocket launch" by qubodup.
-- Interface and unit sounds (CC0, from OpenGameArt): "Typewriter sounds" by Cassie-OrbitGames, "Crank movie telephone ringtone" by cyberdyne, "Mechanical Sounds" by BMacZero, "Equipment Clicks II" and "equipment clicks III" by LFA, "Car engine start 01" by looneybits. Morse signals and the officer's whistle are generated.
-- Music (CC0, from OpenGameArt): "War Theme" by Spring Spring, "Determined Pursuit (epic orchestra loop)" by Emma_MA.
+- Interface and unit sounds (CC0, from OpenGameArt): "Typewriter sounds" by Cassie-OrbitGames, "Crank movie telephone ringtone" by cyberdyne, "Mechanical Sounds" by BMacZero, "Equipment Clicks II" and "equipment clicks III" by LFA, "Car engine start 01" by looneybits.
+- Music (CC0, from OpenGameArt): "Laments of the War" by Cethiel (menus), "QaziJamJam (orchestral battle theme)" by Emma_MA (battle).
 - Display font: **Quiapo Free** by Aaron Amar (http://be.net/aaronamar), used under the SIL Open Font License 1.1. The licence text ships with the game in `licenses/Quiapo-OFL.txt`.
 
 ## Troubleshooting
