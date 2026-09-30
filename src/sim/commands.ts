@@ -8,6 +8,7 @@ import { angleTo, type Vec2 } from '../core/vec';
 import { aliveCount, type Squad } from './entities';
 import { resetMovement, setOrder } from './orders';
 import { canAfford, pay, popUsed, refund } from './systems/economy';
+import { defenseAt } from './systems/defenses';
 import { planBuild } from './systems/engineering';
 import { canReinforceHere, reinforceCost } from './systems/logistics';
 import { startSetup, startTeardown } from './systems/setup';
@@ -186,6 +187,18 @@ export function issueUpgrade(world: World, sq: Squad, upgradeId: string): Comman
   if (!canAfford(res, def.cost)) return fail('Not enough munitions');
   pay(res, def.cost);
   sq.upgrading = { id: upgradeId, remaining: def.time };
+  return OK;
+}
+
+/** Engineers: patch up damaged sandbags, wire or tank traps. */
+export function issueRepairDefense(world: World, sq: Squad, tx: number, ty: number): CommandResult {
+  if (!commandable(sq) || !sq.def.canRepair) return fail('Only engineers can repair');
+  if (sq.retreating) return RETREATING;
+  const d = defenseAt(world, tx, ty);
+  if (!d) return fail('Nothing to repair');
+  if (d.hp >= d.maxHp) return fail('Already at full strength');
+  sq.channel = null;
+  setOrder(sq, { kind: 'repair', dest: world.map.tileCenter(tx, ty) });
   return OK;
 }
 
