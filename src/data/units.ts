@@ -166,27 +166,27 @@ const LIST: UnitDef[] = [
   // ─── Engineer structures (both sides) ─────────────────────
   unit({
     id: 'mg_nest', name: 'MG Nest', kind: 'structure', role: 'fort',
-    description: 'A machine gun behind a ring of sandbags. Fires all round at anything in range and pins infantry down.',
+    description: 'A machine gun behind a ring of sandbags. Fires all round and pins infantry down, but explosives and tank guns tear it apart quickly.',
     strongVs: 'Infantry in the open',
     weakVs: 'Mortars, grenades and tanks',
-    modelHp: 650, speed: 0, sight: 230, loadout: [{ weapons: ['nest_mg'], count: 1 }],
-    armor: { front: 8, rear: 8 }, radius: 14, receivedAccuracy: 1.2, vetXp: [],
+    modelHp: 420, speed: 0, sight: 230, loadout: [{ weapons: ['nest_mg'], count: 1 }],
+    armor: { front: 6, rear: 6 }, radius: 10, receivedAccuracy: 1.6, vetXp: [],
   }),
   unit({
     id: 'bunker', name: 'Bunker', kind: 'structure', role: 'fort',
-    description: 'A log-and-earth bunker with a machine gun slit. Hard to crack, and squads nearby can reinforce and pick up upgrades there.',
+    description: 'A log-and-earth bunker with a machine gun slit. Rifles cannot hurt it; it takes tank guns, bazookas or satchels of grenades. Squads nearby can reinforce and pick up upgrades there.',
     strongVs: 'Infantry assaults',
     weakVs: 'Tank guns and heavy mortar fire',
-    modelHp: 1500, speed: 0, sight: 240, loadout: [{ weapons: ['nest_mg'], count: 1 }],
-    armor: { front: 60, rear: 60 }, radius: 18, receivedAccuracy: 1.4, vetXp: [], supplies: true,
+    modelHp: 1100, speed: 0, sight: 240, loadout: [{ weapons: ['nest_mg'], count: 1 }],
+    armor: { front: 45, rear: 45 }, radius: 13, receivedAccuracy: 1.7, vetXp: [], supplies: true,
   }),
   unit({
     id: 'aid_tent', name: 'Aid Tent', kind: 'structure', role: 'fort',
-    description: 'Medics patch up friendly soldiers nearby when they are out of the fight. Unarmed.',
+    description: 'Medics patch up friendly soldiers nearby when they are out of the fight. Unarmed canvas: it goes down fast under any fire.',
     strongVs: 'Keeping squads at the front healthy',
     weakVs: 'Anything that shoots at it',
-    modelHp: 380, speed: 0, sight: 160, loadout: [],
-    armor: { front: 1, rear: 1 }, radius: 16, receivedAccuracy: 1.3, vetXp: [], healRadius: 150, healRate: 3.5,
+    modelHp: 220, speed: 0, sight: 160, loadout: [],
+    armor: { front: 1, rear: 1 }, radius: 11, receivedAccuracy: 1.7, vetXp: [], healRadius: 150, healRate: 3.5,
   }),
 ];
 
