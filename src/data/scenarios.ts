@@ -13,33 +13,33 @@ const at = (unitId: string, x: number, y: number, facing?: number, deployed?: bo
 
 // Waves climb the north-west trail, come down the north road and out of the eastern fields.
 const SAMAT_SPAWNS = [
-  { x: 2, y: 2 },
-  { x: 63, y: 1 },
-  { x: 110, y: 26 },
+  { x: 60, y: 1 },
+  { x: 1, y: 10 },
+  { x: 95, y: 52 },
 ];
 
 const SAMAT_DEFENDERS: PlacedUnit[] = [
-  at('us_riflemen', 47, 38, -90),
-  at('us_riflemen', 57, 38, -90),
-  at('us_hmg', 52, 35, -90, true),
+  at('us_riflemen', 42, 26, -90),
+  at('us_riflemen', 52, 26, -90),
+  at('us_hmg', 47, 24, -90, true),
 ];
 
 const ROUTE3_GARRISON: PlacedUnit[] = [
   // Tarlac Road
-  at(R, 33, 28, 180), at(R, 33, 34, 180), at(MG, 35, 31, 180, true),
+  at(R, 28, 31, 180), at(R, 28, 37, 180), at(MG, 30, 34, 180, true),
   // Poblacion
-  at(R, 48, 33, 180), at(R, 48, 40, 180), at(MG, 50, 37, 180, true), at(AT, 52, 35, 180),
+  at(R, 42, 38, 180), at(R, 42, 45, 180), at(MG, 44, 41, 180, true), at(AT, 46, 39, 180),
   // Simbahan
-  at(R, 71, 39, 180), at(R, 72, 46, 180), at(MG, 73, 42, 180, true), at(MO, 78, 40, 180, true), at(TK, 76, 45, 180),
+  at(R, 63, 39, 180), at(R, 64, 46, 180), at(MG, 66, 43, 180, true), at(MO, 70, 40, 180, true), at(TK, 68, 45, 180),
   // San Fernando Road
-  at(R, 93, 47, 180), at(R, 93, 54, 180), at(R, 96, 50, 180),
-  at(MG, 95, 46, 180, true), at(MG, 95, 55, 180, true), at(AT, 98, 51, 180), at(TK, 100, 53, 180),
+  at(R, 83, 48, 180), at(R, 83, 55, 180), at(R, 86, 51, 180),
+  at(MG, 85, 47, 180, true), at(MG, 85, 56, 180, true), at(AT, 88, 52, 180), at(TK, 90, 53, 180),
 ];
 
 const ROUTE3_START: PlacedUnit[] = [
-  at('us_riflemen', 6, 16, 0),
-  at('us_riflemen', 6, 24, 0),
-  at('us_hmg', 9, 20, 0),
+  at('us_riflemen', 8, 20, 0),
+  at('us_riflemen', 8, 28, 0),
+  at('us_hmg', 11, 24, 0),
 ];
 
 // ─── Theater of War ────────────────────────────────────────────────
@@ -61,18 +61,18 @@ export const THEATER: readonly ScenarioDef[] = [
     factions: ['usaffe', 'ija'],
     startResources: { manpower: 560, munitions: 90, fuel: 50 },
     playerUnits: [
-      at('us_riflemen', 41, 46, -90),
-      at('us_riflemen', 50, 46, -90),
-      at('us_hmg', 46, 43, -90, true),
+      at('us_riflemen', 28, 44, -90),
+      at('us_riflemen', 38, 44, -90),
+      at('us_hmg', 33, 41, -90, true),
     ],
     owners: { 0: 0, 1: 0, 2: 0, 4: 0, 3: 1 },
     defense: {
       hold: [0],
       prepTime: 75,
       spawns: [
-        { x: 53, y: 1 },
-        { x: 1, y: 46 },
-        { x: 1, y: 8 },
+        { x: 43, y: 1 },
+        { x: 1, y: 18 },
+        { x: 1, y: 45 },
       ],
       waves: [
         wave(0, R, R),
@@ -94,7 +94,7 @@ export const THEATER: readonly ScenarioDef[] = [
     location: 'Mount Samat, Bataan',
     briefing: [
       'The summit is the last good observation post on the line. Whoever holds it sees every approach.',
-      'The enemy will come in waves by three routes: the north-west trail, the north road and out of the jungle to the east. Each wave is stronger than the last.',
+      'The enemy will come in waves by three routes: down the north road, across the western fields and out of the jungle to the south-east. Each wave is stronger than the last.',
       'Use the sixty seconds before the first wave to reinforce, set up your machine gun arcs and bring a mortar forward.',
     ],
     map: 'mount-samat',
@@ -197,18 +197,18 @@ export const CAMPAIGN: readonly ScenarioDef[] = [
     factions: ['usaffe', 'ija'],
     startResources: { manpower: 520, munitions: 70, fuel: 40 },
     playerUnits: [
-      at('us_riflemen', 51, 40, -45),
-      at('us_riflemen', 47, 37, -45),
-      at('us_hmg', 53, 37, -45, true),
+      at('us_riflemen', 32, 44, -45),
+      at('us_riflemen', 28, 40, -45),
+      at('us_hmg', 31, 41, -45, true),
     ],
     owners: { 0: 0, 1: 0, 3: 0, 2: 1, 4: 1 },
     defense: {
       hold: [0],
       prepTime: 60,
       spawns: [
-        { x: 60, y: 1 },
-        { x: 106, y: 6 },
-        { x: 111, y: 50 },
+        { x: 36, y: 1 },
+        { x: 95, y: 3 },
+        { x: 95, y: 40 },
       ],
       waves: [
         wave(0, R, R),
