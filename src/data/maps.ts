@@ -1,3 +1,4 @@
+import { LUZON_MAPS } from './luzonMaps';
 import { T } from './terrain';
 import type { MapDef, MapFeature, MapPointDef } from './types';
 
@@ -14,6 +15,8 @@ function mirrorFeature(f: MapFeature, W: number, H: number): MapFeature {
       return { ...f, x: W - f.x, y: H - f.y };
     case 'line':
       return { ...f, points: f.points.map(([x, y]) => [W - x, H - y] as const) };
+    case 'grid':
+      return f;
   }
 }
 
@@ -209,5 +212,9 @@ const ROQUE: MapDef = {
   ),
 };
 
-export const MAPS: Readonly<Record<string, MapDef>> = { [BATAAN.id]: BATAAN, [ROQUE.id]: ROQUE };
-export const MAP_IDS = [BATAAN.id, ROQUE.id];
+export const MAPS: Readonly<Record<string, MapDef>> = {
+  [BATAAN.id]: BATAAN,
+  [ROQUE.id]: ROQUE,
+  ...Object.fromEntries(LUZON_MAPS.map((m) => [m.id, m])),
+};
+export const MAP_IDS = [BATAAN.id, ROQUE.id, ...LUZON_MAPS.map((m) => m.id)];
