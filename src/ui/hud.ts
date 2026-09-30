@@ -429,9 +429,20 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
 
   // ─── Production queue ────────────────────────────────────────
 
-  /** Everything being processed, in queue order: recruits, then upgrades, then reinforcements. */
+  /** Squads whose queue is shown: the selected units, or none (then it is the HQ's queue). */
+  private queueOwners(): Squad[] {
+    return this.input.selectedOwn().filter((s) => s.def.kind !== 'structure');
+  }
+
+  /**
+   * The queue of whatever is selected, like a CoH2 building or squad: the HQ's
+   * recruits when the HQ (or nothing) is selected, otherwise the selected
+   * squads' own upgrades and reinforcements.
+   */
   private queueJobs(): QueueJob[] {
     const jobs: QueueJob[] = [];
+    const squads = this.queueOwners();
+    if (squads.length > 0) return this.squadJobs(squads);
     const hq = this.world.hqOf(this.player);
     (hq?.production ?? []).forEach((item, i) => {
       const def = UNITS[item.unitId];
@@ -449,8 +460,12 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         click: () => cancelProduction(this.world, this.player, i),
       });
     });
-    const own = this.world.squads.filter((s) => s.team === this.player && !s.dead);
-    for (const sq of own) {
+    return jobs;
+  }
+
+  private squadJobs(squads: Squad[]): QueueJob[] {
+    const jobs: QueueJob[] = [];
+    for (const sq of squads) {
       if (!sq.upgrading) continue;
       const def = UPGRADES[sq.upgrading.id];
       jobs.push({
@@ -467,7 +482,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         click: () => cancelUpgrade(this.world, sq),
       });
     }
-    for (const sq of own) {
+    for (const sq of squads) {
       if (!sq.reinforcing) continue;
       jobs.push({
         key: `reinforce:${sq.id}`,
@@ -504,7 +519,10 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       if (!job) {
         return {
           title: `Queue slot ${i + 1}`,
-          body: `Recruiting, upgrades and reinforcements all run here, ${ECONOMY.maxQueue} at a time.`,
+          body:
+            this.queueOwners().length > 0
+              ? 'This squad’s queue: its weapon upgrade and reinforcements show here while they run.'
+              : `Headquarters’ recruiting queue: up to ${ECONOMY.maxQueue} units at a time.`,
         };
       }
       return { title: job.title, body: `${job.body}\n${job.action}`, cost: job.cost };
@@ -557,6 +575,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         { class: 'rc-body' },
         el('div', { class: 'rc-name', text: sq.def.name }),
         el('div', { class: 'rc-bar' }, el('div', { class: 'fill' })),
+        el('div', { class: 'rc-job' }, el('div', { class: 'fill' })),
       ),
       el('div', { class: 'rc-badges' }),
     );
@@ -584,7 +603,12 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     if (sq.retreating) badges.push('↩');
     else if (sq.suppState === 'pinned') badges.push('PIN');
     else if (sq.reinforcing) badges.push('+');
+    if (sq.upgrading) badges.push('⇪');
     card.classList.toggle('reinforcing', sq.reinforcing);
+    card.classList.toggle('upgrading', !!sq.upgrading);
+    // The squad's own job, shown on its card too: reinforcing first, else the upgrade on its way.
+    const job = sq.reinforcing ? reinforceProgress(sq) : sq.upgrading ? 1 - Math.max(0, sq.upgrading.remaining) / UPGRADES[sq.upgrading.id].time : 0;
+    (card.querySelector('.rc-job .fill') as HTMLElement).style.width = `${Math.round(job * 100)}%`;
     (card.querySelector('.rc-badges') as HTMLElement).textContent = badges.join(' ');
   }
 
