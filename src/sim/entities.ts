@@ -60,6 +60,9 @@ export interface Squad {
   reversing: boolean;
   moving: boolean;
   blockedTime: number;
+  /** Seconds a vehicle has had somewhere to go but made no headway; long enough and it gives up. */
+  stuckTime: number;
+  stuckFrom: Vec2 | null;
   models: Model[];
   order: Order;
   queue: Order[];
@@ -235,6 +238,8 @@ export function createSquad(nextId: () => number, team: TeamId, def: UnitDef, po
     reversing: false,
     moving: false,
     blockedTime: 0,
+    stuckTime: 0,
+    stuckFrom: null,
     models,
     order: { kind: 'idle' },
     queue: [],
