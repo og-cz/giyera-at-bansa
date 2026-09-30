@@ -25,6 +25,7 @@ export const FIRE: Readonly<Record<string, SoundSpec>> = {
   coax_30cal: s('coax', 0.4, 0.08),
   coax_type97: s('coax', 0.4, 0.08),
   hq_mg: s('hmg', 0.4, 0.1),
+  nest_mg: s('hmg', 0.45, 0.08),
   bazooka: s('bazooka', 0.7, 0.2),
   type97_at_rifle: s('atrifle', 0.6, 0.15),
   m6_37mm: s('tankgun', 0.75, 0.2),
