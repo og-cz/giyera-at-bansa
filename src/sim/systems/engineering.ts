@@ -8,6 +8,7 @@ import { aliveCount, type Construction, type Squad } from '../entities';
 import { finishOrder } from '../orders';
 import type { World } from '../world';
 import { explode } from './combat';
+import { defenseAt, repairDefense, resetDefense } from './defenses';
 import { refund } from './economy';
 
 /** Ground engineers may build on. Existing defenses, buildings and water are off limits. */
@@ -16,6 +17,8 @@ const BUILDABLE_GROUND = new Set<number>([T.Open, T.Road, T.Paddy, T.Crater, T.H
 export const WORK_RANGE = 34;
 /** Hit points restored per second by a full engineer squad. */
 const REPAIR_RATE = 14;
+/** Hit points restored per second on sandbags, wire or tank traps. */
+const DEFENSE_REPAIR_RATE = 30;
 const MINE_TRIGGER = 11;
 
 export interface PlannedTile {
@@ -159,6 +162,7 @@ function updateConstructions(world: World, dt: number): void {
     tile.done = true;
     if (def.terrain !== null) {
       if (BUILDABLE_GROUND.has(world.map.get(tile.tx, tile.ty))) world.map.set(tile.tx, tile.ty, def.terrain);
+      resetDefense(world, tile.tx, tile.ty);
     } else {
       world.mines.push({ id: world.nextId(), team: c.team as TeamId, pos: center });
     }
@@ -169,6 +173,19 @@ function updateConstructions(world: World, dt: number): void {
 function updateRepairs(world: World, dt: number): void {
   for (const sq of world.squads) {
     if (sq.dead || sq.order.kind !== 'repair') continue;
+    const spot = sq.order.dest;
+    if (sq.order.targetId === undefined && spot) {
+      // Patching up a defense tile.
+      const tx = Math.floor(spot.x / TILE);
+      const ty = Math.floor(spot.y / TILE);
+      if (!defenseAt(world, tx, ty)) {
+        finishOrder(sq);
+        continue;
+      }
+      if (sq.moving || dist(sq.pos, spot) > WORK_RANGE) continue;
+      if (repairDefense(world, tx, ty, DEFENSE_REPAIR_RATE * (aliveCount(sq) / sq.def.models) * dt)) finishOrder(sq);
+      continue;
+    }
     const target = world.get(sq.order.targetId);
     const hull = target?.models.find((m) => m.alive);
     if (!target || target.dead || target.team !== sq.team || !hull || hull.hp >= hull.maxHp) {
