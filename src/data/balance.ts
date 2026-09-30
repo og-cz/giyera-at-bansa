@@ -31,7 +31,6 @@ export const RETREAT = { speed: 1.4, receivedAccuracy: 0.55, arriveRadius: 60 };
 export const LOGISTICS = {
   healRadius: 180,
   healRate: 5,
-  repairRate: 9,
   reinforceHqRadius: 280,
   reinforcePointRadius: 110,
   reinforceTime: 5.5,
