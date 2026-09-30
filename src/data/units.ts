@@ -23,6 +23,9 @@ const DEFAULTS: Omit<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'> =
   builds: [],
   canRepair: false,
   upgrades: [],
+  healRadius: 0,
+  healRate: 0,
+  supplies: false,
 };
 
 const unit = (def: Partial<UnitDef> & Pick<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'>): UnitDef => ({
@@ -51,12 +54,12 @@ const LIST: UnitDef[] = [
   }),
   unit({
     id: 'us_engineers', name: 'Combat Engineers', kind: 'infantry', role: 'engineer',
-    description: 'Four engineers with carbines. Build sandbags, barbed wire, tank traps and mines, and repair tanks and the HQ.',
+    description: 'Four engineers with carbines. Build sandbags, barbed wire, tank traps, mines, MG nests, bunkers and aid tents, and repair tanks and structures.',
     strongVs: 'Fortifying ground, keeping tanks in the fight',
     weakVs: 'Any real firefight',
     models: 4, modelHp: 75, cost: { manpower: 200, munitions: 0, fuel: 0 }, pop: 4, buildTime: 18,
     speed: 22, sight: 200, loadout: [{ weapons: ['m1_carbine'], count: 4 }], canCapture: true,
-    builds: ['sandbags', 'wire', 'tanktrap', 'mine'], canRepair: true,
+    builds: ['sandbags', 'wire', 'tanktrap', 'mine', 'mg_nest', 'bunker', 'aid_tent'], canRepair: true,
   }),
   unit({
     id: 'us_hmg', name: 'M1917 HMG Team', kind: 'team', role: 'mg',
@@ -116,12 +119,12 @@ const LIST: UnitDef[] = [
   }),
   unit({
     id: 'ija_engineers', name: 'Kohei Engineers', kind: 'infantry', role: 'engineer',
-    description: 'Four engineers with carbines. Build sandbags, barbed wire, tank traps and mines, and repair tanks and the HQ.',
+    description: 'Four engineers with carbines. Build sandbags, barbed wire, tank traps, mines, MG nests, bunkers and aid tents, and repair tanks and structures.',
     strongVs: 'Fortifying ground, keeping tanks in the fight',
     weakVs: 'Any real firefight',
     models: 4, modelHp: 70, cost: { manpower: 190, munitions: 0, fuel: 0 }, pop: 4, buildTime: 18,
     speed: 23, sight: 200, loadout: [{ weapons: ['type38_carbine'], count: 4 }], canCapture: true,
-    builds: ['sandbags', 'wire', 'tanktrap', 'mine'], canRepair: true,
+    builds: ['sandbags', 'wire', 'tanktrap', 'mine', 'mg_nest', 'bunker', 'aid_tent'], canRepair: true,
   }),
   unit({
     id: 'ija_hmg', name: 'Type 92 HMG Team', kind: 'team', role: 'mg',
@@ -159,6 +162,31 @@ const LIST: UnitDef[] = [
     speed: 27, sight: 225, loadout: [{ weapons: ['type97_57mm', 'coax_type97'], count: 1 }],
     armor: { front: 70, rear: 38 }, radius: 14, vetXp: [800, 2000, 3600],
     vehicle: { turnRate: 1.7, turretRate: 1.3, length: 30, width: 19, reverseFactor: 0.55 },
+  }),
+  // ─── Engineer structures (both sides) ─────────────────────
+  unit({
+    id: 'mg_nest', name: 'MG Nest', kind: 'structure', role: 'fort',
+    description: 'A machine gun behind a ring of sandbags. Fires all round at anything in range and pins infantry down.',
+    strongVs: 'Infantry in the open',
+    weakVs: 'Mortars, grenades and tanks',
+    modelHp: 650, speed: 0, sight: 230, loadout: [{ weapons: ['nest_mg'], count: 1 }],
+    armor: { front: 8, rear: 8 }, radius: 14, receivedAccuracy: 1.2, vetXp: [],
+  }),
+  unit({
+    id: 'bunker', name: 'Bunker', kind: 'structure', role: 'fort',
+    description: 'A log-and-earth bunker with a machine gun slit. Hard to crack, and squads nearby can reinforce and pick up upgrades there.',
+    strongVs: 'Infantry assaults',
+    weakVs: 'Tank guns and heavy mortar fire',
+    modelHp: 1500, speed: 0, sight: 240, loadout: [{ weapons: ['nest_mg'], count: 1 }],
+    armor: { front: 60, rear: 60 }, radius: 18, receivedAccuracy: 1.4, vetXp: [], supplies: true,
+  }),
+  unit({
+    id: 'aid_tent', name: 'Aid Tent', kind: 'structure', role: 'fort',
+    description: 'Medics patch up friendly soldiers nearby when they are out of the fight. Unarmed.',
+    strongVs: 'Keeping squads at the front healthy',
+    weakVs: 'Anything that shoots at it',
+    modelHp: 380, speed: 0, sight: 160, loadout: [],
+    armor: { front: 1, rear: 1 }, radius: 16, receivedAccuracy: 1.3, vetXp: [], healRadius: 150, healRate: 3.5,
   }),
 ];
 
