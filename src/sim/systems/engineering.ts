@@ -69,9 +69,16 @@ export function planBuild(world: World, buildId: string, from: Vec2, to: Vec2): 
   for (const c of world.constructions) for (const t of c.tiles) if (!t.done) pending.add(world.map.idx(t.tx, t.ty));
   const tiles = cells.map(([tx, ty]) => {
     let valid = world.map.inBounds(tx, ty) && BUILDABLE_GROUND.has(world.map.get(tx, ty)) && !pending.has(world.map.idx(tx, ty));
-    if (valid && def.terrain === null) {
+    if (valid && def.shape === 'point') {
       const center = world.map.tileCenter(tx, ty);
       valid = !world.mines.some((m) => dist(m.pos, center) < TILE);
+    }
+    if (valid && def.shape === 'structure') {
+      // Structures need a little room: not on top of another one or a building job.
+      const center = world.map.tileCenter(tx, ty);
+      valid =
+        !world.squads.some((s) => !s.dead && s.def.kind === 'structure' && dist(s.pos, center) < s.def.radius + TILE * 1.5) &&
+        !world.constructions.some((c) => BUILDABLES[c.buildId].shape === 'structure' && c.tiles.some((t) => dist(world.map.tileCenter(t.tx, t.ty), center) < TILE * 2.5));
     }
     return { tx, ty, valid };
   });
@@ -160,7 +167,9 @@ function updateConstructions(world: World, dt: number): void {
     }
     if (tile.progress < 1) continue;
     tile.done = true;
-    if (def.terrain !== null) {
+    if (def.shape === 'structure') {
+      world.spawn(c.team as TeamId, def.unit!, center, workers[0].heading);
+    } else if (def.terrain !== null) {
       if (BUILDABLE_GROUND.has(world.map.get(tile.tx, tile.ty))) world.map.set(tile.tx, tile.ty, def.terrain);
       resetDefense(world, tile.tx, tile.ty);
     } else {
