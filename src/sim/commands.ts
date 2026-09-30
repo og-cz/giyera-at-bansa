@@ -77,6 +77,7 @@ export function issueStop(_world: World, sq: Squad): CommandResult {
 
 export function issueRetreat(world: World, sq: Squad): CommandResult {
   if (!commandable(sq)) return fail('Cannot retreat');
+  if (sq.def.kind === 'vehicle') return fail('Tanks cannot retreat: move them back and have engineers repair them');
   const team = world.teams[sq.team];
   sq.retreating = true;
   sq.channel = null;
