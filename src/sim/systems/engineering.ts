@@ -104,6 +104,13 @@ export function workSpot(world: World, sq: Squad, c: Construction): Vec2 | null 
   return best ?? world.map.tileCenter(tile.tx, tile.ty);
 }
 
+/** The team's unfinished construction job covering the tile under `p`, if any. */
+export function constructionAt(world: World, team: number, p: Vec2): Construction | undefined {
+  const tx = Math.floor(p.x / TILE);
+  const ty = Math.floor(p.y / TILE);
+  return world.constructions.find((c) => c.team === team && c.tiles.some((t) => !t.done && t.tx === tx && t.ty === ty));
+}
+
 export function constructionOf(world: World, sq: Squad): Construction | undefined {
   return sq.order.kind === 'build' ? world.constructions.find((c) => c.id === sq.order.targetId) : undefined;
 }
@@ -114,15 +121,20 @@ export function updateEngineering(world: World, dt: number): void {
   updateMines(world);
 }
 
+/** Engineer squads currently assigned to a construction job. */
+export function workersOf(world: World, c: Construction): Squad[] {
+  return world.squads.filter((s) => !s.dead && s.team === c.team && s.order.kind === 'build' && s.order.targetId === c.id);
+}
+
 function updateConstructions(world: World, dt: number): void {
   if (world.constructions.length === 0) return;
   const keep: Construction[] = [];
   for (const c of world.constructions) {
     const def = BUILDABLES[c.buildId];
-    const owner = world.get(c.ownerId);
+    const workers = workersOf(world, c);
     const unbuilt = c.tiles.filter((t) => !t.done).length;
-    // Abandoned (new order, retreat or death): refund whatever was not built.
-    if (!owner || owner.dead || owner.order.kind !== 'build' || owner.order.targetId !== c.id) {
+    // Abandoned (every squad on it took another order, retreated or died): refund whatever was not built.
+    if (workers.length === 0) {
       refund(world.teams[c.team].resources, {
         manpower: def.cost.manpower * unbuilt,
         munitions: def.cost.munitions * unbuilt,
@@ -132,14 +144,17 @@ function updateConstructions(world: World, dt: number): void {
     }
     const tile = currentTile(c);
     if (!tile) {
-      finishOrder(owner);
+      for (const w of workers) finishOrder(w);
       world.emit({ type: 'notify', team: c.team, text: `${def.name} finished`, tone: 'good' });
       continue;
     }
     keep.push(c);
     const center = world.map.tileCenter(tile.tx, tile.ty);
-    if (owner.moving || owner.suppState === 'pinned' || dist(owner.pos, center) > WORK_RANGE) continue;
-    tile.progress += (dt * (aliveCount(owner) / owner.def.models)) / def.buildTime;
+    // Every squad on the job adds its effort: two squads build twice as fast.
+    for (const w of workers) {
+      if (w.moving || w.suppState === 'pinned' || dist(w.pos, center) > WORK_RANGE) continue;
+      tile.progress += (dt * (aliveCount(w) / w.def.models)) / def.buildTime;
+    }
     if (tile.progress < 1) continue;
     tile.done = true;
     if (def.terrain !== null) {
