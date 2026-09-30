@@ -268,7 +268,7 @@ button:disabled {
   justify-content: flex-end;
   align-content: flex-start;
   gap: 4px;
-  width: 236px;
+  width: 250px;
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -276,10 +276,11 @@ button:disabled {
 .roster-card {
   position: relative;
   display: grid;
+  grid-template-rows: 1fr auto;
   place-items: center;
-  width: 55px;
-  height: 48px;
-  padding: 0 0 6px;
+  width: 58px;
+  height: 58px;
+  padding: 4px 2px 7px;
   color: #cfe0f5;
   background: linear-gradient(180deg, rgba(40, 58, 82, 0.95), rgba(18, 26, 38, 0.95));
   border: 1px solid #1c2735;
@@ -287,7 +288,17 @@ button:disabled {
 }
 
 .roster-card .ico {
-  font-size: 26px;
+  font-size: 24px;
+}
+
+.rc-name {
+  max-width: 100%;
+  font: 600 10px/1 var(--display);
+  letter-spacing: 0.02em;
+  color: #e6ecf3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .roster-card:hover {
@@ -330,7 +341,7 @@ button:disabled {
 
 .rc-count {
   right: 3px;
-  bottom: 7px;
+  top: 16px;
   color: #ffd766;
 }
 
@@ -528,6 +539,14 @@ button:disabled {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.portrait-type {
+  margin-top: -3px;
+  font: 600 12px var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
 }
 
 .portrait-hint {
