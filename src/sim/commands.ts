@@ -10,7 +10,7 @@ import { resetMovement, setOrder } from './orders';
 import { canAfford, pay, popUsed, refund } from './systems/economy';
 import { defenseAt } from './systems/defenses';
 import { planBuild } from './systems/engineering';
-import { canReinforceHere, reinforceCost } from './systems/logistics';
+import { canReinforceHere, dropReinforcements, reinforceCost } from './systems/logistics';
 import { startSetup, startTeardown } from './systems/setup';
 import type { World } from './world';
 
@@ -81,7 +81,7 @@ export function issueRetreat(world: World, sq: Squad): CommandResult {
   const team = world.teams[sq.team];
   sq.retreating = true;
   sq.channel = null;
-  sq.reinforcing = false;
+  dropReinforcements(world, sq);
   sq.targetId = null;
   sq.queue.length = 0;
   sq.order = { kind: 'retreat', dest: { ...team.retreatPoint } };
@@ -92,12 +92,18 @@ export function issueRetreat(world: World, sq: Squad): CommandResult {
 
 export function issueReinforce(world: World, sq: Squad): CommandResult {
   if (!commandable(sq) || sq.def.kind === 'vehicle') return fail('Cannot reinforce vehicles');
-  if (aliveCount(sq) >= sq.def.models) return fail('Squad is at full strength');
+  if (aliveCount(sq) + sq.reinforceQueued >= sq.def.models) return fail(sq.reinforceQueued > 0 ? 'Every missing soldier is already on the way' : 'Squad is at full strength');
   if (sq.retreating) return RETREATING;
+  if (squadJobs(sq) >= LOGISTICS.squadQueue) return fail('Queue full: three jobs at a time');
   if (!canReinforceHere(world, sq)) return fail('Must be near HQ or a supplied friendly point');
-  if (world.teams[sq.team].resources.manpower < reinforceCost(sq.def)) return fail('Not enough manpower');
+  const cost = reinforceCost(sq.def);
+  const res = world.teams[sq.team].resources;
+  if (res.manpower < cost) return fail('Not enough manpower');
+  // One press queues one soldier, paid for now; they arrive one after another.
+  res.manpower -= cost;
+  if (!sq.reinforcing) sq.reinforceTimer = LOGISTICS.reinforceTime;
+  sq.reinforceQueued++;
   sq.reinforcing = true;
-  sq.reinforceTimer = LOGISTICS.reinforceTime;
   return OK;
 }
 
@@ -186,6 +192,7 @@ export function issueUpgrade(world: World, sq: Squad, upgradeId: string): Comman
   if (!canReinforceHere(world, sq)) return fail('Must be near HQ or a supplied friendly point');
   const res = world.teams[sq.team].resources;
   if (!canAfford(res, def.cost)) return fail('Not enough munitions');
+  if (squadJobs(sq) >= LOGISTICS.squadQueue) return fail('Queue full: three jobs at a time');
   pay(res, def.cost);
   sq.upgrading = { id: upgradeId, remaining: def.time };
   return OK;
@@ -199,11 +206,18 @@ export function cancelUpgrade(world: World, sq: Squad): CommandResult {
   return OK;
 }
 
-/** Stop reinforcing. Soldiers already arrived stay; nothing is owed for the rest. */
-export function cancelReinforce(_world: World, sq: Squad): CommandResult {
-  if (!sq.reinforcing) return fail('Nothing to cancel');
-  sq.reinforcing = false;
+/** Call off the last soldier waiting to join and get his manpower back. */
+export function cancelReinforce(world: World, sq: Squad): CommandResult {
+  if (sq.reinforceQueued <= 0) return fail('Nothing to cancel');
+  sq.reinforceQueued--;
+  world.teams[sq.team].resources.manpower += reinforceCost(sq.def);
+  if (sq.reinforceQueued === 0) sq.reinforcing = false;
   return OK;
+}
+
+/** Jobs in a squad's own queue: soldiers waiting to join plus an upgrade on its way. */
+export function squadJobs(sq: Squad): number {
+  return sq.reinforceQueued + (sq.upgrading ? 1 : 0);
 }
 
 /** Engineers: patch up damaged sandbags, wire or tank traps. */
