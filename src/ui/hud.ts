@@ -107,7 +107,7 @@ export class Hud {
     }
     const top = el('div', { class: 'hud-top' }, this.objective ? this.objective.box : el('div', { class: 'score' }, t0, this.pointIcons, t1), this.clock);
 
-    // ─── Top right: resources, menu buttons and unit roster ───
+    // ─── Resources (bottom, beside the orders) ───
     const stat = (cls: string, label: string, name: string) => {
       const v = el('span', { class: 'val' });
       const inc = el('span', { class: 'inc' });
@@ -121,6 +121,7 @@ export class Hud {
     const [popBox, pop] = stat('pop', 'Population', 'pop');
     this.res = { manpower: mp, munitions: mu, fuel: fu, pop };
     this.income = { manpower: mpInc, munitions: muInc, fuel: fuInc };
+    // ─── Top right: menu buttons and unit roster ───
     const menu = el('button', { class: 'corner-btn', text: 'Menu' });
     const help = el('button', { class: 'corner-btn', text: '?' });
     menu.addEventListener('click', () => this.onMenu());
@@ -132,7 +133,6 @@ export class Hud {
       'div',
       { class: 'hud-corner' },
       el('div', { class: 'corner-btns' }, help, menu),
-      el('div', { class: 'resources' }, mpBox, muBox, fuBox, popBox),
       this.roster,
     );
 
@@ -154,6 +154,7 @@ export class Hud {
       el('div', { class: 'panel minimap-panel' }, minimap.canvas),
       el('div', { class: 'panel unit-card' }, this.unitPanel),
       queue,
+      el('div', { class: 'panel resources' }, mpBox, muBox, fuBox, popBox),
       el(
         'div',
         { class: 'panel command-card' },
