@@ -4,7 +4,7 @@ import type { Acknowledgement } from '../input/input';
 import type { SimEvent, Squad } from '../sim/entities';
 import type { World } from '../sim/world';
 import { audio, type Loop } from './audio';
-import { BLAST, DEFAULT_BLAST, ENGINE, FIRE, WRECK, type SoundSpec } from './sounds';
+import { BLAST, DEFAULT_BLAST, ENGINE, FIRE, IMPACT, WRECK, type SoundSpec } from './sounds';
 
 /** Weapons whose throw or launch makes no firing sound of its own (grenades). */
 const SILENT_LAUNCH = new Set(['mk2_grenade', 'type97_grenade']);
@@ -52,6 +52,12 @@ export class BattleAudio {
         case 'shot': {
           const spec = FIRE[e.weapon];
           if (spec && this.heard(e.from, e.team)) this.emit(spec, e.from);
+          // Rockets and HE shells go off where they land, a moment later.
+          const blast = IMPACT[e.weapon];
+          if (blast && (this.heard(e.to, e.team) || this.heard(e.from, e.team))) {
+            const to = { ...e.to };
+            window.setTimeout(() => this.emit(blast, to), Math.max(80, (Math.hypot(e.to.x - e.from.x, e.to.y - e.from.y) / 900) * 1000));
+          }
           break;
         }
         case 'launch': {
