@@ -4,7 +4,7 @@ import { MAPS } from '../src/data/maps';
 import { UNITS } from '../src/data/units';
 import { UPGRADES } from '../src/data/upgrades';
 import { WEAPONS } from '../src/data/weapons';
-import { issueMove, issueUpgrade } from '../src/sim/commands';
+import { activeJobs, cancelReinforce, cancelUpgrade, issueMove, issueReinforce, issueUpgrade, queueProduction } from '../src/sim/commands';
 import { addRecruit } from '../src/sim/systems/logistics';
 import { World } from '../src/sim/world';
 
@@ -77,6 +77,27 @@ describe('squad upgrades', () => {
         for (const w of UPGRADES[id].weapons) expect(WEAPONS[w].range, `${id} on ${unit.id}`).toBeGreaterThanOrEqual(base.range);
       }
     }
+  });
+
+  it('recruiting, upgrades and reinforcements share three queue slots', () => {
+    const { w, rifles } = atHq();
+    w.teams[0].resources.manpower = 5000;
+    expect(queueProduction(w, 0, 'us_riflemen').ok).toBe(true);
+    expect(queueProduction(w, 0, 'us_riflemen').ok).toBe(true);
+    expect(issueUpgrade(w, rifles, 'us_bar').ok).toBe(true);
+    expect(activeJobs(w, 0)).toBe(3);
+    rifles.models[0].alive = false;
+    const wounded = w.spawn(0, 'us_riflemen', rifles.pos, 0);
+    wounded.models[0].alive = false;
+    expect(issueReinforce(w, wounded).reason).toMatch(/Queue full/);
+    expect(queueProduction(w, 0, 'us_riflemen').reason).toMatch(/Queue full/);
+    // Cancelling the upgrade frees a slot and refunds the munitions.
+    const munitions = w.teams[0].resources.munitions;
+    expect(cancelUpgrade(w, rifles).ok).toBe(true);
+    expect(w.teams[0].resources.munitions).toBe(munitions + 50);
+    expect(issueReinforce(w, wounded).ok).toBe(true);
+    expect(cancelReinforce(w, wounded).ok).toBe(true);
+    expect(activeJobs(w, 0)).toBe(2);
   });
 
   it('keeps going while the squad moves off', () => {
