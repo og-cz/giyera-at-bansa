@@ -19,15 +19,15 @@ const SAMAT = missionMap({
   description: 'A hilltop barrio above the Pilar–Bagac road, ringed by jungle. Four roads converge on the summit.',
   rows: SAMAT_ROWS,
   bases: [
-    { x: 50, y: 74 },
-    { x: 100, y: 6 },
+    { x: 30, y: 60 },
+    { x: 30, y: 4 },
   ],
   points: [
-    { x: 52, y: 42, kind: 'victory', name: 'Samat Summit' },
-    { x: 40, y: 56, kind: 'munitions', name: 'Aid Station' },
-    { x: 64, y: 56, kind: 'fuel', name: 'Motor Pool' },
-    { x: 18, y: 14, kind: 'manpower', name: 'Pilar Trail' },
-    { x: 100, y: 24, kind: 'manpower', name: 'Orion Road' },
+    { x: 47, y: 30, kind: 'victory', name: 'Samat Summit' },
+    { x: 34, y: 44, kind: 'munitions', name: 'Aid Station' },
+    { x: 58, y: 46, kind: 'fuel', name: 'Motor Pool' },
+    { x: 12, y: 20, kind: 'manpower', name: 'Pilar Trail' },
+    { x: 76, y: 57, kind: 'manpower', name: 'Orion Road' },
   ],
 });
 
@@ -38,14 +38,14 @@ const ROUTE3 = missionMap({
   description: 'The national highway through a town in the rice country, lined with paddies and dug-in defenders.',
   rows: ROUTE3_ROWS,
   bases: [
-    { x: 5, y: 20 },
-    { x: 104, y: 64 },
+    { x: 6, y: 24 },
+    { x: 89, y: 60 },
   ],
   points: [
-    { x: 31, y: 31, kind: 'manpower', name: 'Tarlac Road' },
-    { x: 46, y: 37, kind: 'munitions', name: 'Poblacion' },
-    { x: 70, y: 43, kind: 'fuel', name: 'Simbahan' },
-    { x: 92, y: 51, kind: 'victory', name: 'San Fernando Road' },
+    { x: 25, y: 34, kind: 'manpower', name: 'Tarlac Road' },
+    { x: 40, y: 41, kind: 'munitions', name: 'Poblacion' },
+    { x: 62, y: 42, kind: 'fuel', name: 'Simbahan' },
+    { x: 82, y: 51, kind: 'victory', name: 'San Fernando Road' },
   ],
 });
 
@@ -56,17 +56,17 @@ const INTRAMUROS = missionMap({
   description: 'The walled city of Manila on the bay. Stone ramparts, gates on the landward side, Fort Santiago in the south wall and the Plaza de Roma at its heart.',
   rows: INTRAMUROS_ROWS,
   bases: [
-    { x: 45, y: 78 },
-    { x: 70, y: 3 },
+    { x: 33, y: 80 },
+    { x: 86, y: 5 },
   ],
   // A gate from Fort Santiago into the city.
-  carve: [{ x: 44, y: 62, w: 3, h: 12, tile: '=' }],
+  carve: [{ x: 34, y: 62, w: 3, h: 13, tile: '=' }],
   points: [
-    { x: 45, y: 50, kind: 'victory', name: 'Plaza de Roma' },
-    { x: 45, y: 70, kind: 'munitions', name: 'Fort Santiago' },
-    { x: 74, y: 58, kind: 'fuel', name: 'San Agustin' },
-    { x: 53, y: 4, kind: 'manpower', name: 'Puerta Real' },
-    { x: 16, y: 46, kind: 'manpower', name: 'Puerta del Parian' },
+    { x: 30, y: 50, kind: 'victory', name: 'Plaza de Roma' },
+    { x: 35, y: 70, kind: 'munitions', name: 'Fort Santiago' },
+    { x: 64, y: 57, kind: 'fuel', name: 'San Agustin' },
+    { x: 43, y: 3, kind: 'manpower', name: 'Puerta Real' },
+    { x: 5, y: 45, kind: 'manpower', name: 'Puerta del Parian' },
   ],
 });
 
@@ -77,15 +77,15 @@ const LAYAC = missionMap({
   description: 'The last bridge on the road into Bataan, where the highway crosses a wide bend of the river. Jungle on both banks.',
   rows: LAYAC_ROWS,
   bases: [
-    { x: 7, y: 68 },
-    { x: 104, y: 8 },
+    { x: 6, y: 62 },
+    { x: 88, y: 8 },
   ],
   points: [
-    { x: 58, y: 34, kind: 'victory', name: 'Layac Bridge' },
-    { x: 40, y: 45, kind: 'munitions', name: 'Barrio Layac' },
-    { x: 74, y: 28, kind: 'fuel', name: 'Junction Town' },
-    { x: 22, y: 58, kind: 'manpower', name: 'Dinalupihan Road' },
-    { x: 86, y: 48, kind: 'manpower', name: 'Hermosa Fields' },
+    { x: 37, y: 39, kind: 'victory', name: 'Layac Bridge' },
+    { x: 22, y: 44, kind: 'munitions', name: 'Barrio Layac' },
+    { x: 53, y: 30, kind: 'fuel', name: 'Junction Town' },
+    { x: 14, y: 54, kind: 'manpower', name: 'Dinalupihan Road' },
+    { x: 66, y: 50, kind: 'manpower', name: 'Hermosa Fields' },
   ],
 });
 
