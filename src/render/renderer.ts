@@ -15,9 +15,8 @@ import type { Camera } from './camera';
 import { Effects } from './effects';
 import { COVER_COLOR, NEUTRAL, TEAM } from './palette';
 import { TerrainLayer } from './terrainLayer';
+import { drawIcon, unitIcon } from '../ui/icons';
 
-const ROLE_GLYPH: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN' };
-const FORT_GLYPH: Record<string, string> = { mg_nest: 'N', bunker: 'BK', aid_tent: '+' };
 const POINT_GLYPH: Record<string, string> = { victory: 'V', munitions: 'M', fuel: 'F', manpower: 'P' };
 const ORDER_COLOR: Record<string, string> = {
   move: '#9be29b',
@@ -932,23 +931,22 @@ export class Renderer {
     const col = TEAM[sq.team];
     const selected = ui.selected.has(sq.id);
 
-    const glyph = (sq.def.role === 'fort' ? FORT_GLYPH[sq.def.id] : ROLE_GLYPH[sq.def.role]) ?? '?';
-    ctx.font = 'bold 9px "Segoe UI", system-ui, sans-serif';
-    const bw = Math.max(16, ctx.measureText(glyph).width + 8);
+    // A small team-coloured plate with the unit's icon.
+    const bw = 18;
     ctx.fillStyle = selected ? col.light : col.main;
-    ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.85)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(x - bw / 2, y - 16, bw, 12, 2);
+    ctx.roundRect(x - bw / 2, y - 20, bw, 16, 2);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#111';
-    ctx.textAlign = 'center';
-    ctx.fillText(glyph, x, y - 7);
+    ctx.strokeStyle = '#10151c';
+    drawIcon(ctx, unitIcon(sq.def), x, y - 12, 13, 'rgba(16,21,28,0.5)');
     if (sq.vet > 0) {
+      ctx.font = 'bold 9px "Segoe UI", system-ui, sans-serif';
       ctx.fillStyle = '#ffd766';
       ctx.textAlign = 'left';
-      ctx.fillText('★'.repeat(sq.vet), x + bw / 2 + 2, y - 7);
+      ctx.fillText('★'.repeat(sq.vet), x + bw / 2 + 2, y - 8);
     }
 
     const barW = 26;
