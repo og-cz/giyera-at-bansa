@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.7 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.8 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -164,6 +164,11 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.6.8**
+- **Squads have names.** Every Maharlika squad is named after a hero (Pangkat Luna, Pangkat Bonifacio, Pangkat Rizal…) and every tank has one too (Tangke Kidlat, Tangke Agila…); the Imperial Army has numbered sections (Dai-ichi Buntai…) and named tanks. Names show on the roster cards, the unit card and in tooltips. More names can be added in `src/data/squadNames.ts`.
+- **Soldiers look like soldiers:** seen from above with a helmet, uniform, pack and the weapon in hand, edged in their side's colour; pinned soldiers lie flat.
+- **Bazooka:** a new firing sound that bangs the moment it fires (the old one only started after a delay), and the rocket explodes where it hits, with a flash, smoke and a blast you hear. Tank shells burst on impact too.
 
 **0.6.7**
 - Resources (manpower, munitions, fuel, population) are back at the bottom, in their own panel beside the orders.
