@@ -5,7 +5,8 @@ export type Mode =
   | { kind: 'attackMove' }
   | { kind: 'ability'; abilityId: string }
   | { kind: 'setup' }
-  | { kind: 'build'; buildId: string };
+  | { kind: 'build'; buildId: string }
+  | { kind: 'repair' };
 
 /** Something on the ground that was clicked to see its info: a defense tile, a construction job or one of our mines. */
 export type Inspect = { kind: 'defense'; tx: number; ty: number } | { kind: 'construction'; id: number } | { kind: 'mine'; id: number };
