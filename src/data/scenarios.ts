@@ -11,34 +11,35 @@ const at = (unitId: string, x: number, y: number, facing?: number, deployed?: bo
 
 // ─── Shared layouts ────────────────────────────────────────────────
 
+// Waves climb the north-west trail, come down the north road and out of the eastern fields.
 const SAMAT_SPAWNS = [
-  { x: 12, y: 4 },
-  { x: 40, y: 10 },
-  { x: 68, y: 4 },
+  { x: 2, y: 2 },
+  { x: 63, y: 1 },
+  { x: 110, y: 26 },
 ];
 
 const SAMAT_DEFENDERS: PlacedUnit[] = [
-  at('us_riflemen', 36, 33, -90),
-  at('us_riflemen', 44, 33, -90),
-  at('us_hmg', 40, 27, -90, true),
+  at('us_riflemen', 47, 38, -90),
+  at('us_riflemen', 57, 38, -90),
+  at('us_hmg', 52, 35, -90, true),
 ];
 
 const ROUTE3_GARRISON: PlacedUnit[] = [
-  // Tarlac
-  at(R, 38, 21, 180), at(R, 37, 26, 180), at(MG, 34, 21, 180, true),
-  // Bamban
-  at(R, 70, 19, 180), at(R, 68, 24, 180), at(MG, 66, 20, 180, true), at(AT, 72, 21, 180),
-  // San Fernando
-  at(R, 97, 19, 180), at(R, 99, 23, 180), at(MG, 94, 21, 180, true), at(MO, 108, 22, 180, true), at(TK, 104, 22, 180),
-  // Calumpit bridge
-  at(R, 133, 21, 180), at(R, 133, 24, 180), at(R, 135, 19, 180),
-  at(MG, 132, 17.5, 180, true), at(MG, 132, 26.5, 180, true), at(AT, 136, 22, 180), at(TK, 139, 22, 180),
+  // Tarlac Road
+  at(R, 33, 28, 180), at(R, 33, 34, 180), at(MG, 35, 31, 180, true),
+  // Poblacion
+  at(R, 48, 33, 180), at(R, 48, 40, 180), at(MG, 50, 37, 180, true), at(AT, 52, 35, 180),
+  // Simbahan
+  at(R, 71, 39, 180), at(R, 72, 46, 180), at(MG, 73, 42, 180, true), at(MO, 78, 40, 180, true), at(TK, 76, 45, 180),
+  // San Fernando Road
+  at(R, 93, 47, 180), at(R, 93, 54, 180), at(R, 96, 50, 180),
+  at(MG, 95, 46, 180, true), at(MG, 95, 55, 180, true), at(AT, 98, 51, 180), at(TK, 100, 53, 180),
 ];
 
 const ROUTE3_START: PlacedUnit[] = [
-  at('us_riflemen', 11, 20, 0),
-  at('us_riflemen', 11, 24, 0),
-  at('us_hmg', 13, 22, 0),
+  at('us_riflemen', 6, 16, 0),
+  at('us_riflemen', 6, 24, 0),
+  at('us_hmg', 9, 20, 0),
 ];
 
 // ─── Theater of War ────────────────────────────────────────────────
@@ -52,7 +53,7 @@ export const THEATER: readonly ScenarioDef[] = [
     location: 'Intramuros, Manila',
     briefing: [
       'The old walled city of Intramuros guards the heart of Manila. Its stone ramparts have stood for centuries; tonight they must stand again.',
-      'The enemy will storm three gates at once: Puerta Real to the south, Santa Lucia to the west and the Parian gate to the east. Every wave is stronger than the last.',
+      'The enemy will storm the landward gates at once: from the north, the north-west and the west. Every wave is stronger than the last. The bay guards your back and Fort Santiago holds your headquarters.',
       'The streets are narrow and the walls cannot be climbed. Cover the gates with your machine guns, keep a reserve at the plaza, and do not let the Plaza de Roma fall.',
     ],
     map: 'intramuros',
@@ -60,18 +61,18 @@ export const THEATER: readonly ScenarioDef[] = [
     factions: ['usaffe', 'ija'],
     startResources: { manpower: 560, munitions: 90, fuel: 50 },
     playerUnits: [
-      at('us_riflemen', 41, 36, 90),
-      at('us_riflemen', 49, 40, 90),
-      at('us_hmg', 45, 45, 90, true),
+      at('us_riflemen', 41, 46, -90),
+      at('us_riflemen', 50, 46, -90),
+      at('us_hmg', 46, 43, -90, true),
     ],
     owners: { 0: 0, 1: 0, 2: 0, 4: 0, 3: 1 },
     defense: {
       hold: [0],
       prepTime: 75,
       spawns: [
-        { x: 45, y: 66 },
-        { x: 4, y: 38 },
-        { x: 86, y: 38 },
+        { x: 53, y: 1 },
+        { x: 1, y: 46 },
+        { x: 1, y: 8 },
       ],
       waves: [
         wave(0, R, R),
@@ -93,7 +94,7 @@ export const THEATER: readonly ScenarioDef[] = [
     location: 'Mount Samat, Bataan',
     briefing: [
       'The summit is the last good observation post on the line. Whoever holds it sees every approach.',
-      'The enemy will come in waves up three lanes: the western trail, the central road and the eastern road. Each wave is stronger than the last.',
+      'The enemy will come in waves by three routes: the north-west trail, the north road and out of the jungle to the east. Each wave is stronger than the last.',
       'Use the sixty seconds before the first wave to reinforce, set up your machine gun arcs and bring a mortar forward.',
     ],
     map: 'mount-samat',
@@ -154,7 +155,7 @@ export const THEATER: readonly ScenarioDef[] = [
       'December 1941. Enemy columns are pushing south from the Lingayen beaches, and every crossroads on the plain is contested.',
       'Build your company, take the ground and break the enemy on your terms: hold the victory points, annihilate them, or fight with no limit at all.',
     ],
-    map: 'bataan',
+    map: 'san-fernando',
     mode: 'skirmish',
     win: 'points',
     factions: ['usaffe', 'ija'],
@@ -167,15 +168,15 @@ export const CAMPAIGN: readonly ScenarioDef[] = [
   {
     id: 'c1-withdrawal',
     name: 'Withdrawal to Bataan',
-    tagline: 'Destroy the enemy vanguard at the crossroads.',
+    tagline: 'Destroy the enemy vanguard at Calumpit.',
     date: 'December 1941',
     location: 'Central Luzon',
     briefing: [
       'On 22 December 1941 the Japanese 14th Army landed at Lingayen Gulf and drove south towards Manila.',
       'Command has ordered a fighting withdrawal into the Bataan peninsula. Every day the roads stay open, more men and supplies reach the new line.',
-      'An enemy vanguard is racing for the crossroads on the withdrawal route. Destroy it to the last man, and the road stays open.',
+      'An enemy vanguard is racing for Calumpit and its bridges over the Pampanga, the only way across on the withdrawal route. Destroy it to the last man, and the road stays open.',
     ],
-    map: 'bataan',
+    map: 'calumpit',
     mode: 'skirmish',
     win: 'annihilation',
     factions: ['usaffe', 'ija'],
@@ -188,26 +189,26 @@ export const CAMPAIGN: readonly ScenarioDef[] = [
     location: 'Layac Junction, gateway to Bataan',
     briefing: [
       'The last units are crossing into Bataan. Layac Junction is the door, and your company is holding it open.',
-      'The enemy will attack the stone bridge from the south in waves. Hold it until the withdrawal is complete.',
-      'Your church and the ammunition dump to the north keep you supplied. Do not let the bridge fall.',
+      'The enemy will come at the bridge in waves from the north, the junction town and the fields to the east. Hold it until the withdrawal is complete.',
+      'Barrio Layac and the Dinalupihan road on your bank keep you supplied. Do not let the bridge fall.',
     ],
-    map: 'san-roque',
+    map: 'layac',
     mode: 'defense',
     factions: ['usaffe', 'ija'],
     startResources: { manpower: 520, munitions: 70, fuel: 40 },
     playerUnits: [
-      at('us_riflemen', 42, 34, 90),
-      at('us_riflemen', 48, 34, 90),
-      at('us_hmg', 45, 33.5, 90, true),
+      at('us_riflemen', 51, 40, -45),
+      at('us_riflemen', 47, 37, -45),
+      at('us_hmg', 53, 37, -45, true),
     ],
-    owners: { 0: 0, 1: 0, 3: 0, 5: 0, 2: 1, 4: 1, 6: 1 },
+    owners: { 0: 0, 1: 0, 3: 0, 2: 1, 4: 1 },
     defense: {
       hold: [0],
       prepTime: 60,
       spawns: [
-        { x: 16, y: 72 },
-        { x: 45, y: 64 },
-        { x: 74, y: 72 },
+        { x: 60, y: 1 },
+        { x: 106, y: 6 },
+        { x: 111, y: 50 },
       ],
       waves: [
         wave(0, R, R),
@@ -257,13 +258,13 @@ export const CAMPAIGN: readonly ScenarioDef[] = [
   {
     id: 'c4-return',
     name: 'The Road to Manila',
-    tagline: 'Drive down Route 3 and seize the Calumpit bridge.',
+    tagline: 'Drive down Route 3 and break through to the San Fernando road.',
     date: 'January 1945',
     location: 'Route 3, Central Luzon',
     briefing: [
       'Three years later, the Hukbong Maharlika has returned. On 9 January 1945 the landings came at Lingayen Gulf, where the invasion began.',
-      'The road to Manila runs straight down Route 3 through Tarlac, Bamban and San Fernando to the bridge at Calumpit.',
-      'Every town is fortified. Take them in order, keep the advance moving, and seize the bridge before the enemy can blow it.',
+      'The road to Manila runs straight down Route 3. Here it passes through a fortified town: the Tarlac road, the poblacion, the church and the road south to San Fernando.',
+      'Every position is dug in. Take them in order, keep the advance moving, and break through before the enemy can bring up reserves.',
     ],
     map: 'route-3',
     mode: 'offensive',
