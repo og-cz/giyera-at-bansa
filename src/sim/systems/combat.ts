@@ -171,6 +171,7 @@ function tryFire(world: World, sq: Squad, m: Model, ws: WeaponState, target: Squ
     projectile: w.projectile,
     hit,
     team: sq.team,
+    weapon: w.id,
   });
   if (isSoft(target)) {
     applySuppression(world, target, w.suppression * COVER[coverAt(world.map, tm.pos, m.pos)].suppression);
@@ -243,7 +244,7 @@ export function launch(world: World, source: Squad, from: Vec2, to: Vec2, w: Wea
     flight,
     arc,
   });
-  world.emit({ type: 'launch', from: { ...from }, team: source.team });
+  world.emit({ type: 'launch', from: { ...from }, team: source.team, weapon: w.id });
 }
 
 export function updateProjectiles(world: World, dt: number): void {
@@ -260,7 +261,7 @@ export function updateProjectiles(world: World, dt: number): void {
 
 /** Area damage with falloff. Explosives ignore allegiance: friendly fire is real. */
 export function explode(world: World, pos: Vec2, w: WeaponDef, source: Squad | null): void {
-  world.emit({ type: 'explosion', pos: { ...pos }, radius: w.aoe });
+  world.emit({ type: 'explosion', pos: { ...pos }, radius: w.aoe, weapon: w.id });
   for (const sq of world.squads) {
     if (sq.dead) continue;
     let touched = false;
