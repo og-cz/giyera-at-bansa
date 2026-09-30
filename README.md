@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="docs/logo.svg" alt="Taga Komando" width="420">
-</p>
+<img src="docs/logo.svg" alt="Taga Komando" width="420">
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
