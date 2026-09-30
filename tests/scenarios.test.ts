@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SIM_DT, TILE } from '../src/data/balance';
-import { CAMPAIGN, SCENARIOS, THEATER } from '../src/data/scenarios';
+import { CAMPAIGN, CAMPAIGN_PARTS } from '../src/data/campaign';
+import { SCENARIOS, THEATER } from '../src/data/scenarios';
 import { ALL_MAPS } from '../src/data/theaterMaps';
 import { dist } from '../src/core/vec';
 import { issueAttackMove } from '../src/sim/commands';
@@ -30,7 +31,7 @@ function killTeam(world: World, team: 0 | 1): void {
 
 describe('scenario data', () => {
   it('references valid maps and points', () => {
-    for (const s of [...THEATER, ...CAMPAIGN]) {
+    for (const s of [...THEATER, ...CAMPAIGN_PARTS]) {
       const map = ALL_MAPS[s.map];
       expect(map, s.id).toBeDefined();
       for (const i of s.defense?.hold ?? []) expect(map.points[i], s.id).toBeDefined();
@@ -51,7 +52,7 @@ describe('scenario data', () => {
     }
   });
 
-  it.each([...THEATER, ...CAMPAIGN].map((s) => s.id))('%s: the enemy HQ can be reached and destroying it wins', (id) => {
+  it.each([...THEATER, ...CAMPAIGN_PARTS].map((s) => s.id))('%s: the enemy HQ can be reached and destroying it wins', (id) => {
     const world = worldFor(id);
     const hq = world.hqOf(1)!;
     expect(hq, 'enemy HQ').toBeDefined();
@@ -68,7 +69,7 @@ describe('scenario data', () => {
   });
 
   it('wave spawns can reach the hold point', () => {
-    for (const s of [...THEATER, ...CAMPAIGN]) {
+    for (const s of [...THEATER, ...CAMPAIGN_PARTS]) {
       if (!s.defense) continue;
       const world = worldFor(s.id);
       const hold = world.points[s.defense.hold[0]].pos;
@@ -203,5 +204,36 @@ describe('every scenario runs', () => {
     const world = worldFor(id);
     run(world, 120);
     expect(world.time).toBeGreaterThan(0);
+  });
+});
+
+describe('campaign', () => {
+  it('has many missions, each told in two parts with a story', () => {
+    expect(CAMPAIGN.length).toBeGreaterThanOrEqual(9);
+    const ids = new Set<string>();
+    for (const m of CAMPAIGN) {
+      expect(m.parts, m.id).toHaveLength(2);
+      for (const p of m.parts) {
+        expect(ids.has(p.id), p.id).toBe(false);
+        ids.add(p.id);
+        expect(p.story?.length ?? 0, p.id).toBeGreaterThan(0);
+      }
+      expect(m.parts[1].aftermath?.length ?? 0, m.id).toBeGreaterThan(0);
+    }
+  });
+
+  it.each(CAMPAIGN_PARTS.filter((s) => s.mode !== 'skirmish').map((s) => s.id))('%s: generated layout puts units and spawns on the map', (id) => {
+    const s = SCENARIOS[id];
+    const map = ALL_MAPS[s.map];
+    for (const u of s.enemyUnits ?? []) {
+      expect(u.x, `${id} ${u.unitId}`).toBeGreaterThanOrEqual(-2);
+      expect(u.x).toBeLessThanOrEqual(map.width + 2);
+      expect(u.y).toBeGreaterThanOrEqual(-2);
+      expect(u.y).toBeLessThanOrEqual(map.height + 2);
+    }
+    for (const sp of s.defense?.spawns ?? []) {
+      expect(sp.x).toBeGreaterThanOrEqual(0);
+      expect(sp.y).toBeLessThanOrEqual(map.height);
+    }
   });
 });
