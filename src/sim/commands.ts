@@ -37,6 +37,8 @@ function commandable(sq: Squad): boolean {
 export function issueMove(world: World, sq: Squad, dest: Vec2, queue = false, facing?: number): CommandResult {
   if (sq.dead) return fail('Unit is dead');
   if (sq.def.kind === 'structure') {
+    // Headquarters: the rally point where new units go.
+    if (sq.def.role !== 'hq') return fail('Structures cannot move');
     sq.rally = { ...dest };
     return OK;
   }
