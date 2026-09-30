@@ -1,10 +1,12 @@
-# Taga Komando
+<p align="center">
+  <img src="docs/logo.svg" alt="Taga Komando" width="420">
+</p>
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
 *Factions are dramatized. The battles and places are inspired by real events on Luzon, 1941–45.*
 
-Version 0.5.3 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.5.4 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -160,9 +162,13 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 ## Changelog
 
+**0.5.4**
+- Several units of the **same type** keep their shared abilities and special orders, like CoH2; only a mixed group is limited to attack-move, stop and retreat.
+- The README shows the Taga Komando logo.
+
 **0.5.3**
 - **Repair order** for engineers (F): click it, then click the damaged tank, HQ or defense. Engineers do not fight while they repair or build.
-- With **several units selected**, only the common orders show (attack-move, stop, retreat), like CoH2; select one unit for its abilities, upgrades and special orders.
+- With a **mixed group selected**, only the common orders show (attack-move, stop, retreat), like CoH2.
 - **Surrender** from the pause menu ends the battle on the defeat screen.
 - The camera starts closer and zooms in further.
 
