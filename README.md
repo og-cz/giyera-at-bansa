@@ -154,7 +154,9 @@ No unit is simply the strongest. Each one has a job and a threat:
 
 Machine guns turn slowly once set up, so attacking them from the side works. The unit card and every build button show these strengths and weaknesses.
 
-**Maps:** Bataan Crossroads, Barrio San Roque (skirmish), Mount Samat, Route 3, Intramuros (missions).
+**Maps:**
+- Skirmish: Bataan Crossroads, Barrio San Roque, and thirteen Luzon towns: Calumpit, Plaridel, Pilar, Orani, Porac, Abucay, San Fernando, Dinalupihan, Hermosa, Guagua, Lingayen, Baliuag and Lubao (river towns, coast, jungle and open farmland).
+- Missions: Mount Samat, Route 3, Intramuros.
 
 ## Changelog
 
@@ -206,6 +208,7 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 ## Credits
 
+- Town maps: generated with Watabou's **Village Generator** (https://watabou.itch.io/village-generator) and converted into battlefields. Watabou's maps are free to use; thank you.
 - Display font: **Quiapo Free** by Aaron Amar (http://be.net/aaronamar), used under the SIL Open Font License 1.1. The licence text ships with the game in `licenses/Quiapo-OFL.txt`.
 
 ## Troubleshooting
@@ -223,7 +226,7 @@ Needs Node.js and Git (see [Where to get things](#where-to-get-things)).
 
 ```bash
 git clone https://github.com/og-cz/taga-komando.git
-cd giyera-at-bansa
+cd taga-komando
 npm install
 ```
 
@@ -252,5 +255,13 @@ src/render/ drawing
 src/ui/     menus and HUD
 src/input/  mouse and keyboard
 tests/      automated tests
+tools/      map converter for Watabou village exports
 ```
+
+**Adding a town map**
+
+1. Open https://watabou.github.io/village-generator/, make a village you like, then right-click the map → *Export as* → *JSON*.
+2. On the same page, open the browser console, paste in `tools/watabou-to-grid.js`, and run `copy(JSON.stringify(watabouToGrid(<the exported JSON>)))`.
+3. Save the rows in `src/data/luzon/<town>.ts` and add an entry for the town in `src/data/luzonMaps.ts` (name, description, point names).
+4. Run `npm test`. Bases and capture points are placed automatically, and the tests check that every point can be reached by infantry and tanks from both bases.
 
