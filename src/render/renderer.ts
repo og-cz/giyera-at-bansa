@@ -17,6 +17,7 @@ import { COVER_COLOR, NEUTRAL, TEAM } from './palette';
 import { TerrainLayer } from './terrainLayer';
 
 const ROLE_GLYPH: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN' };
+const FORT_GLYPH: Record<string, string> = { mg_nest: 'N', bunker: 'BK', aid_tent: '+' };
 const POINT_GLYPH: Record<string, string> = { victory: 'V', munitions: 'M', fuel: 'F', manpower: 'P' };
 const ORDER_COLOR: Record<string, string> = {
   move: '#9be29b',
@@ -84,6 +85,9 @@ export class Renderer {
     camera.apply(ctx, this.dpr);
 
     this.terrain.sync();
+    const topLeft = camera.screenToWorld(0, 0);
+    const bottomRight = camera.screenToWorld(camera.viewW, camera.viewH);
+    this.terrain.drawSurround(ctx, topLeft.x - 32, topLeft.y - 32, bottomRight.x + 32, bottomRight.y + 32);
     this.terrain.draw(ctx);
     this.drawTerritory();
     this.drawPoints();
@@ -928,7 +932,7 @@ export class Renderer {
     const col = TEAM[sq.team];
     const selected = ui.selected.has(sq.id);
 
-    const glyph = ROLE_GLYPH[sq.def.role] ?? '?';
+    const glyph = (sq.def.role === 'fort' ? FORT_GLYPH[sq.def.id] : ROLE_GLYPH[sq.def.role]) ?? '?';
     ctx.font = 'bold 9px "Segoe UI", system-ui, sans-serif';
     const bw = Math.max(16, ctx.measureText(glyph).width + 8);
     ctx.fillStyle = selected ? col.light : col.main;
