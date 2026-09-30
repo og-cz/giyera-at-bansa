@@ -1,7 +1,7 @@
 import { ABILITIES } from '../data/abilities';
 import { BUILDABLES, BUILDABLE_IDS } from '../data/buildables';
 import { ECONOMY, LOGISTICS } from '../data/balance';
-import type { Resources, TeamId } from '../data/types';
+import type { Resources, TeamId, UnitDef } from '../data/types';
 import { TERRAIN } from '../data/terrain';
 import { UNITS } from '../data/units';
 import { UPGRADES } from '../data/upgrades';
@@ -20,7 +20,10 @@ import type { Minimap } from './minimap';
 
 const DEFENSE_ICON: Record<string, string> = { sandbags: '▤', wire: '⌇', tanktrap: '✕', mine: '●', mg_nest: '◉', bunker: '▣', aid_tent: '✚' };
 
-const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN', fort: 'F' };
+const ROLE_ICON: Record<string, string> = { hq: 'HQ', line: 'R', mg: 'MG', mortar: 'M', at: 'AT', tank: 'T', engineer: 'EN', fort: '▣' };
+/** Short badge for a unit: structures show what they are (nest, bunker, tent). */
+const glyphOf = (def: UnitDef): string => (def.role === 'fort' ? FORT_GLYPH[def.id] ?? '▣' : ROLE_ICON[def.role]);
+const FORT_GLYPH: Record<string, string> = { mg_nest: 'N', bunker: 'BK', aid_tent: '+' };
 
 interface Tip {
   title: string;
@@ -624,7 +627,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     const card = el(
       'button',
       { class: 'roster-card' },
-      el('span', { class: 'glyph', text: ROLE_ICON[sq.def.role] }),
+      el('span', { class: 'glyph', text: glyphOf(sq.def) }),
       el(
         'div',
         { class: 'rc-body' },
@@ -772,7 +775,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
   private miniCard(sq: Squad): HTMLElement {
     const fill = el('div', { class: 'fill' });
     fill.style.width = `${healthFraction(sq) * 100}%`;
-    const card = el('button', { class: `mini t${sq.team}` }, el('span', { class: 'glyph', text: ROLE_ICON[sq.def.role] }), el('div', { class: 'hp' }, fill));
+    const card = el('button', { class: `mini t${sq.team}` }, el('span', { class: 'glyph', text: glyphOf(sq.def) }), el('div', { class: 'hp' }, fill));
     if (sq.suppState !== 'normal') card.classList.add(sq.suppState);
     card.addEventListener('mousedown', (e) => this.input.select([sq.id], e.shiftKey));
     this.tip(card, () => ({ title: sq.def.name, body: this.statusLine(sq) }));
@@ -804,7 +807,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       el(
         'div',
         { class: 'portrait' },
-        el('span', { class: 'portrait-glyph', text: ROLE_ICON[sq.def.role] }),
+        el('span', { class: 'portrait-glyph', text: glyphOf(sq.def) }),
         el('span', { class: 'portrait-vet', text: '★'.repeat(sq.vet) }),
         el('div', { class: 'hpbar' }, fill),
       ),
