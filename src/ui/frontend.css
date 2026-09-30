@@ -446,6 +446,34 @@ body.cinematic #game {
   border: 1px solid rgba(0, 0, 0, 0.6);
 }
 
+.choices.map-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 8px;
+}
+
+.map-tile {
+  padding: 6px;
+  text-align: center;
+}
+
+.map-tile canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 4px;
+}
+
+.map-tile h3 {
+  font-size: 14px;
+}
+
+.map-info {
+  min-height: 2.8em;
+  margin: 8px 0 0;
+  color: #cfc9b4;
+}
+
 .map-card {
   display: grid;
   grid-template-columns: 140px 1fr;
