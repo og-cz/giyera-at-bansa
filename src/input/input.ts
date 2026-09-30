@@ -177,12 +177,22 @@ export class Input {
     this.report(this.selectedOwn().filter(notStructure).map((s) => issueRetreat(this.world, s)));
   }
 
+  /**
+   * Like CoH2: with several units selected only the common orders (move, attack,
+   * stop, retreat) are available. Abilities and unit-specific orders need one unit.
+   */
+  singleUnit(): boolean {
+    return this.selectedOwn().filter(notStructure).length === 1;
+  }
+
   reinforce(): void {
+    if (!this.singleUnit()) return;
     this.report(this.selectedOwn().filter((s) => s.def.kind === 'infantry' || s.def.kind === 'team').map((s) => issueReinforce(this.world, s)));
   }
 
   /** Buy the upgrade on `hotkey` (T or Y) for every selected squad that can still take it. */
   upgrade(hotkey: string): void {
+    if (!this.singleUnit()) return;
     const results: CommandResult[] = [];
     for (const sq of this.selectedOwn()) {
       const id = sq.def.upgrades.find((u) => UPGRADES[u].hotkey === hotkey.toUpperCase());
@@ -192,6 +202,7 @@ export class Input {
   }
 
   setupMode(): void {
+    if (!this.singleUnit()) return;
     const teams = this.selectedOwn().filter((s) => s.def.kind === 'team');
     if (teams.length === 0) return;
     const deployed = teams.filter((s) => s.setup === 'deployed' || s.setup === 'settingUp');
@@ -208,6 +219,7 @@ export class Input {
 
   /** Enter placement mode for a defense, if an engineer that can build it is selected. */
   buildMode(buildId: string): void {
+    if (!this.singleUnit()) return;
     if (!this.selectedOwn().some((s) => s.def.builds.includes(buildId))) return;
     this.ui.mode = { kind: 'build', buildId };
     this.ui.buildFrom = null;
@@ -235,7 +247,27 @@ export class Input {
     this.report([issueBuild(this.world, lead, buildId, from, to)]);
   }
 
+  /** Engineers' Repair order: click it, then click the damaged tank, HQ or defense. */
+  repairMode(): void {
+    if (!this.singleUnit() || !this.selectedOwn().some((s) => s.def.canRepair)) return;
+    this.ui.mode = { kind: 'repair' };
+  }
+
+  private repairAt(p: Vec2): void {
+    const repairers = this.selectedOwn().filter((s) => s.def.canRepair);
+    const target = this.pick(p);
+    if (target) {
+      this.report(repairers.map((s) => issueRepair(this.world, s, target)));
+      return;
+    }
+    const tx = Math.floor(p.x / TILE);
+    const ty = Math.floor(p.y / TILE);
+    if (defenseAt(this.world, tx, ty)) this.report(repairers.map((s) => issueRepairDefense(this.world, s, tx, ty)));
+    else this.cb.toast('Click a damaged tank, headquarters or defense to repair');
+  }
+
   abilityMode(hotkey: string): void {
+    if (!this.singleUnit()) return;
     const own = this.selectedOwn();
     for (const sq of own) {
       const id = sq.def.abilities.find((a) => ABILITIES[a].hotkey === hotkey.toUpperCase());
@@ -362,6 +394,11 @@ export class Input {
     }
     if (mode.kind === 'build') {
       this.ui.buildFrom = p;
+      return;
+    }
+    if (mode.kind === 'repair') {
+      this.repairAt(p);
+      if (!e.shiftKey) this.ui.mode = { kind: 'none' };
       return;
     }
     if (mode.kind === 'setup') {
@@ -535,6 +572,9 @@ export class Input {
       case 't':
       case 'y':
         this.upgrade(key);
+        break;
+      case 'f':
+        this.repairMode();
         break;
       case 'h':
         this.selectHq();
