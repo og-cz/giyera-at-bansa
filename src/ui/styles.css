@@ -58,18 +58,40 @@ button:disabled {
 }
 
 /* ─── HUD ─────────────────────────────────────────── */
-/* Objective top centre, roster top right,
-   minimap / unit card / command card along the bottom. */
+/* Few words, clear icons: score top centre, resources and roster top right,
+   minimap / selected unit / queue / orders along the bottom. Names and
+   details live in the tooltips. */
 
 .hud {
   position: absolute;
   inset: 0;
   pointer-events: none !important;
   font-family: var(--display);
+  --plate: linear-gradient(180deg, rgba(30, 33, 27, 0.97), rgba(15, 17, 13, 0.97));
+  --plate-edge: #3a3a2c;
+  --plate-hi: rgba(217, 180, 90, 0.35);
 }
 
 .hud > * {
   pointer-events: auto;
+}
+
+/* Line icons: stroked in the text colour, filled parts a shade of it. */
+.ico {
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.ico .ico-fill {
+  fill: currentColor;
+  stroke: none;
+  opacity: 0.28;
 }
 
 /* Top centre: VP bar or objective, clock beneath */
@@ -89,16 +111,18 @@ button:disabled {
   align-items: center;
   gap: 10px;
   padding: 5px 12px;
-  background: linear-gradient(180deg, rgba(12, 14, 11, 0.92), rgba(12, 14, 11, 0.75));
-  border: 1px solid var(--panel-edge);
-  border-radius: 3px;
+  background: var(--plate);
+  border: 1px solid var(--plate-edge);
+  border-top-color: var(--plate-hi);
+  border-radius: 2px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
 .tickets {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-weight: 700;
+  gap: 7px;
+  font: 700 15px var(--display);
   font-variant-numeric: tabular-nums;
 }
 
@@ -107,10 +131,10 @@ button:disabled {
 }
 
 .tickets .bar {
-  width: 190px;
-  height: 11px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  width: 180px;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .tickets.t1 .bar {
@@ -123,12 +147,12 @@ button:disabled {
   transition: width 0.3s;
 }
 
-.tickets.t0 .fill { background: var(--blue); }
-.tickets.t1 .fill { background: var(--red); }
+.tickets.t0 .fill { background: linear-gradient(180deg, #6aa8f0, #3f7cc8); }
+.tickets.t1 .fill { background: linear-gradient(180deg, #ef6f64, #c9443a); }
 
 .vp-icons {
   display: flex;
-  gap: 4px;
+  gap: 5px;
 }
 
 .vp {
@@ -136,12 +160,11 @@ button:disabled {
   place-items: center;
   width: 22px;
   height: 22px;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 800;
-  color: #111;
-  background: #b8b2a0;
+  transform: rotate(45deg);
+  font-size: 0;
+  background: #6f6a5c;
   border: 1px solid #000;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.35);
 }
 
 .vp.o0 { background: var(--blue); }
@@ -149,15 +172,14 @@ button:disabled {
 
 .clock {
   padding: 1px 10px;
-  font-size: 13px;
-  letter-spacing: 0.08em;
+  font: 600 13px var(--display);
+  letter-spacing: 0.1em;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.55);
-  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.6);
 }
 
-/* Top right: menu buttons and roster */
+/* Top right: resources, menu buttons, roster */
 .hud-corner {
   position: absolute;
   top: 6px;
@@ -166,13 +188,58 @@ button:disabled {
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  max-height: calc(100vh - 190px);
+  max-height: calc(100vh - 175px);
   pointer-events: none !important;
 }
 
 .hud-corner > * {
   pointer-events: auto;
 }
+
+.corner-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.resources {
+  display: flex;
+  gap: 1px;
+  background: var(--plate-edge);
+  border: 1px solid var(--plate-edge);
+  border-top-color: var(--plate-hi);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+}
+
+.res {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
+  background: var(--plate);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.res-icon {
+  align-self: center;
+  font-size: 17px;
+}
+
+.res .val {
+  font: 700 16px var(--display);
+  color: var(--ink);
+}
+
+.res .inc {
+  font: 600 11px var(--display);
+  color: var(--ink-dim);
+}
+
+.res.mp .res-icon { color: #e3dac0; }
+.res.mu .res-icon { color: #e0b44f; }
+.res.fu .res-icon { color: #7cc0e8; }
+.res.pop .res-icon { color: #9ac38a; }
 
 .corner-btns {
   display: flex;
@@ -185,87 +252,128 @@ button:disabled {
   font: 600 13px var(--display);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  background: rgba(12, 14, 11, 0.9);
-  border: 1px solid var(--panel-edge);
-  border-radius: 3px;
+  background: var(--plate);
+  border: 1px solid var(--plate-edge);
+  border-top-color: var(--plate-hi);
 }
 
 .corner-btn:hover {
   border-color: var(--accent);
 }
 
+/* The army at a glance: one icon card per unit */
 .roster {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 196px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: flex-start;
+  gap: 4px;
+  width: 236px;
   overflow-y: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
 
 .roster-card {
+  position: relative;
   display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  text-align: left;
-  background: rgba(12, 14, 11, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-left: 3px solid var(--blue);
-  border-radius: 2px;
+  place-items: center;
+  width: 55px;
+  height: 48px;
+  padding: 0 0 6px;
+  color: #cfe0f5;
+  background: linear-gradient(180deg, rgba(40, 58, 82, 0.95), rgba(18, 26, 38, 0.95));
+  border: 1px solid #1c2735;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.roster-card .ico {
+  font-size: 26px;
 }
 
 .roster-card:hover {
-  border-color: rgba(217, 180, 90, 0.7);
+  border-color: rgba(217, 180, 90, 0.8);
 }
 
 .roster-card.selected {
-  background: rgba(40, 52, 32, 0.95);
-  border-color: #9dff7a;
+  border-color: #e8d48a;
+  box-shadow: 0 0 0 1px #e8d48a, inset 0 0 10px rgba(232, 212, 138, 0.25);
 }
 
 .roster-card.pinned {
-  border-left-color: #ff4a3a;
+  background: linear-gradient(180deg, rgba(110, 40, 34, 0.95), rgba(40, 16, 14, 0.95));
 }
 
 .roster-card.retreating {
-  opacity: 0.7;
-  border-left-color: #ffd166;
+  opacity: 0.6;
 }
 
-.rc-body {
-  min-width: 0;
+.rc-group,
+.rc-state,
+.rc-count {
+  position: absolute;
+  font: 700 11px/1 var(--display);
 }
 
-.rc-name {
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.rc-group {
+  top: 2px;
+  left: 3px;
+  color: var(--ink);
 }
 
-.rc-bar {
-  height: 3px;
-  margin-top: 3px;
+.rc-state {
+  top: 2px;
+  right: 3px;
+  color: #ffd166;
+}
+
+.roster-card.reinforcing .rc-state { color: #9ad06b; }
+
+.rc-count {
+  right: 3px;
+  bottom: 7px;
+  color: #ffd766;
+}
+
+.rc-bar,
+.rc-job {
+  position: absolute;
+  left: 3px;
+  right: 3px;
   background: rgba(0, 0, 0, 0.6);
 }
 
-.rc-bar .fill {
+.rc-bar {
+  bottom: 3px;
+  height: 3px;
+}
+
+.rc-job {
+  bottom: 0;
+  height: 2px;
+  background: none;
+}
+
+.rc-bar .fill,
+.hpbar .fill,
+.mini .hp .fill {
   height: 100%;
-  background: #7fd66b;
+  background: linear-gradient(180deg, #92e27c, #5fb44c);
 }
 
-.rc-badges {
-  font-size: 11px;
-  color: var(--ink-dim);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
+.rc-bar .fill.low,
+.hpbar .fill.low {
+  background: linear-gradient(180deg, #ff8a70, #d4513f);
 }
 
-.roster-card.pinned .rc-badges { color: #ff7a6a; }
-.roster-card.retreating .rc-badges { color: #ffd166; }
+.rc-job .fill {
+  height: 100%;
+  width: 0;
+  background: #9ad06b;
+}
+
+.roster-card.upgrading:not(.reinforcing) .rc-job .fill {
+  background: #e08a4f;
+}
 
 /* Notifications */
 .toasts {
@@ -281,10 +389,11 @@ button:disabled {
 
 .toast {
   padding: 5px 10px;
+  font-size: 13px;
   background: rgba(10, 12, 9, 0.85);
   border-left: 3px solid var(--ink-dim);
   transition: opacity 0.7s;
-  max-width: 360px;
+  max-width: 340px;
 }
 
 .toast.good { border-color: var(--good); }
@@ -301,27 +410,19 @@ button:disabled {
   gap: 4px;
   padding: 5px;
   align-items: stretch;
-  height: 178px;
+  height: 150px;
   pointer-events: none !important;
-  background: linear-gradient(0deg, rgba(5, 6, 5, 0.85), transparent);
+  background: linear-gradient(0deg, rgba(5, 6, 5, 0.7), transparent);
 }
 
 .panel {
   pointer-events: auto;
-  background: linear-gradient(180deg, rgba(26, 29, 23, 0.96), rgba(16, 18, 14, 0.96));
-  border: 1px solid var(--panel-edge);
-  border-top: 2px solid #5d5a44;
-  border-radius: 3px;
+  background: var(--plate);
+  border: 1px solid var(--plate-edge);
+  border-top-color: var(--plate-hi);
+  box-shadow: 0 -2px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   padding: 6px;
   overflow: hidden;
-}
-
-.panel-title {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-  margin: 4px 0;
 }
 
 .minimap-panel {
@@ -333,48 +434,73 @@ button:disabled {
 .minimap {
   display: block;
   cursor: pointer;
-  max-height: 164px;
+  max-height: 138px;
   image-rendering: pixelated;
 }
 
-/* Unit card (bottom centre) */
+/* Selected unit (bottom centre) */
 .unit-card {
   flex: 1;
   min-width: 260px;
-  font-family: var(--font);
 }
 
-.hint {
+.unit-panel {
+  height: 100%;
+}
+
+.empty-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  padding: 0 12px;
   color: var(--ink-dim);
-  padding: 10px;
-  line-height: 1.6;
+}
+
+.empty-icon {
+  font-size: 52px;
+  opacity: 0.35;
+}
+
+.empty-name {
+  font: 700 17px var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #bdb6a2;
+}
+
+.empty-sub {
+  font: 500 12px var(--display);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .portrait-card {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   height: 100%;
 }
 
 .portrait {
   position: relative;
   flex: none;
-  width: 118px;
+  width: 124px;
   display: grid;
   place-items: center;
-  background: radial-gradient(circle at 50% 35%, #3f5f86 0%, #1a2b40 70%);
+  color: #d6e6fa;
+  background: radial-gradient(circle at 50% 38%, #466892 0%, #1b2c42 72%);
   border: 1px solid #0b0d0a;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), inset 0 -20px 30px rgba(0, 0, 0, 0.35);
 }
 
 .portrait-card.t1 .portrait {
-  background: radial-gradient(circle at 50% 35%, #8a3b33 0%, #3e1512 70%);
+  color: #f6d6d0;
+  background: radial-gradient(circle at 50% 38%, #8f3f36 0%, #3e1512 72%);
 }
 
-.portrait-glyph {
-  font: 700 44px/1 var(--display);
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+.portrait-icon {
+  font-size: 70px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
 }
 
 .portrait-vet {
@@ -382,104 +508,81 @@ button:disabled {
   top: 4px;
   left: 6px;
   color: #ffd766;
-  font-size: 12px;
-}
-
-.portrait .hpbar {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  bottom: 4px;
-  height: 5px;
-  margin: 0;
-  background: rgba(0, 0, 0, 0.6);
+  font-size: 13px;
 }
 
 .portrait-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   min-width: 0;
+  padding-top: 2px;
   overflow: hidden;
 }
 
-.portrait-faction {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
-
 .portrait-name {
-  font: 700 18px/1.1 var(--display);
+  font: 700 20px/1 var(--display);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--ink);
-}
-
-.portrait-desc {
-  margin: 2px 0 3px;
-  font-size: 12px;
-  line-height: 1.3;
-  color: #c9c3b1;
-}
-
-.portrait-hint {
-  margin-top: 3px;
-  font-size: 11px;
-  color: var(--accent);
-}
-
-.portrait-card dl {
-  display: grid;
-  grid-template-columns: auto 1fr auto 1fr;
-  gap: 0 10px;
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.25;
-}
-
-.portrait-card dt {
-  color: var(--ink-dim);
-}
-
-.portrait-card dd.wide {
-  grid-column: span 3;
-}
-
-.portrait-card dd {
-  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.glyph {
-  display: inline-grid;
-  place-items: center;
-  min-width: 26px;
-  height: 20px;
-  padding: 0 4px;
-  border-radius: 2px;
-  font-size: 10px;
-  font-weight: 800;
-  color: #111;
-  background: var(--blue);
-}
-
-.t1 .glyph,
-.mini.t1 .glyph {
-  background: var(--red);
+.portrait-hint {
+  font: 500 12px var(--display);
+  letter-spacing: 0.04em;
+  color: var(--accent);
 }
 
 .hpbar {
-  height: 5px;
-  margin: 5px 0;
-  background: rgba(0, 0, 0, 0.5);
+  height: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.hpbar .fill {
-  height: 100%;
-  background: #7fd66b;
+.hpbar.big {
+  height: 8px;
+  max-width: 360px;
 }
 
+/* One pip per soldier: bright alive, amber hurt, dark lost */
+.pips {
+  display: flex;
+  gap: 4px;
+}
+
+.pip {
+  width: 11px;
+  height: 16px;
+  background: linear-gradient(180deg, #d9e8c4, #9fb884);
+  clip-path: polygon(50% 0, 100% 30%, 100% 100%, 0 100%, 0 30%);
+}
+
+.pip.hurt { background: linear-gradient(180deg, #ffd08a, #d99a3d); }
+.pip.lost { background: rgba(255, 255, 255, 0.12); }
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  padding: 2px 7px;
+  font: 600 12px var(--display);
+  letter-spacing: 0.03em;
+  color: #d8d2bf;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.chip.weapon { color: #bdb6a2; }
+.chip.good { color: #9ee08a; border-color: rgba(158, 224, 138, 0.35); }
+.chip.bad { color: #ff9a82; border-color: rgba(255, 122, 106, 0.45); }
+
+/* Several units selected: icon tiles */
 .multi {
   display: flex;
   flex-wrap: wrap;
@@ -487,14 +590,18 @@ button:disabled {
 }
 
 .mini {
-  width: 54px;
-  padding: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
   display: grid;
   gap: 4px;
   justify-items: center;
+  width: 50px;
+  padding: 5px 4px 4px;
+  color: #cfe0f5;
+  background: linear-gradient(180deg, rgba(40, 58, 82, 0.9), rgba(18, 26, 38, 0.9));
+  border: 1px solid #1c2735;
+}
+
+.mini .ico {
+  font-size: 24px;
 }
 
 .mini.suppressed { border-color: #ffd23a; }
@@ -502,122 +609,118 @@ button:disabled {
 
 .mini .hp {
   width: 100%;
-  height: 4px;
+  height: 3px;
   background: rgba(0, 0, 0, 0.6);
 }
 
-.mini .hp .fill {
-  height: 100%;
-  background: #7fd66b;
-}
-
-/* Command card (bottom right): resources, then orders or the build menu */
+/* Orders: square icon buttons, the hotkey in the corner */
 .command-card {
-  width: 380px;
-  display: flex;
-  flex-direction: column;
-}
-
-.resources {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-}
-
-.res {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 2px 6px 2px 2px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 2px;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  padding: 6px 7px;
 }
-
-.res .icon {
-  display: inline-grid;
-  place-items: center;
-  min-width: 24px;
-  height: 18px;
-  padding: 0 2px;
-  border-radius: 2px;
-  font-size: 10px;
-  font-weight: 700;
-  color: #111;
-}
-
-.res.mp .icon { background: #d9d0b4; }
-.res.mu .icon { background: #d9b45a; }
-.res.fu .icon { background: #7cc0e8; }
-.res.pop .icon { background: #9ac38a; }
 
 .cmd-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(4, 56px);
+  grid-auto-rows: 56px;
+  gap: 5px;
 }
 
 .cmd {
   position: relative;
   display: grid;
-  grid-template-rows: auto auto;
-  justify-items: center;
-  align-content: center;
-  gap: 1px;
-  height: 46px;
-  padding: 3px;
-  background: linear-gradient(180deg, #2d3127, #1c1f19);
-  border: 1px solid #4a4a36;
-  border-radius: 3px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  place-items: center;
+  padding: 0;
+  color: #e6dec5;
+  background: linear-gradient(180deg, #33372c, #1b1e17);
+  border: 1px solid #45452f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -8px 12px rgba(0, 0, 0, 0.25);
 }
 
 .cmd-icon {
-  font-size: 17px;
-  line-height: 1;
-  color: var(--accent);
-}
-
-.cmd-label {
-  max-width: 100%;
-  font-size: 11px;
-  line-height: 1.1;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 30px;
 }
 
 .cmd .key {
   position: absolute;
-  top: 2px;
-  right: 3px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--ink-dim);
+  right: 2px;
+  bottom: 2px;
+  min-width: 14px;
+  padding: 0 2px;
+  font: 700 10px/13px var(--display);
+  text-align: center;
+  color: #d9d2bb;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.cmd .key:empty {
+  display: none;
+}
+
+.cmd-cd {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 700 18px var(--display);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.cmd-cd:empty {
+  display: none;
+}
+
+.cmd.upgrade::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  clip-path: polygon(50% 0, 100% 60%, 70% 60%, 70% 100%, 30% 100%, 30% 60%, 0 60%);
+}
+
+.cmd.on::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9ee08a;
 }
 
 .cmd:not(:disabled):hover {
+  color: #fff3c9;
   border-color: var(--accent);
-  background: linear-gradient(180deg, #3a3e30, #25281f);
+  background: linear-gradient(180deg, #43462f, #25271c);
 }
 
 .cmd.active {
+  color: #fff3c9;
   border-color: var(--accent);
-  background: linear-gradient(180deg, #4a4630, #2e2b1c);
+  box-shadow: 0 0 0 1px var(--accent), inset 0 0 14px rgba(217, 180, 90, 0.35);
 }
 
-.cmd-grid.build .cmd-icon {
-  font: 700 14px var(--display);
-  color: #9cc4f5;
+.cmd:disabled {
+  opacity: 0.35;
+  filter: grayscale(1);
 }
 
-/* HQ production queue: three slots beside the orders */
+/* Recruit buttons at the HQ: blue plates like the roster */
+.cmd-grid.build .cmd {
+  color: #cfe0f5;
+  background: linear-gradient(180deg, #2c4262, #16202e);
+  border-color: #283a52;
+}
+
+/* Queue: three slots beside the orders */
 .queue-panel {
-  width: 62px;
+  width: 58px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -631,17 +734,15 @@ button:disabled {
   place-items: center;
   overflow: hidden;
   padding: 0;
-  font: 700 15px var(--font);
-  color: var(--ink);
+  color: #cfe0f5;
   background: rgba(0, 0, 0, 0.35);
-  border: 1px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 2px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
   cursor: default;
 }
 
 .qslot.filled {
-  background: rgba(58, 110, 190, 0.35);
-  border: 1px solid rgba(140, 180, 240, 0.55);
+  background: linear-gradient(180deg, rgba(44, 66, 98, 0.9), rgba(22, 32, 46, 0.9));
+  border: 1px solid #3b5575;
   cursor: pointer;
 }
 
@@ -650,7 +751,7 @@ button:disabled {
 }
 
 .qslot.filled:not(.active) {
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .qslot-fill {
@@ -659,19 +760,21 @@ button:disabled {
   right: 0;
   bottom: 0;
   height: 0;
-  background: linear-gradient(0deg, rgba(217, 180, 90, 0.55), rgba(217, 180, 90, 0.2));
+  background: linear-gradient(0deg, rgba(217, 180, 90, 0.5), rgba(217, 180, 90, 0.12));
   transition: height 0.1s linear;
 }
 
 .qslot-glyph {
   position: relative;
+  display: grid;
+  font-size: 22px;
 }
 
 .qslot-time {
   position: absolute;
   right: 3px;
   bottom: 1px;
-  font: 600 10px var(--font);
+  font: 700 10px var(--display);
   color: var(--accent);
 }
 
@@ -680,29 +783,8 @@ button:disabled {
   position: absolute;
   left: 3px;
   top: 1px;
-  font: 700 11px var(--font);
+  font: 700 11px var(--display);
   color: #9ad06b;
-}
-
-/* A squad's own job on its roster card: reinforcing (green) or an upgrade on its way (orange) */
-.rc-job {
-  height: 2px;
-  margin-top: 1px;
-}
-
-.rc-job .fill {
-  height: 100%;
-  width: 0;
-  background: #9ad06b;
-}
-
-.roster-card.upgrading:not(.reinforcing) .rc-job .fill {
-  background: #e08a4f;
-}
-
-/* A squad that is reinforcing */
-.roster-card.reinforcing {
-  border-left-color: #9ad06b;
 }
 
 /* Strengths and weaknesses */
@@ -724,13 +806,12 @@ button:disabled {
 .tooltip {
   position: fixed;
   z-index: 50;
-  width: 270px;
+  width: 280px;
   padding: 9px 11px;
   font-family: var(--font);
   background: rgba(10, 11, 9, 0.97);
   border: 1px solid var(--panel-edge);
   border-top: 2px solid var(--accent);
-  border-radius: 3px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   pointer-events: none !important;
   opacity: 0;
@@ -761,7 +842,6 @@ button:disabled {
   font-weight: 700;
   color: var(--accent-ink);
   background: var(--accent);
-  border-radius: 2px;
 }
 
 .tip-body {
