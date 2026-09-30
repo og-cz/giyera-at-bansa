@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.5.4 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.0 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -158,6 +158,11 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 
 ## Changelog
 
+**0.6.0**
+- **Sound and music.** Recorded gunfire for every weapon (Garand, Arisaka, carbines, BAR, machine guns, AT rifle, bazooka), tank guns, mortars, grenade and shell explosions, destroyed tanks and tank engines. Sounds are placed where they happen on screen, louder up close and quieter zoomed out.
+- Orchestral music on the menus and in battle.
+- Master, music and effects volume in the pause menu (remembered between sessions).
+
 **0.5.4**
 - Several units of the **same type** keep their shared abilities and special orders; only a mixed group is limited to attack-move, stop and retreat.
 - The README shows the Taga Komando logo.
@@ -234,6 +239,8 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 ## Credits
 
 - Town maps: generated with Watabou's **Village Generator** (https://watabou.itch.io/village-generator) and **Medieval Fantasy City Generator** (https://watabou.itch.io/medieval-fantasy-city-generator) and converted into battlefields. Watabou's maps are free to use; thank you.
+- Sound effects (all CC0, from OpenGameArt): **The Free Firearm Sound Library** (gunfire), "25 CC0 bang / firework SFX" by rubberduck, "Explosions" by EZduzziteh, "Cannon fire" and "Cannon hit" by Thimras, "Generator (loop)" by YCbCr, "Rocket launch" by qubodup.
+- Music (CC0, from OpenGameArt): "War Theme" by Spring Spring, "Determined Pursuit (epic orchestra loop)" by Emma_MA.
 - Display font: **Quiapo Free** by Aaron Amar (http://be.net/aaronamar), used under the SIL Open Font License 1.1. The licence text ships with the game in `licenses/Quiapo-OFL.txt`.
 
 ## Troubleshooting
