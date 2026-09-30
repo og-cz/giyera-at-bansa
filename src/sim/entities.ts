@@ -88,6 +88,10 @@ export interface Squad {
   reinforcing: boolean;
   /** Soldiers paid for and waiting to arrive, one at a time. */
   reinforceQueued: number;
+  /** Call name, e.g. "Pangkat Luna" (empty for structures). */
+  callsign: string;
+  /** Short form for small labels, e.g. "Luna". */
+  shortName: string;
   reinforceTimer: number;
   production: ProductionItem[];
   rally: Vec2 | null;
@@ -266,6 +270,8 @@ export function createSquad(nextId: () => number, team: TeamId, def: UnitDef, po
     channel: null,
     reinforcing: false,
     reinforceQueued: 0,
+    callsign: '',
+    shortName: '',
     reinforceTimer: 0,
     production: [],
     rally: null,
