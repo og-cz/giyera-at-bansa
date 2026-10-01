@@ -22,6 +22,8 @@ const weaponsOf = (sq: { models: { alive: boolean; weapons: { def: { id: string 
 function atHq() {
   const w = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'] });
   w.teams[0].resources.munitions = 200;
+  // Upgrades are unlocked by tier buildings; these tests are about the upgrades themselves.
+  w.techFree = true;
   const hq = w.hqOf(0)!;
   const rifles = w.spawn(0, 'us_riflemen', { x: hq.pos.x + 2 * TILE, y: hq.pos.y }, 0);
   return { w, rifles };
