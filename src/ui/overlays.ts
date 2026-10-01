@@ -53,17 +53,30 @@ export function endOverlay(world: World, player: TeamId, title: string, actions:
   const won = world.winner === player;
   const me = world.teams[player];
   const enemy = world.teams[player === 0 ? 1 : 0];
-  const row = (k: string, a: string | number, b: string | number) =>
-    el('tr', {}, el('th', { text: k }), el('td', { text: String(a) }), el('td', { text: String(b) }));
+  // Head to head: our number, a bar split by who did better, theirs.
+  const row = (label: string, a: number, b: number) => {
+    const total = a + b;
+    const mine = el('i', { class: 'me' });
+    const theirs = el('i', { class: 'them' });
+    mine.style.flexGrow = String(total > 0 ? a : 1);
+    theirs.style.flexGrow = String(total > 0 ? b : 1);
+    return el(
+      'div',
+      { class: 'es-row' },
+      el('span', { class: 'es-val me', text: String(a) }),
+      el('div', { class: 'es-mid' }, el('div', { class: 'es-label', text: label }), el('div', { class: 'es-bar' }, mine, theirs)),
+      el('span', { class: 'es-val them', text: String(b) }),
+    );
+  };
 
   const stats = el(
-    'table',
+    'div',
     { class: 'end-stats' },
-    el('tr', {}, el('th', {}), el('th', { text: me.faction.name }), el('th', { text: enemy.faction.name })),
-    ...(world.objective.mode === 'skirmish' && world.win === 'points' ? [row('Tickets remaining', me.tickets, enemy.tickets)] : []),
-    row('Units produced', me.stats.produced, enemy.stats.produced),
+    el('div', { class: 'es-head' }, el('span', { class: 'es-side me', text: me.faction.name }), el('span', { class: 'es-vs', text: 'vs' }), el('span', { class: 'es-side them', text: enemy.faction.name })),
+    ...(world.objective.mode === 'skirmish' && world.win === 'points' ? [row('Tickets left', me.tickets, enemy.tickets)] : []),
+    row('Units fielded', me.stats.produced, enemy.stats.produced),
+    row('Enemies destroyed', me.stats.killed, enemy.stats.killed),
     row('Units lost', me.stats.lost, enemy.stats.lost),
-    row('Enemy units destroyed', me.stats.killed, enemy.stats.killed),
   );
 
   const o = world.objective;
