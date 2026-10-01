@@ -7,7 +7,7 @@ export const CONTROLS: [string, string][] = [
   ['A', 'Attack-move'],
   ['S', 'Stop'],
   ['R', 'Retreat to HQ'],
-  ['E', 'Reinforce (near HQ or a supplied point)'],
+  ['E', 'Reinforce (close to headquarters, a tier building or a bunker)'],
   ['D', 'Set up / tear down weapon teams (shows the firing cone; click to aim)'],
   ['G / B', 'Grenade / mortar barrage'],
   ['Q', 'Engineers: open the Build menu (Esc closes it)'],
