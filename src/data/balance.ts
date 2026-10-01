@@ -31,7 +31,9 @@ export const RETREAT = { speed: 1.4, receivedAccuracy: 0.55, arriveRadius: 60 };
 export const LOGISTICS = {
   healRadius: 180,
   healRate: 5,
-  reinforceHqRadius: 280,
+  /** Squads reinforce only close to headquarters, a tier building or a bunker. */
+  reinforceHqRadius: 190,
+  reinforceBaseRadius: 130,
   reinforcePointRadius: 110,
   reinforceTime: 5.5,
   /** A squad's own queue: reinforcements and an upgrade, this many jobs at a time. */
