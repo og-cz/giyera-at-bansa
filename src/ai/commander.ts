@@ -224,7 +224,9 @@ export class AICommander {
       const ahead = Math.atan2(enemyBase.y - p.pos.y, enemyBase.x - p.pos.x);
       for (const [d, turn] of [[3, 0], [3, 0.6], [3, -0.6], [2, 1.2], [2, -1.2]]) {
         const spot = { x: p.pos.x + Math.cos(ahead + turn) * TILE * d, y: p.pos.y + Math.sin(ahead + turn) * TILE * d };
-        if (issueBuild(world, sq, id, spot, spot).ok) return true;
+        // Built facing the enemy's side of the map.
+        const front = { x: spot.x + Math.cos(ahead) * TILE * 2, y: spot.y + Math.sin(ahead) * TILE * 2 };
+        if (issueBuild(world, sq, id, spot, front).ok) return true;
       }
     }
     return false;
