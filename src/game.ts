@@ -162,6 +162,7 @@ export class Game {
     if (!this.running) return;
     const won = this.world.winner === PLAYER;
     const title = this.setup.scenario?.name ?? `Skirmish · ${ALL_MAPS[this.setup.map].name}`;
+    audio.playMusic(won ? 'victory' : 'defeat');
     // The battle HUD (and any tooltip left open) goes away behind the result.
     this.hud.root.style.display = 'none';
     this.showOverlay(
