@@ -7,7 +7,7 @@
 
 const CLIPS = import.meta.glob<string>('./sfx/*.ogg', { query: '?inline', import: 'default', eager: true });
 
-export type Track = 'menu' | 'battle';
+export type Track = 'menu' | 'battle' | 'victory' | 'defeat';
 export type Channel = 'master' | 'music' | 'effects';
 
 /** Most effects that may sound at once; quieter new ones are dropped beyond this. */
@@ -20,7 +20,9 @@ const FADE_SECONDS = 1.5;
  */
 const LOOP_CROSSFADE = 4;
 /** Where a track's music really ends: the menu theme closes on a long fade, the battle theme ends in silence. */
-const TRACK_END_TRIM: Record<Track, number> = { menu: 10, battle: 6 };
+const TRACK_END_TRIM: Record<Track, number> = { menu: 10, battle: 6, victory: 0, defeat: 0 };
+/** Result pieces play once and end; the rest loop. */
+const PLAYS_ONCE: ReadonlySet<Track> = new Set(['victory', 'defeat']);
 
 /** One music track: two copies of the same file take turns so it can loop with a crossfade. */
 interface MusicTrack {
@@ -198,6 +200,8 @@ class AudioSystem {
       this.music.set(track, { copies: [copy(), copy()], current: 0, level: 0, crossingSince: null });
     }
     const t = track ? this.music.get(track)! : null;
+    // A result piece starts again from the top each time it is called for.
+    if (t && track && PLAYS_ONCE.has(track)) t.copies[t.current].currentTime = 0;
     if (t && t.copies[t.current].paused) void t.copies[t.current].play().catch(() => {});
     if (!this.musicTimer) this.musicTimer = window.setInterval(() => this.tickMusic(), 50);
   }
@@ -218,6 +222,10 @@ class AudioSystem {
         continue;
       }
       active = true;
+      if (PLAYS_ONCE.has(name)) {
+        cur.volume = Math.max(0, Math.min(1, this.musicLevel() * t.level));
+        continue;
+      }
       // Start the second copy a few seconds before the first runs out.
       const end = (Number.isFinite(cur.duration) ? cur.duration : Infinity) - TRACK_END_TRIM[name];
       if (t.crossingSince === null && !cur.paused && cur.currentTime >= end - LOOP_CROSSFADE) {
