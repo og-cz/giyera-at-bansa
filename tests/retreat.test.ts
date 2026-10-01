@@ -52,6 +52,7 @@ describe('retreat is binding', () => {
   it('new units come out of headquarters side by side, not stacked', () => {
     const w = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'] });
     w.teams[0].resources = { manpower: 9000, munitions: 9000, fuel: 9000 };
+    w.techFree = true;
     for (let i = 0; i < 3; i++) queueProduction(w, 0, 'us_stuart');
     const before = new Set(w.squads.map((s) => s.id));
     const spots: { x: number; y: number }[] = [];
