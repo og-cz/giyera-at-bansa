@@ -968,22 +968,64 @@ body.cinematic #game {
 }
 
 .end-stats {
-  width: min(640px, 100%);
-  margin: 30px auto;
-  border-collapse: collapse;
+  display: grid;
+  gap: 12px;
+  width: min(620px, 100%);
+  margin: 34px auto 30px;
   font-variant-numeric: tabular-nums;
   animation: fadeUp 0.8s 1.3s ease both;
 }
 
-.end-stats th,
-.end-stats td {
-  padding: 7px 10px;
-  text-align: left;
-  border-bottom: 1px solid;
+.es-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 4px;
+  font: 700 15px var(--fe-font);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-.end-stats th:first-child {
-  font-weight: 400;
+.es-side.me { text-align: right; }
+.es-side.them { text-align: left; }
+
+.es-vs {
+  font: 400 12px var(--fe-font-body);
+  letter-spacing: 0.3em;
+  opacity: 0.6;
+}
+
+.es-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 70px;
+  align-items: center;
+  gap: 16px;
+}
+
+.es-val {
+  font: 700 30px/1 var(--fe-font);
+}
+
+.es-val.me { text-align: right; }
+.es-val.them { text-align: left; }
+
+.es-label {
+  margin-bottom: 5px;
+  font: 600 12px var(--fe-font);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.es-bar {
+  display: flex;
+  gap: 3px;
+  height: 6px;
+}
+
+.es-bar i {
+  min-width: 3px;
+  transition: flex-grow 0.6s;
 }
 
 .end-actions {
@@ -994,11 +1036,12 @@ body.cinematic #game {
 }
 
 .end-btn {
-  padding: 12px 34px;
-  font: 700 18px var(--fe-font);
-  letter-spacing: 0.16em;
+  min-width: 230px;
+  padding: 13px 30px;
+  font: 700 17px var(--fe-font);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  border-radius: 2px;
+  border-radius: 1px;
   transition: filter 0.15s, transform 0.15s;
 }
 
@@ -1027,18 +1070,23 @@ body.cinematic #game {
 }
 
 .defeat .end-time,
-.defeat .end-stats th {
+.defeat .es-label,
+.defeat .es-vs {
   color: #b8433c;
 }
 
-.defeat .end-stats td {
+.defeat .es-side,
+.defeat .es-val {
   color: #f0d6d4;
 }
 
-.defeat .end-stats th,
-.defeat .end-stats td {
-  border-color: rgba(224, 21, 29, 0.25);
+.defeat .es-val.them,
+.defeat .es-side.them {
+  color: #e2463d;
 }
+
+.defeat .es-bar .me { background: rgba(240, 214, 212, 0.75); }
+.defeat .es-bar .them { background: #c4161d; }
 
 .defeat .end-btn.primary {
   color: #fff;
@@ -1080,18 +1128,23 @@ body.cinematic #game {
 }
 
 .victory .end-time,
-.victory .end-stats th {
+.victory .es-label,
+.victory .es-vs {
   color: #8a6512;
 }
 
-.victory .end-stats td {
+.victory .es-side,
+.victory .es-val {
   color: #3a2d10;
 }
 
-.victory .end-stats th,
-.victory .end-stats td {
-  border-color: rgba(184, 134, 43, 0.3);
+.victory .es-val.me,
+.victory .es-side.me {
+  color: #9a6f1a;
 }
+
+.victory .es-bar .me { background: linear-gradient(90deg, #d4a73c, #a8791f); }
+.victory .es-bar .them { background: rgba(58, 45, 16, 0.25); }
 
 .victory .end-btn.primary {
   color: #fff;
