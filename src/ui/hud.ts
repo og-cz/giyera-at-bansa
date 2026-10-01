@@ -41,8 +41,8 @@ interface GridButton {
   refresh(own: Squad[]): void;
   /** Available with several units selected (move, stop, retreat); everything else needs one unit. */
   common?: boolean;
-  /** Buttons on the engineers' Build submenu page instead of the main orders. */
-  buildPage?: boolean;
+  /** Buttons on one of the engineers' submenu pages instead of the main orders. */
+  buildPage?: 'defense' | 'base';
 }
 
 /**
@@ -293,36 +293,56 @@ export class Hud {
     }
   }
 
-  /** The Build button, and the engineer construction buttons on its submenu page. */
+  /**
+   * The engineers' two submenus: Build (Q) for field defenses and Base (W) for
+   * the tier buildings that unlock the rest of the army.
+   */
   private buildDefenseButtons(): void {
     const builders = (own: Squad[]) => own.some((s) => s.def.builds.length > 0);
-    const open = this.gridButton(this.orderGrid, 'build', 'Build', 'Q', () => this.input.toggleBuildMenu());
-    this.tip(open, () => ({ title: 'Build', body: 'Open the engineers’ construction menu: sandbags, barbed wire, tank traps, mines, MG nests, bunkers and aid tents.', key: 'Q' }));
+    const open = this.gridButton(this.orderGrid, 'build', 'Build', 'Q', () => this.input.toggleBuildMenu('defense'));
+    this.tip(open, () => ({ title: 'Build', body: 'Field defenses: sandbags, barbed wire, tank traps, mines, MG nests, bunkers and aid stations.', key: 'Q' }));
     this.orders.push({ node: open, refresh: (own) => (open.style.display = builders(own) ? '' : 'none') });
+    const base = this.gridButton(this.orderGrid, 'base', 'Base', 'W', () => this.input.toggleBuildMenu('base'));
+    this.tip(base, () => ({ title: 'Base', body: 'Tier buildings: each one unlocks more of the army at headquarters. Tier 1 support weapons, Tier 2 anti-tank, Tier 3 tanks.', key: 'W' }));
+    this.orders.push({ node: base, refresh: (own) => (base.style.display = builders(own) && !this.world.techFree ? '' : 'none') });
     for (const id of BUILDABLE_IDS) {
       const def = BUILDABLES[id];
-      const node = this.gridButton(this.orderGrid, id, def.name, def.hotkey, () => this.input.buildMode(id));
+      const page = def.page ?? 'defense';
+      const node = this.gridButton(this.orderGrid, page === 'base' ? `tech${id.slice(-1)}` : id, def.name, def.hotkey, () => this.input.buildMode(id));
       const how = def.shape === 'line' ? `Click and drag to lay a line of up to ${def.maxLength} tiles. Cost is per tile.` : 'Click to place.';
       this.tip(node, () => ({
         title: def.name,
         body: `${def.description}\n\n${how} ${def.buildTime}s of work${def.shape === 'line' ? ' each' : ''} for one squad; more engineers build faster.`,
         key: def.hotkey,
         cost: def.cost,
+        warn: this.buildBlock(def),
       }));
       this.orders.push({
-        buildPage: true,
+        buildPage: page,
         node,
         refresh: (own) => {
           const can = own.some((s) => s.def.builds.includes(id));
+          const blocked = this.buildBlock(def);
           node.style.display = can ? '' : 'none';
-          node.disabled = !canAfford(this.world.teams[this.player].resources, def.cost);
+          node.disabled = !canAfford(this.world.teams[this.player].resources, def.cost) || !!blocked;
+          node.classList.toggle('locked', !!blocked);
           node.classList.toggle('active', this.ui.mode.kind === 'build' && this.ui.mode.buildId === id);
         },
       });
     }
-    const back = this.gridButton(this.orderGrid, 'back', 'Back', 'Esc', () => (this.ui.buildMenu = false));
-    this.tip(back, () => ({ title: 'Back', body: 'Close the Build menu.', key: 'Esc' }));
-    this.orders.push({ buildPage: true, node: back, refresh: () => {} });
+    for (const page of ['defense', 'base'] as const) {
+      const back = this.gridButton(this.orderGrid, 'back', 'Back', 'Esc', () => (this.ui.buildMenu = false));
+      this.tip(back, () => ({ title: 'Back', body: 'Close this menu.', key: 'Esc' }));
+      this.orders.push({ buildPage: page, node: back, refresh: () => {} });
+    }
+  }
+
+  /** Why a building cannot be started yet (already standing, or its tier is missing), or undefined. */
+  private buildBlock(def: (typeof BUILDABLES)[string]): string | undefined {
+    const standing = (unitId?: string) => this.world.squads.some((s) => !s.dead && s.team === this.player && s.def.id === unitId);
+    if (def.unique && (standing(def.unit) || this.world.constructions.some((c) => c.team === this.player && c.buildId === def.id))) return 'Already built';
+    if (def.requires && !standing(def.requires)) return `Needs the ${UNITS[def.requires].name}`;
+    return undefined;
   }
 
   /** Weapon upgrade buttons (T, Y), shown when a selected squad can still take one. */
@@ -348,7 +368,11 @@ export class Hud {
 Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. One upgrade per squad; reinforcements replace the new weapon first.`,
           key: hotkey,
           cost: o.def.cost,
-          warn: taken ? 'This squad already has an upgrade' : undefined,
+          warn: !this.world.hasTech(this.player, o.def.requires)
+            ? `Locked: build the ${UNITS[o.def.requires!].name} first (engineers, Base menu)`
+            : taken
+              ? 'This squad already has an upgrade'
+              : undefined,
         };
       });
       this.orders.push({
@@ -364,7 +388,9 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
             node.querySelector('.cmd-icon')!.replaceWith(icon(kind, 'ico cmd-icon'));
           }
           const open = own.some((s) => s.def.upgrades.includes(o.def.id) && s.upgrades.length === 0 && !s.upgrading);
-          node.disabled = !open || !canAfford(this.world.teams[this.player].resources, o.def.cost);
+          const unlocked = this.world.hasTech(this.player, o.def.requires);
+          node.classList.toggle('locked', !unlocked);
+          node.disabled = !open || !unlocked || !canAfford(this.world.teams[this.player].resources, o.def.cost);
         },
       });
     }
@@ -389,7 +415,14 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       const r = queueProduction(this.world, this.player, id);
       if (!r.ok) this.toast(r.reason ?? 'Cannot build', 'bad');
     });
-    this.tip(node, () => ({ title: def.type ? `${def.name} · ${def.type}` : def.name, body: `${def.description}\n\nPopulation ${def.pop} · Build time ${def.buildTime}s`, cost: def.cost, strong: def.strongVs, weak: def.weakVs }));
+    this.tip(node, () => ({
+      title: def.type ? `${def.name} · ${def.type}` : def.name,
+      body: `${def.description}\n\nPopulation ${def.pop} · Build time ${def.buildTime}s`,
+      cost: def.cost,
+      strong: def.strongVs,
+      weak: def.weakVs,
+      warn: this.world.hasTech(this.player, def.requires) ? undefined : `Locked: engineers must build the ${UNITS[def.requires!].name} (Base menu, W)`,
+    }));
     this.builds.push({ id, node });
   }
 
@@ -437,7 +470,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     const own = this.input.selectedOwn();
     const units = own.filter((s) => s.def.kind !== 'structure');
     // Units selected → their orders; HQ or nothing selected → the recruit menu; a nest, bunker or tent → nothing to order.
-    const fort = units.length === 0 ? own.find((s) => s.def.role === 'fort') : undefined;
+    const fort = units.length === 0 ? own.find((s) => s.def.role === 'fort' || s.def.role === 'tech') : undefined;
     const building = units.length === 0 && !fort;
     if (this.ui.buildMenu && !own.some((s) => s.def.builds.length > 0)) this.ui.buildMenu = false;
     this.orderGrid.style.display = building || fort ? 'none' : '';
@@ -449,9 +482,13 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       c.node.style.display = '';
       c.refresh(own);
       if (!single && !c.common) c.node.style.display = 'none';
-      if (!!c.buildPage !== this.ui.buildMenu) c.node.style.display = 'none';
+      if ((c.buildPage ?? false) !== this.ui.buildMenu) c.node.style.display = 'none';
     }
-    for (const b of this.builds) b.node.disabled = !canAfford(r, UNITS[b.id].cost);
+    for (const b of this.builds) {
+      const open = this.world.hasTech(this.player, UNITS[b.id].requires);
+      b.node.classList.toggle('locked', !open);
+      b.node.disabled = !open || !canAfford(r, UNITS[b.id].cost);
+    }
     this.rallyNode?.classList.toggle('active', this.ui.mode.kind === 'rally');
     this.renderQueue();
     this.renderRoster();
