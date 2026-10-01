@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.13 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.14 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -94,6 +94,15 @@ How the mission types work:
 - Red = exposed (rice paddies make soldiers easier to hit)
 - Cover only protects against fire from the far side of it.
 
+**Building your army** (like a real company, you earn your heavy weapons):
+
+- Every battle starts with **one engineer squad**. Headquarters recruits **riflemen and engineers** from the start.
+- Engineers raise **tier buildings** from the **Base** menu (**W**), one of each:
+  - **Tier 1 · Support Command** (150 MP, 15 FU): machine gun and mortar teams, BAR / light MG upgrade.
+  - **Tier 2 · Anti-Tank Command** (180 MP, 40 FU, needs Tier 1): bazooka / AT rifle teams, anti-tank rifle upgrade.
+  - **Tier 3 · Motor Pool** (200 MP, 80 FU, needs Tier 2): tanks.
+- Lose a tier building and its units can't be recruited until it is rebuilt. Defense and assault missions start with everything unlocked.
+
 **Tips**
 
 - Machine guns pin infantry inside their firing cone. Flank them or throw a grenade.
@@ -118,6 +127,7 @@ How the mission types work:
 | G | Grenade |
 | B | Mortar barrage |
 | Q | Engineers: open the Build menu (Esc closes it) |
+| W | Engineers: open the Base menu: Z / X / C build Tier 1 / Tier 2 / Tier 3 |
 | Z / X / C / V | Build menu: sandbags / barbed wire / tank traps / mine (drag to lay a line; Shift keeps placing) |
 | B / N / M | Build menu: MG nest / bunker / aid tent |
 | F, then click a damaged tank, HQ or defense | Engineers repair it (right-click works too) |
@@ -164,6 +174,11 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.6.14**
+- **Tech tiers.** You can no longer buy everything from the first minute. Headquarters starts with riflemen and engineers only; engineers raise tier buildings from the new **Base** menu (W) to unlock the rest: Tier 1 support (machine guns, mortars, BAR / light MG upgrade), Tier 2 anti-tank (bazooka / AT rifle teams and upgrade) and Tier 3 motor pool (tanks), each needing the one before. Locked units and upgrades show a padlock and say what to build. Each army's tier buildings have their own look.
+- The enemy commander climbs the tiers too, saving manpower for each building, so early battles are infantry and support weapons and tanks arrive later.
+- Defense and assault missions still start with everything unlocked.
 
 **0.6.13**
 - Every battle now starts with a single engineer squad and a little more manpower (600) instead of two rifle squads: fortify, then recruit your army.
