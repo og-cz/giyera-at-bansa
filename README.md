@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.10 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.11 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -164,6 +164,9 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.6.11**
+- The headquarters no longer fly flags, until the factions' own flags and emblems are designed.
 
 **0.6.10**
 - **Headquarters in each army's style.** The Maharlika Punong Himpilan is a bahay na bato compound: terracotta tiled roof, capiz windows under the eaves, an adobe wall with a gate and sandbags. The Imperial Army Shireibu is a Japanese building with a dark grey tiled roof, pale ridge caps and deep eaves behind a timber fence.
