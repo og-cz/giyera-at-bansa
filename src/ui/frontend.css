@@ -953,8 +953,8 @@ body.cinematic #game {
 }
 
 .end-reason {
-  font: 600 22px var(--fe-font);
-  letter-spacing: 0.08em;
+  font: 400 30px var(--fe-display);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   animation: fadeUp 0.8s 1s ease both;
 }
