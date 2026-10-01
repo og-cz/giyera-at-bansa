@@ -1,6 +1,12 @@
 import { T } from './terrain';
 import type { BuildableDef } from './types';
 
+const TIER_TEXT: Record<string, string> = {
+  '1': 'Tier 1: unlocks machine gun and mortar teams and the first rifle upgrade.',
+  '2': 'Tier 2: unlocks anti-tank teams and the anti-tank rifle upgrade. Needs Tier 1.',
+  '3': 'Tier 3: unlocks tanks. Needs Tier 2.',
+};
+
 const LIST: BuildableDef[] = [
   {
     id: 'sandbags', name: 'Sandbags', hotkey: 'Z',
@@ -44,6 +50,32 @@ const LIST: BuildableDef[] = [
     cost: { manpower: 150, munitions: 0, fuel: 0 }, buildTime: 25, shape: 'structure', unit: 'aid_tent', terrain: null, maxLength: 1,
     hp: 0, blastResist: 0,
   },
+  // ─── Base: tier buildings, one of each per army ───
+  ...[
+    ['us_tech1', 'Kampo ng Suporta', 'Z', { manpower: 150, munitions: 0, fuel: 15 }, 35, undefined],
+    ['us_tech2', 'Kampo Pangontra-Tangke', 'X', { manpower: 180, munitions: 0, fuel: 40 }, 45, 'us_tech1'],
+    ['us_tech3', 'Garahe ng Tangke', 'C', { manpower: 200, munitions: 0, fuel: 80 }, 55, 'us_tech2'],
+    ['ija_tech1', 'Shien Honbu', 'Z', { manpower: 150, munitions: 0, fuel: 15 }, 35, undefined],
+    ['ija_tech2', 'Taisen Honbu', 'X', { manpower: 180, munitions: 0, fuel: 40 }, 45, 'ija_tech1'],
+    ['ija_tech3', 'Sensha Shako', 'C', { manpower: 200, munitions: 0, fuel: 80 }, 55, 'ija_tech2'],
+  ].map(([id, name, hotkey, cost, buildTime, requires]) => ({
+    id: id as string,
+    name: name as string,
+    hotkey: hotkey as string,
+    description: TIER_TEXT[(id as string).slice(-1)],
+    cost: cost as BuildableDef['cost'],
+    buildTime: buildTime as number,
+    shape: 'structure' as const,
+    unit: id as string,
+    page: 'base' as const,
+    requires: requires as string | undefined,
+    unique: true,
+    terrain: null,
+    maxLength: 1,
+    hp: 0,
+    blastResist: 0,
+  })),
+
 ];
 
 export const BUILDABLES: Readonly<Record<string, BuildableDef>> = Object.fromEntries(LIST.map((b) => [b.id, b]));
