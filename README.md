@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.14 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.15 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -101,7 +101,9 @@ How the mission types work:
   - **Tier 1 · Support Command** (150 MP, 15 FU): machine gun and mortar teams, BAR / light MG upgrade.
   - **Tier 2 · Anti-Tank Command** (180 MP, 40 FU, needs Tier 1): bazooka / AT rifle teams, anti-tank rifle upgrade.
   - **Tier 3 · Motor Pool** (200 MP, 80 FU, needs Tier 2): tanks.
-- Lose a tier building and its units can't be recruited until it is rebuilt. Defense and assault missions start with everything unlocked.
+- Select a tier building to recruit its units right there (they come out of its door); headquarters can recruit anything unlocked. Lose a tier building and its units can't be recruited until it is rebuilt. Defense and assault missions start with everything unlocked.
+- Squads reinforce only **close to a base**: headquarters, a tier building or a bunker. The new soldiers walk out of that base to join them.
+- Buildings take up their real ground (MG nests, bunkers and aid stations 2×2 tiles, tier buildings 3×2), shown when you place them. MG nests (120°) and bunkers (90°) only fire to their front: **drag** while placing to choose which way they face.
 
 **Tips**
 
@@ -174,6 +176,14 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.6.15**
+- **Emplacements face the front.** MG nests cover a 120° arc and bunkers a 90° slit; drag while placing to choose the direction. They no longer fire all round, so they can be flanked.
+- **Buildings take up their real ground:** MG nests, bunkers and aid stations occupy 2×2 tiles and tier buildings 3×2. The placement shows every tile it will take, units cannot walk through a finished building, and the ground is freed when it falls.
+- **Tier buildings recruit their own units.** Select a tier building to recruit its units there; they come out of its door. Headquarters can still recruit anything unlocked.
+- **Reinforcing needs a base.** Squads reinforce only close to headquarters, a tier building or a bunker, and the new soldiers walk out of that base to join them.
+- **Music for the result:** a triumphant orchestral theme on victory, a sad one on defeat.
+- The result screen and pause menu titles always use the game's display font again (it now loads at startup).
 
 **0.6.14**
 - **Tech tiers.** You can no longer buy everything from the first minute. Headquarters starts with riflemen and engineers only; engineers raise tier buildings from the new **Base** menu (W) to unlock the rest: Tier 1 support (machine guns, mortars, BAR / light MG upgrade), Tier 2 anti-tank (bazooka / AT rifle teams and upgrade) and Tier 3 motor pool (tanks), each needing the one before. Locked units and upgrades show a padlock and say what to build. Each army's tier buildings have their own look.
@@ -325,7 +335,7 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Town maps: generated with Watabou's **Village Generator** (https://watabou.itch.io/village-generator) and **Medieval Fantasy City Generator** (https://watabou.itch.io/medieval-fantasy-city-generator) and converted into battlefields. Watabou's maps are free to use; thank you.
 - Sound effects (all CC0, from OpenGameArt): **The Free Firearm Sound Library** (gunfire), "25 CC0 bang / firework SFX" by rubberduck, "Explosions" by EZduzziteh, "Cannon fire" and "Cannon hit" by Thimras, "Generator (loop)" by YCbCr, "Rocket launch" by qubodup.
 - Interface and unit sounds (CC0, from OpenGameArt): "Typewriter sounds" by Cassie-OrbitGames, "Crank movie telephone ringtone" by cyberdyne, "Mechanical Sounds" by BMacZero, "Equipment Clicks II" and "equipment clicks III" by LFA, "Car engine start 01" by looneybits.
-- Music: "Laments of the War" by Cethiel (menus, CC0, from OpenGameArt) and "Five Armies" by Kevin MacLeod (incompetech.com) for battle, licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Both credits ship with the game in `licenses/Music-credits.txt`.
+- Music: "Triumphant" by Emma_MA (victory) and "The Sad Battle" by Eldritch Grim (defeat), both CC0 from OpenGameArt; "Laments of the War" by Cethiel (menus, CC0, from OpenGameArt) and "Five Armies" by Kevin MacLeod (incompetech.com) for battle, licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/). Both credits ship with the game in `licenses/Music-credits.txt`.
 - Display font: **Quiapo Free** by Aaron Amar (http://be.net/aaronamar), used under the SIL Open Font License 1.1. The licence text ships with the game in `licenses/Quiapo-OFL.txt`.
 
 ## Troubleshooting
