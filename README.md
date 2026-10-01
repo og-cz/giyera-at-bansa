@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.12 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.13 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -164,6 +164,10 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.6.13**
+- Every battle now starts with a single engineer squad and a little more manpower (600) instead of two rifle squads: fortify, then recruit your army.
+- A deep, dramatic boom plays as the studio card comes up at startup.
 
 **0.6.12**
 - **Each army builds its own way.** Maharlika MG nests are sandbag rings round a water-cooled M1917, bunkers are coconut logs under palm fronds, and the aid station is a bamboo-and-nipa klinika. Imperial MG nests are log-lined pits round a finned Type 92, bunkers are round concrete pillboxes under camouflage netting, and the aid station is a khaki field tent.
