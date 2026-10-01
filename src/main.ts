@@ -107,7 +107,8 @@ installUiSounds();
 // Development only: ?battle=<map> starts a skirmish straight away (for quick checks).
 // &spawn=<unit id>[,<unit id>…] adds our units by the HQ (&enemy=… adds enemy ones beside them), &select=<unit id> selects our
 // first unit of that type, &zoom=<n> zooms in on them, &edge=1 zooms out to the map corner,
-// &end=win|lose ends the battle at once (to see the result screen).
+// &end=win|lose ends the battle at once (to see the result screen), &focus=hq|enemy centres
+// the camera on our or the enemy headquarters, &reveal=1 lifts the fog of war.
 const devBattle = import.meta.env.DEV ? new URLSearchParams(location.search).get('battle') : null;
 if (devBattle) {
   play({ faction: 'usaffe', enemyFaction: 'ija', map: devBattle, difficulty: 'normal', win: 'points' }, { kind: 'skirmish' });
@@ -120,6 +121,7 @@ if (devBattle) {
 interface DevGame {
   world: import('./sim/world').World;
   input: { select(ids: number[]): void };
+  renderer: { spectator: boolean };
   camera: { zoom: number; minZoom: number; maxZoom: number; centerOn(p: { x: number; y: number }): void };
 }
 
@@ -138,6 +140,10 @@ function devSetup(): void {
   const pick = params.get('select');
   const sq = pick ? game.world.squads.find((s) => s.team === 0 && s.def.id === pick) : undefined;
   if (sq) game.input.select([sq.id]);
+  if (params.get('reveal')) game.renderer.spectator = true;
+  const focus = params.get('focus');
+  const target = focus === 'enemy' ? game.world.hqOf(1) : focus === 'hq' ? hq : undefined;
+  if (target) game.camera.centerOn(target.pos);
   const end = params.get('end');
   if (end) game.world.winner = end === 'win' ? 0 : 1;
   if (params.get('edge')) {
