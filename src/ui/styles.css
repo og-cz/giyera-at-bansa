@@ -920,7 +920,7 @@ button:disabled {
 
 .menu-box h1 {
   margin: 0;
-  font: 700 40px/1.1 var(--display);
+  font: 400 46px/1.1 'Quiapo', var(--display);
   letter-spacing: 0.02em;
   color: var(--accent);
 }
