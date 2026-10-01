@@ -2,7 +2,7 @@ export type TeamId = 0 | 1;
 export type Owner = TeamId | -1;
 export type CoverType = 'negative' | 'none' | 'light' | 'heavy';
 export type UnitKind = 'infantry' | 'team' | 'vehicle' | 'structure';
-export type UnitRole = 'hq' | 'line' | 'mg' | 'mortar' | 'at' | 'tank' | 'engineer' | 'fort';
+export type UnitRole = 'hq' | 'line' | 'mg' | 'mortar' | 'at' | 'tank' | 'engineer' | 'fort' | 'tech';
 export type PointKind = 'victory' | 'munitions' | 'fuel' | 'manpower';
 export type Mover = 'infantry' | 'vehicle';
 export type Difficulty = 'easy' | 'normal' | 'hard';
@@ -127,6 +127,8 @@ export interface UnitDef {
   healRate: number;
   /** Structures: friendly squads nearby can reinforce and upgrade here. */
   supplies: boolean;
+  /** Tier building (unit id) that must be standing before this unit can be recruited. */
+  requires?: string;
 }
 
 /** A weapon upgrade: some of the squad's basic soldiers swap their rifles for something heavier. */
@@ -141,6 +143,8 @@ export interface UpgradeDef {
   weapons: readonly string[];
   /** How many soldiers take the new weapons. */
   count: number;
+  /** Tier building (unit id) that must be standing before it can be bought. */
+  requires?: string;
 }
 
 /** Something engineers can build: a line of fortification tiles, or a single item such as a mine. */
@@ -157,6 +161,12 @@ export interface BuildableDef {
   shape: 'line' | 'point' | 'structure';
   /** The structure's unit, for shape 'structure'. */
   unit?: string;
+  /** Which page of the engineers' menu it is on: field defenses or base buildings. */
+  page?: 'defense' | 'base';
+  /** Tier building (unit id) that must already be standing. */
+  requires?: string;
+  /** Only one per army (tier buildings). */
+  unique?: boolean;
   /** Terrain laid down when a tile is finished; null for mines and structures. */
   terrain: number | null;
   maxLength: number;
