@@ -31,6 +31,12 @@ const ICONS: Record<string, IconDef> = {
   tanktrap: { stroke: ['M5 19L19 5', 'M19 19L5 5', 'M12 3v18', 'M3 19h18'] },
   mine: { stroke: ['M5 16a7 5 0 0 1 14 0', 'M3 16h18', 'M12 11V8', 'M10 8h4'], fill: ['M5 16a7 5 0 0 1 14 0z'] },
 
+  // ─── Tier buildings ───
+  tech1: { stroke: ['M3 20V11l9-5 9 5v9z', 'M8 20v-5h8v5', 'M12 6V3', 'M7 13h10'] },
+  tech2: { stroke: ['M3 20V11l9-5 9 5v9z', 'M6.5 16.5l11-4', 'M6 15.5l.6 1.8', 'M12 9V6'] },
+  tech3: { stroke: ['M2 20V10h20v10', 'M5 20v-6h14v6', 'M2 10l3-4h14l3 4', 'M8 17h8'] },
+  base: { stroke: ['M3 20V11l9-5 9 5v9z', 'M9 20v-6h6v6', 'M3 11h18'] },
+
   // ─── Orders ───
   attack: { stroke: ['M12 5a7 7 0 1 0 .01 0', 'M12 2v6', 'M12 16v6', 'M2 12h6', 'M16 12h6'] },
   stop: { stroke: ['M6 6h12v12H6z'], fill: ['M6 6h12v12H6z'] },
@@ -105,5 +111,6 @@ export function drawIcon(ctx: CanvasRenderingContext2D, name: string, x: number,
 
 /** Icon for a unit: its role, or for structures what they are. */
 export function unitIcon(def: { id: string; role: string }): string {
+  if (def.role === 'tech') return `tech${def.id.slice(-1)}`;
   return def.role === 'fort' ? def.id : def.role;
 }
