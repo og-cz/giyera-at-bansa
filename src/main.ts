@@ -105,8 +105,9 @@ function play(setup: MatchSetup, origin: Origin): void {
 
 installUiSounds();
 // Development only: ?battle=<map> starts a skirmish straight away (for quick checks).
-// &spawn=<unit id>[,<unit id>…] adds our units by the HQ, &select=<unit id> selects our
-// first unit of that type, &zoom=<n> zooms in on them, &edge=1 zooms out to the map corner.
+// &spawn=<unit id>[,<unit id>…] adds our units by the HQ (&enemy=… adds enemy ones beside them), &select=<unit id> selects our
+// first unit of that type, &zoom=<n> zooms in on them, &edge=1 zooms out to the map corner,
+// &end=win|lose ends the battle at once (to see the result screen).
 const devBattle = import.meta.env.DEV ? new URLSearchParams(location.search).get('battle') : null;
 if (devBattle) {
   play({ faction: 'usaffe', enemyFaction: 'ija', map: devBattle, difficulty: 'normal', win: 'points' }, { kind: 'skirmish' });
@@ -128,6 +129,7 @@ function devSetup(): void {
   const hq = game.world.hqOf(0);
   const near = hq ? { x: hq.pos.x + 90, y: hq.pos.y + 20 } : { x: 0, y: 0 };
   (params.get('spawn') ?? '').split(',').filter(Boolean).forEach((id, i) => game.world.spawn(0, id, { x: near.x + (i % 3) * 45, y: near.y + Math.floor(i / 3) * 45 }));
+  (params.get('enemy') ?? '').split(',').filter(Boolean).forEach((id, i) => game.world.spawn(1, id, { x: near.x + 120 + (i % 3) * 45, y: near.y + Math.floor(i / 3) * 45 }, Math.PI));
   const zoom = Number(params.get('zoom'));
   if (zoom) {
     game.camera.zoom = Math.min(game.camera.maxZoom, zoom);
@@ -136,6 +138,8 @@ function devSetup(): void {
   const pick = params.get('select');
   const sq = pick ? game.world.squads.find((s) => s.team === 0 && s.def.id === pick) : undefined;
   if (sq) game.input.select([sq.id]);
+  const end = params.get('end');
+  if (end) game.world.winner = end === 'win' ? 0 : 1;
   if (params.get('edge')) {
     game.camera.zoom = game.camera.minZoom;
     game.camera.centerOn({ x: 0, y: 0 });
