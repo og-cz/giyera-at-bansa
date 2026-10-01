@@ -20,8 +20,8 @@ import { el, formatTime } from './dom';
 import { icon, unitIcon } from './icons';
 import type { Minimap } from './minimap';
 
-/** "Pangkat Luna · Rifle Squad", or just the unit type when it has no call name. */
-const titleOf = (sq: Squad): string => (sq.callsign ? `${sq.callsign} · ${sq.def.name}` : sq.def.name);
+/** "Sundalo ng Maharlika · Rifle Squad": the unit's name and what it is. */
+const titleOf = (sq: Squad): string => (sq.def.type ? `${sq.def.name} · ${sq.def.type}` : sq.def.name);
 
 /** Icon for a unit (its role, or what a structure is). */
 const glyphOf = (def: UnitDef): SVGSVGElement => icon(unitIcon(def));
@@ -389,7 +389,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       const r = queueProduction(this.world, this.player, id);
       if (!r.ok) this.toast(r.reason ?? 'Cannot build', 'bad');
     });
-    this.tip(node, () => ({ title: def.name, body: `${def.description}\n\nPopulation ${def.pop} · Build time ${def.buildTime}s`, cost: def.cost, strong: def.strongVs, weak: def.weakVs }));
+    this.tip(node, () => ({ title: def.type ? `${def.name} · ${def.type}` : def.name, body: `${def.description}\n\nPopulation ${def.pop} · Build time ${def.buildTime}s`, cost: def.cost, strong: def.strongVs, weak: def.weakVs }));
     this.builds.push({ id, node });
   }
 
@@ -645,7 +645,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       'button',
       { class: 'roster-card' },
       glyphOf(sq.def),
-      el('span', { class: 'rc-name', text: sq.shortName || sq.def.name }),
+      el('span', { class: 'rc-name', text: sq.def.short }),
       el('span', { class: 'rc-group' }),
       el('span', { class: 'rc-state' }),
       el('span', { class: 'rc-count' }),
@@ -831,8 +831,8 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       el(
         'div',
         { class: 'portrait-text' },
-        el('div', { class: 'portrait-name', text: sq.callsign || sq.def.name }),
-        el('div', { class: 'portrait-type', text: (sq.callsign ? sq.def.name : this.world.teams[sq.team].faction.name) + (enemy ? ' · enemy' : '') }),
+        el('div', { class: 'portrait-name', text: sq.def.name }),
+        el('div', { class: 'portrait-type', text: (sq.def.type || this.world.teams[sq.team].faction.name) + (enemy ? ' · enemy' : '') }),
         el('div', { class: 'hpbar big' }, fill),
         ...(pips ? [pips] : []),
         el('div', { class: 'chips' }, ...chips.map(([text, tone]) => el('span', { class: `chip ${tone}`, text }))),
