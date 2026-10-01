@@ -79,6 +79,7 @@ function acquireTarget(world: World, sq: Squad, dt: number): Squad | null {
     if (e.dead || e.team === sq.team) continue;
     const d = dist(sq.pos, e.pos) - e.def.radius;
     if (d > range || !world.canSee(sq.team, e)) continue;
+    if (sq.def.kind === 'structure' && !structureCovers(sq, e.pos)) continue;
     const armored = e.def.armor !== null;
     let score = Math.max(d, 1);
     if (prefers === 'vehicle') score *= armored ? 0.4 : 1.6;
@@ -98,6 +99,18 @@ function acquireTarget(world: World, sq: Squad, dt: number): Squad | null {
 }
 
 /** How eager a squad is to shoot at an emplacement: low (eager) when its weapons can really hurt it. */
+/** True if `p` lies inside the weapon's arc around the structure's facing. */
+export function inArc(sq: Squad, w: WeaponDef, p: Vec2): boolean {
+  if (w.arc >= 360) return true;
+  return Math.abs(angleDiff(sq.heading, angleTo(sq.pos, p))) <= (w.arc * Math.PI) / 360;
+}
+
+/** A structure can only engage what is in front of at least one of its guns. */
+function structureCovers(sq: Squad, p: Vec2): boolean {
+  const weapons = sq.models.flatMap((m) => (m.alive ? m.weapons : []));
+  return weapons.length === 0 || weapons.some((ws) => inArc(sq, ws.def, p));
+}
+
 export function fortPriority(sq: Squad, fort: Squad): number {
   const armor = fort.def.armor?.front ?? 0;
   let best = 0;
@@ -157,6 +170,9 @@ function tryFire(world: World, sq: Squad, m: Model, ws: WeaponState, target: Squ
       sq.setupFacing = rotateTowards(sq.setupFacing, ang, CREW_PIVOT_RATE * dt);
       return;
     }
+  } else if (sq.def.kind === 'structure' && w.arc < 360 && !inArc(sq, w, tm.pos)) {
+    // Emplaced guns cannot turn: they only cover the way they were built facing.
+    return;
   }
   if (w.indirect) {
     if (!world.vision.isVisible(sq.team, tm.pos)) return;
