@@ -1,6 +1,6 @@
 import { ABILITIES } from '../data/abilities';
 import { BUILDABLES } from '../data/buildables';
-import { ECONOMY, LOGISTICS } from '../data/balance';
+import { ECONOMY, LOGISTICS, TILE } from '../data/balance';
 import type { TeamId } from '../data/types';
 import { UNITS } from '../data/units';
 import { UPGRADES } from '../data/upgrades';
@@ -37,8 +37,8 @@ function commandable(sq: Squad): boolean {
 export function issueMove(world: World, sq: Squad, dest: Vec2, queue = false, facing?: number): CommandResult {
   if (sq.dead) return fail('Unit is dead');
   if (sq.def.kind === 'structure') {
-    // Headquarters: the rally point where new units go.
-    if (sq.def.role !== 'hq') return fail('Structures cannot move');
+    // Headquarters and tier buildings: the rally point where new units go.
+    if (sq.def.role !== 'hq' && sq.def.role !== 'tech') return fail('Structures cannot move');
     sq.rally = { ...dest };
     return OK;
   }
@@ -154,12 +154,26 @@ export function issueBuild(world: World, sq: Squad, buildId: string, from: Vec2,
     return fail(plan.cost.munitions > world.teams[sq.team].resources.munitions ? 'Not enough munitions' : 'Not enough manpower');
   }
   pay(world.teams[sq.team].resources, plan.cost);
+  // A structure is one job on its centre tile, taking up its whole footprint, facing
+  // the way the placement was dragged (or away from headquarters, towards the front).
+  const structure = def.shape === 'structure';
+  const anchor = { tx: Math.floor(from.x / TILE), ty: Math.floor(from.y / TILE) };
+  const hq = world.hqOf(sq.team);
+  const facing = structure
+    ? Math.hypot(to.x - from.x, to.y - from.y) > TILE * 0.75
+      ? angleTo(from, to)
+      : hq
+        ? angleTo(hq.pos, from)
+        : sq.heading
+    : undefined;
   const construction = {
     id: world.nextId(),
     team: sq.team,
     buildId,
     ownerId: sq.id,
-    tiles: tiles.map((t) => ({ tx: t.tx, ty: t.ty, progress: 0, done: false })),
+    tiles: (structure ? [anchor] : tiles).map((t) => ({ tx: t.tx, ty: t.ty, progress: 0, done: false })),
+    footprint: structure ? tiles.map((t) => ({ tx: t.tx, ty: t.ty })) : undefined,
+    facing,
   };
   world.constructions.push(construction);
   sq.channel = null;
@@ -240,26 +254,31 @@ export function issueRepairDefense(world: World, sq: Squad, tx: number, ty: numb
   return OK;
 }
 
-export function queueProduction(world: World, team: TeamId, unitId: string): CommandResult {
+/**
+ * Recruit a unit. Headquarters can recruit anything unlocked; a tier building
+ * (`producer`) recruits the units it unlocks, and they come out of it.
+ */
+export function queueProduction(world: World, team: TeamId, unitId: string, producer?: Squad): CommandResult {
   const t = world.teams[team];
-  const hq = world.hqOf(team);
   const def = UNITS[unitId];
-  if (!hq || hq.dead) return fail('Headquarters destroyed');
   if (!def || !t.faction.roster.includes(unitId)) return fail('Not in roster');
+  const hq = world.hqOf(team);
+  const from = producer && !producer.dead && producer.team === team && (producer.def.role === 'hq' || producer.def.id === def.requires) ? producer : hq;
+  if (!from || from.dead) return fail('Headquarters destroyed');
   if (!world.hasTech(team, def.requires)) return fail(`Build the ${UNITS[def.requires!].name} first`);
-  if (hq.production.length >= ECONOMY.maxQueue) return fail('Production queue full');
+  if (from.production.length >= ECONOMY.maxQueue) return fail('Production queue full');
   if (popUsed(world, team) + def.pop > ECONOMY.popCap) return fail('Population cap reached');
   if (!canAfford(t.resources, def.cost)) {
     const need = def.cost.fuel > t.resources.fuel ? 'fuel' : def.cost.munitions > t.resources.munitions ? 'munitions' : 'manpower';
     return fail(`Not enough ${need}`);
   }
   pay(t.resources, def.cost);
-  hq.production.push({ unitId, remaining: def.buildTime });
+  from.production.push({ unitId, remaining: def.buildTime });
   return OK;
 }
 
-export function cancelProduction(world: World, team: TeamId, index: number): CommandResult {
-  const hq = world.hqOf(team);
+export function cancelProduction(world: World, team: TeamId, index: number, producer?: Squad): CommandResult {
+  const hq = producer ?? world.hqOf(team);
   if (!hq || index < 0 || index >= hq.production.length) return fail('Nothing to cancel');
   const [item] = hq.production.splice(index, 1);
   refund(world.teams[team].resources, UNITS[item.unitId].cost);
