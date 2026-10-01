@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.8 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.9 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -137,11 +137,11 @@ How the mission types work:
 
 | Role | Hukbong Maharlika | Imperial Army |
 | --- | --- | --- |
-| Rifle squad | Rifle Squad: 5 men, grenades; upgrade Bazooka or BAR | Hohei Rifle Squad: 6 men, grenades; upgrade Type 99 LMG or AT rifle |
-| Engineers | Combat Engineers | Kohei Engineers |
-| Machine gun | M1917 HMG Team | Type 92 HMG Team |
-| Mortar | 60mm Mortar Team | Type 97 81mm Mortar Team |
-| Anti-tank | Bazooka Squad | AT Rifle Team |
+| Rifle squad | Sundalo ng Maharlika: 5 men, grenades; upgrade Bazooka or BAR | Hohei: 6 men, grenades; upgrade Type 99 LMG or AT rifle |
+| Engineers | Inhinyero ng Maharlika | Kohei |
+| Machine gun | Ametralyadora M1917 | Kikanjū Type 92 |
+| Mortar | Mortero 60mm | Hakugekihō Type 97 (81mm) |
+| Anti-tank | Pangontra-Tangke (bazooka squad) | Taisensha-hei (AT rifle team) |
 | Tank | M3 Stuart | Type 97 Chi-Ha |
 
 ### Unit roles
@@ -164,6 +164,11 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.6.9**
+- **Units have their army's own names:** Sundalo ng Maharlika, Inhinyero ng Maharlika, Ametralyadora M1917, Mortero 60mm, Pangontra-Tangke, and the Punong Himpilan (HQ); the Imperial Army fields Hohei, Kohei, Kikanjū, Hakugekihō and Taisensha-hei. The unit card shows the name with what the unit is beneath it (Rifle Squad, Mortar Team…). The per-squad hero names are gone.
+- **Each army looks its own:** Maharlika soldiers wear wide round helmets and olive uniforms; Imperial soldiers wear smaller star helmets with a cloth neck flap and khaki. The Stuart is olive drab with a long 37mm gun and a sun emblem; the Chi-Ha wears three-colour camouflage with its off-centre turret, short 57mm and hoop aerial.
+- **New result screen:** the victory and defeat statistics are shown head to head, each with a bar showing who came out ahead, and the battle HUD no longer shows through behind it.
 
 **0.6.8**
 - **Squads have names.** Every Maharlika squad is named after a hero (Pangkat Luna, Pangkat Bonifacio, Pangkat Rizal…) and every tank has one too (Tangke Kidlat, Tangke Agila…); the Imperial Army has numbered sections (Dai-ichi Buntai…) and named tanks. Names show on the roster cards, the unit card and in tooltips. More names can be added in `src/data/squadNames.ts`.
