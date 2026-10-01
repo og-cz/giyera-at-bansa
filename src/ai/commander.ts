@@ -8,6 +8,7 @@ import { WEAPONS } from '../data/weapons';
 import { dist, lerpVec, type Vec2 } from '../core/vec';
 import {
   issueAbility,
+  issueAttack,
   issueAttackMove,
   issueBuild,
   issueMove,
@@ -19,6 +20,7 @@ import {
   queueProduction,
 } from '../sim/commands';
 import { aliveCount, healthFraction, isSoft, type CapturePoint, type Squad } from '../sim/entities';
+import { fortPriority } from '../sim/systems/combat';
 import { coverAt } from '../sim/systems/cover';
 import { canAfford } from '../sim/systems/economy';
 import { canReinforceHere, reinforceCost } from '../sim/systems/logistics';
@@ -126,6 +128,7 @@ export class AICommander {
     if (sq.def.builds.length > 0 && this.fortify(world, sq)) return;
     this.useAbilities(world, sq);
     if (sq.order.kind === 'ability') return;
+    if (this.hunt(world, sq)) return;
 
     if (sq.order.kind === 'idle' && sq.def.kind === 'team' && sq.setup === 'packed' && this.objective.has(sq.id)) {
       const enemyHq = world.hqOf(this.team === 0 ? 1 : 0);
@@ -249,13 +252,32 @@ export class AICommander {
     issueAttackMove(world, sq, world.map.nearestPassable(dest, sq.def.vehicle ? 'vehicle' : 'infantry'));
   }
 
+  /**
+   * Go after an enemy nest, bunker or aid station in sight: they hold up the
+   * advance or keep the enemy alive. Only squads that can really hurt one
+   * (tanks, anti-tank teams) are sent; riflemen leave bunkers alone.
+   */
+  private hunt(world: World, sq: Squad): boolean {
+    if (sq.def.kind === 'team') return false;
+    if (sq.order.kind === 'attack') {
+      const t = world.get(sq.order.targetId);
+      if (t && !t.dead && t.def.role === 'fort') return true;
+    }
+    const forts = this.enemies(world).filter((e) => e.def.role === 'fort' && dist(e.pos, sq.pos) < 450 && fortPriority(sq, e) < 1);
+    if (forts.length === 0) return false;
+    forts.sort((a, b) => dist(a.pos, sq.pos) - dist(b.pos, sq.pos));
+    return issueAttack(world, sq, forts[0]).ok;
+  }
+
   private useAbilities(world: World, sq: Squad): void {
     const res = world.teams[this.team].resources;
     for (const id of sq.def.abilities) {
       const ab = ABILITIES[id];
       if ((sq.cooldowns[id] ?? 0) > 0 || !canAfford(res, ab.cost) || res.munitions < ab.cost.munitions + 10) continue;
       const range = ab.range * (ab.requiresSetup ? 1 : 0.95);
-      const target = this.enemies(world).find((e) => {
+      // Grenades and barrages go on enemy nests, bunkers and aid stations first.
+      const fort = this.enemies(world).find((e) => e.def.role === 'fort' && dist(e.pos, sq.pos) <= range);
+      const target = fort ?? this.enemies(world).find((e) => {
         if (!isSoft(e) || dist(e.pos, sq.pos) > range) return false;
         if (e.def.kind === 'team' && e.setup === 'deployed') return true;
         if (ab.requiresSetup) return aliveCount(e) >= 3 && e.order.kind === 'idle';
