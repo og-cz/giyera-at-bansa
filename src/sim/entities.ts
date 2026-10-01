@@ -90,6 +90,8 @@ export interface Squad {
   reinforceQueued: number;
   reinforceTimer: number;
   production: ProductionItem[];
+  /** Structures built by engineers: the tiles they take up, freed when they fall. */
+  footprint: { tx: number; ty: number }[];
   rally: Vec2 | null;
   lastHurt: number;
   lastFired: number;
@@ -124,6 +126,10 @@ export interface Construction {
   /** The engineer squad that started the job. Others may help; once nobody works on it, it is cancelled. */
   ownerId: number;
   tiles: { tx: number; ty: number; progress: number; done: boolean }[];
+  /** Structures: the tiles the finished building will take up. */
+  footprint?: { tx: number; ty: number }[];
+  /** Structures: which way it will face (its guns' arc), radians. */
+  facing?: number;
 }
 
 export interface Mine {
@@ -268,6 +274,7 @@ export function createSquad(nextId: () => number, team: TeamId, def: UnitDef, po
     reinforceQueued: 0,
     reinforceTimer: 0,
     production: [],
+    footprint: [],
     rally: null,
     lastHurt: -Infinity,
     lastFired: -Infinity,
