@@ -140,7 +140,7 @@ describe('capture and territory', () => {
 
   it('retreat takes a squad home and clears the flag on arrival', () => {
     const world = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'] });
-    const sq = world.squads.find((s) => s.team === 0 && s.def.id === 'us_riflemen')!;
+    const sq = world.squads.find((s) => s.team === 0 && s.def.id === 'us_engineers')!;
     issueMove(world, sq, { x: 700, y: 560 });
     run(world, 20);
     issueRetreat(world, sq);
