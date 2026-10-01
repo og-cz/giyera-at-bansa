@@ -59,6 +59,11 @@ export class World {
   readonly vision: Vision;
   readonly territory: Territory;
   winner: Owner = -1;
+  /**
+   * Every unit is available without tier buildings: defense and assault
+   * missions drop you into a running fight with the army already in place.
+   */
+  techFree = false;
   /** Why the match ended, for the end screen. */
   endReason = '';
   ticketTimer = 0;
@@ -72,6 +77,7 @@ export class World {
   constructor(opts: WorldOptions) {
     this.mapDef = opts.map;
     this.scenario = opts.scenario ?? null;
+    this.techFree = !!this.scenario && this.scenario.mode !== 'skirmish';
     this.difficulty = opts.difficulty ?? 'normal';
     this.win = opts.win ?? opts.scenario?.win ?? 'points';
     const scenario = this.scenario;
@@ -172,6 +178,12 @@ export class World {
     this.squads.push(sq);
     this.byId.set(sq.id, sq);
     return sq;
+  }
+
+  /** True if the tier building `unitId` (or nothing, if undefined) is standing for this team. */
+  hasTech(team: TeamId, unitId: string | undefined): boolean {
+    if (!unitId || this.techFree) return true;
+    return this.squads.some((s) => !s.dead && s.team === team && s.def.id === unitId);
   }
 
   emit(e: SimEvent): void {
