@@ -26,10 +26,45 @@ const ORDER_COLOR: Record<string, string> = {
   ability: '#c9a2ff',
 };
 
-/** Uniform colours seen from above, by faction: cloth, helmet, pack. */
-const UNIFORM: Record<string, { cloth: string; helmet: string; pack: string }> = {
-  usaffe: { cloth: '#6f6f47', helmet: '#4e5335', pack: '#47442d' },
-  ija: { cloth: '#8c7c47', helmet: '#6d673b', pack: '#5a4a2b' },
+/** How each army looks on the battlefield: uniforms, helmets and tank paint. */
+interface FactionLook {
+  cloth: string;
+  helmet: string;
+  pack: string;
+  /** m1: wide round helmet; type90: smaller helmet with a star and a cloth neck flap. */
+  helmetStyle: 'm1' | 'type90';
+  hull: string;
+  turret: string;
+  camo?: string[];
+  barrel: number;
+  emblem: 'sun' | 'star';
+  chiHa: boolean;
+}
+
+const LOOK: Record<string, FactionLook> = {
+  usaffe: {
+    cloth: '#6f6f47',
+    helmet: '#4e5335',
+    pack: '#47442d',
+    helmetStyle: 'm1',
+    hull: '#58603a',
+    turret: '#626b41',
+    barrel: 19,
+    emblem: 'sun',
+    chiHa: false,
+  },
+  ija: {
+    cloth: '#8c7c47',
+    helmet: '#6d673b',
+    pack: '#5a4a2b',
+    helmetStyle: 'type90',
+    hull: '#8a7a4c',
+    turret: '#7d6f45',
+    camo: ['#5b6a3a', '#6e5231'],
+    barrel: 10,
+    emblem: 'star',
+    chiHa: true,
+  },
 };
 
 /** Draws the world from the player's point of view. Reads the simulation, never writes it. */
@@ -425,7 +460,7 @@ export class Renderer {
   private drawSoldier(p: Vec2, facing: number, sq: Squad, w: WeaponDef | undefined, prone: boolean): void {
     const { ctx } = this;
     const col = TEAM[sq.team];
-    const kit = UNIFORM[this.world.teams[sq.team].faction.id] ?? UNIFORM.usaffe;
+    const kit = this.look(sq);
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(facing);
@@ -458,28 +493,55 @@ export class Renderer {
     else ctx.ellipse(0, 0, 2.4, 4.1, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
-    // Helmet, with a little light on it.
+    // Helmet, with a little light on it. The Maharlika wear a wide round
+    // helmet; the Imperial Army a smaller one with a star and a cloth neck flap.
     const hx = prone ? 2.6 : 0.4;
+    const m1 = kit.helmetStyle === 'm1';
+    if (!m1) {
+      ctx.fillStyle = kit.cloth;
+      ctx.beginPath();
+      ctx.moveTo(hx - 0.5, -1.9);
+      ctx.lineTo(hx - 3.2, -2.3);
+      ctx.lineTo(hx - 3.2, 2.3);
+      ctx.lineTo(hx - 0.5, 1.9);
+      ctx.closePath();
+      ctx.fill();
+    }
     ctx.fillStyle = kit.helmet;
     ctx.strokeStyle = 'rgba(0,0,0,0.55)';
     ctx.lineWidth = 0.6;
     ctx.beginPath();
-    ctx.arc(hx, 0, 2.3, 0, Math.PI * 2);
+    ctx.arc(hx, 0, m1 ? 2.6 : 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+    if (m1) {
+      // The brim.
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.arc(hx, 0, 1.8, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#e8c547';
+      ctx.fillRect(hx + 1.1, -0.45, 0.9, 0.9);
+    }
     ctx.fillStyle = 'rgba(255,255,230,0.22)';
     ctx.beginPath();
-    ctx.arc(hx - 0.6, -0.7, 1, 0, Math.PI * 2);
+    ctx.arc(hx - 0.6, -0.7, 0.9, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
 
+  /**
+   * Tanks in their army's paint: the Maharlika Stuart in olive drab with a
+   * long 37mm gun and a sun on the hull; the Chi-Ha in three-colour
+   * camouflage with its off-centre turret, stubby 57mm and hoop aerial.
+   */
   private drawVehicle(sq: Squad, ui: UIState): void {
     const { ctx } = this;
     const vd = sq.def.vehicle!;
-    const col = TEAM[sq.team];
     const L = vd.length;
     const W = vd.width;
+    const look = this.look(sq);
     ctx.save();
     ctx.translate(sq.pos.x, sq.pos.y);
     if (ui.selected.has(sq.id) || ui.hoverId === sq.id) {
@@ -490,30 +552,150 @@ export class Renderer {
       ctx.stroke();
     }
     ctx.rotate(sq.heading);
-    ctx.fillStyle = '#1e1e1c';
-    ctx.fillRect(-L / 2, -W / 2, L, 4);
-    ctx.fillRect(-L / 2, W / 2 - 4, L, 4);
-    ctx.fillStyle = col.dark;
-    ctx.strokeStyle = '#0d0d0d';
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-L / 2 + 2, -W / 2 + 2, L, W);
+
+    // Tracks, with links.
+    ctx.fillStyle = '#23231f';
+    ctx.fillRect(-L / 2, -W / 2, L, 4.5);
+    ctx.fillRect(-L / 2, W / 2 - 4.5, L, 4.5);
+    ctx.strokeStyle = 'rgba(90,88,78,0.7)';
+    ctx.lineWidth = 0.8;
+    for (let x = -L / 2 + 1.5; x < L / 2; x += 2.6) {
+      ctx.beginPath();
+      ctx.moveTo(x, -W / 2);
+      ctx.lineTo(x, -W / 2 + 4.5);
+      ctx.moveTo(x, W / 2 - 4.5);
+      ctx.lineTo(x, W / 2);
+      ctx.stroke();
+    }
+
+    // Hull.
+    const hullX = -L / 2 + 1;
+    const hullY = -W / 2 + 3.5;
+    const hullW = L - 2;
+    const hullH = W - 7;
+    ctx.fillStyle = look.hull;
+    ctx.strokeStyle = '#141410';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(-L / 2 + 1, -W / 2 + 3, L - 2, W - 6, 3);
+    if (look.chiHa) {
+      // Sloped glacis at the front.
+      ctx.moveTo(hullX, hullY);
+      ctx.lineTo(hullX + hullW - 5, hullY);
+      ctx.lineTo(hullX + hullW, hullY + 3);
+      ctx.lineTo(hullX + hullW, hullY + hullH - 3);
+      ctx.lineTo(hullX + hullW - 5, hullY + hullH);
+      ctx.lineTo(hullX, hullY + hullH);
+      ctx.closePath();
+    } else {
+      ctx.roundRect(hullX, hullY, hullW, hullH, 2.5);
+    }
     ctx.fill();
+    if (look.camo) {
+      // Camouflage blotches, clipped to the hull.
+      ctx.save();
+      ctx.clip();
+      look.camo.forEach((c, i) => {
+        ctx.fillStyle = c;
+        for (let k = 0; k < 3; k++) {
+          const bx = hullX + ((i * 7 + k * 11) % hullW);
+          const by = hullY + ((i * 5 + k * 7) % hullH);
+          ctx.beginPath();
+          ctx.ellipse(bx, by, 4.5, 2.6, (i + k) * 0.9, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      ctx.restore();
+    }
     ctx.stroke();
-    ctx.fillStyle = col.main;
-    ctx.fillRect(L / 2 - 6, -W / 2 + 5, 4, W - 10);
+    // Engine deck grille at the back, and rivets along the hull.
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(hullX + 2 + i * 1.8, hullY + 2.5);
+      ctx.lineTo(hullX + 2 + i * 1.8, hullY + hullH - 2.5);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    for (let x = hullX + 3; x < hullX + hullW - 2; x += 4) {
+      ctx.fillRect(x, hullY + 0.8, 0.9, 0.9);
+      ctx.fillRect(x, hullY + hullH - 1.7, 0.9, 0.9);
+    }
+    // Hull marking.
+    this.emblem(look.emblem, hullX + hullW * 0.32, 0, 2.6);
+
+    // Turret: the Stuart's is central, the Chi-Ha's sits to one side.
+    ctx.translate(look.chiHa ? 1 : 0.5, look.chiHa ? -1.2 : 0);
     ctx.rotate(sq.turret - sq.heading);
-    ctx.fillStyle = '#222';
-    ctx.fillRect(0, -1.6, L * 0.62, 3.2);
-    ctx.fillStyle = col.main;
-    ctx.strokeStyle = col.dark;
+    ctx.fillStyle = '#1b1b18';
+    ctx.fillRect(0, -1.3, look.barrel, 2.6);
+    ctx.fillRect(look.barrel - 1.5, -1.8, 1.5, 3.6);
+    const tr = W * 0.3;
+    ctx.fillStyle = look.turret;
+    ctx.strokeStyle = '#141410';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(0, 0, W * 0.33, 0, Math.PI * 2);
+    if (look.chiHa) ctx.ellipse(0, 0, tr, tr * 0.9, 0, 0, Math.PI * 2);
+    else ctx.roundRect(-tr, -tr * 0.85, tr * 2, tr * 1.7, 2.5);
     ctx.fill();
     ctx.stroke();
+    // Hatch.
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.arc(-tr * 0.35, 0, tr * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+    if (look.chiHa) {
+      // The Chi-Ha's hoop aerial round the turret.
+      ctx.strokeStyle = 'rgba(30,30,26,0.9)';
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.ellipse(-1, 0, tr + 2.2, tr + 1.6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
     // Damaged vehicles trail smoke.
     if (healthFraction(sq) < 0.4 && Math.random() < 0.15) this.effects.puff(sq.pos);
+  }
+
+  /** Paint and kit of a unit's army. */
+  private look(sq: Squad): FactionLook {
+    return LOOK[this.world.teams[sq.team].faction.id] ?? LOOK.usaffe;
+  }
+
+  /** A small national marking: a sun (Maharlika) or a star (Imperial Army). */
+  private emblem(kind: 'sun' | 'star', x: number, y: number, r: number): void {
+    const { ctx } = this;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = '#e8c547';
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    if (kind === 'sun') {
+      ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#e8c547';
+      ctx.lineWidth = 0.7;
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        ctx.moveTo(Math.cos(a) * r * 0.75, Math.sin(a) * r * 0.75);
+        ctx.lineTo(Math.cos(a) * r * 1.2, Math.sin(a) * r * 1.2);
+      }
+      ctx.stroke();
+    } else {
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + (i / 10) * Math.PI * 2;
+        const rr = i % 2 === 0 ? r : r * 0.45;
+        if (i === 0) ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+        else ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   private drawStructure(sq: Squad, ui: UIState): void {
