@@ -1,6 +1,6 @@
 import type { UnitDef } from './types';
 
-const DEFAULTS: Omit<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'> = {
+const DEFAULTS: Omit<UnitDef, 'id' | 'name' | 'short' | 'type' | 'description' | 'kind' | 'role'> = {
   models: 1,
   modelHp: 80,
   cost: { manpower: 0, munitions: 0, fuel: 0 },
@@ -30,13 +30,15 @@ const DEFAULTS: Omit<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'> =
 
 const unit = (def: Partial<UnitDef> & Pick<UnitDef, 'id' | 'name' | 'description' | 'kind' | 'role'>): UnitDef => ({
   ...DEFAULTS,
+  short: def.name,
+  type: '',
   ...def,
 });
 
 const LIST: UnitDef[] = [
   // ─── Hukbong Maharlika ─────────────────────────────────────
   unit({
-    id: 'us_hq', name: 'Maharlika Headquarters', kind: 'structure', role: 'hq',
+    id: 'us_hq', name: 'Punong Himpilan', short: 'Himpilan', type: 'Headquarters', kind: 'structure', role: 'hq',
     description: 'Produces units, heals and reinforces nearby squads. Lose it and you lose the battle.',
     strongVs: 'Infantry raids on the base',
     weakVs: 'Tanks and mortars',
@@ -44,7 +46,7 @@ const LIST: UnitDef[] = [
     armor: { front: 180, rear: 180 }, radius: 36, receivedAccuracy: 1.5, vetXp: [],
   }),
   unit({
-    id: 'us_riflemen', name: 'Rifle Squad', kind: 'infantry', role: 'line',
+    id: 'us_riflemen', name: 'Sundalo ng Maharlika', short: 'Sundalo', type: 'Rifle Squad', kind: 'infantry', role: 'line',
     description: 'Five riflemen with semi-automatic M1 Garands. Captures territory. Can throw frag grenades.',
     strongVs: 'Weapon teams from the flank, other infantry',
     weakVs: 'Machine guns from the front, tanks',
@@ -53,7 +55,7 @@ const LIST: UnitDef[] = [
     abilities: ['grenade_us'], upgrades: ['us_bazooka_kit', 'us_bar'],
   }),
   unit({
-    id: 'us_engineers', name: 'Combat Engineers', kind: 'infantry', role: 'engineer',
+    id: 'us_engineers', name: 'Inhinyero ng Maharlika', short: 'Inhinyero', type: 'Combat Engineers', kind: 'infantry', role: 'engineer',
     description: 'Four engineers with carbines. Build sandbags, barbed wire, tank traps, mines, MG nests, bunkers and aid tents, and repair tanks and structures.',
     strongVs: 'Fortifying ground, keeping tanks in the fight',
     weakVs: 'Any real firefight',
@@ -62,7 +64,7 @@ const LIST: UnitDef[] = [
     builds: ['sandbags', 'wire', 'tanktrap', 'mine', 'mg_nest', 'bunker', 'aid_tent'], canRepair: true,
   }),
   unit({
-    id: 'us_hmg', name: 'M1917 HMG Team', kind: 'team', role: 'mg',
+    id: 'us_hmg', name: 'Ametralyadora M1917', short: 'Ametralyadora', type: 'Heavy Machine Gun Team', kind: 'team', role: 'mg',
     description: 'Water-cooled heavy machine gun. Must set up to fire; pins infantry inside its arc.',
     strongVs: 'Infantry inside its firing cone',
     weakVs: 'Mortars, flanking infantry, tanks',
@@ -71,7 +73,7 @@ const LIST: UnitDef[] = [
     canCapture: true, setupTime: 2.4, teardownTime: 2,
   }),
   unit({
-    id: 'us_mortar', name: '60mm Mortar Team', kind: 'team', role: 'mortar',
+    id: 'us_mortar', name: 'Mortero 60mm', short: 'Mortero', type: 'Mortar Team', kind: 'team', role: 'mortar',
     description: 'Indirect fire support. Needs allied eyes on the target. Can fire a barrage.',
     strongVs: 'Set-up weapon teams, infantry in cover',
     weakVs: 'Infantry rushes, tanks. Needs a spotter to see its target',
@@ -80,7 +82,7 @@ const LIST: UnitDef[] = [
     canCapture: true, setupTime: 2, teardownTime: 2, abilities: ['barrage_us'],
   }),
   unit({
-    id: 'us_bazooka', name: 'Bazooka Squad', kind: 'infantry', role: 'at',
+    id: 'us_bazooka', name: 'Pangontra-Tangke', short: 'Bazooka', type: 'Bazooka Squad', kind: 'infantry', role: 'at',
     description: 'Two M1 bazookas and two carbines. Hunts armour; weak against infantry.',
     strongVs: 'Tanks, especially from the side or rear',
     weakVs: 'Infantry and machine guns',
@@ -89,7 +91,7 @@ const LIST: UnitDef[] = [
     canCapture: true,
   }),
   unit({
-    id: 'us_stuart', name: 'M3 Stuart', kind: 'vehicle', role: 'tank',
+    id: 'us_stuart', name: 'M3 Stuart', short: 'Stuart', type: 'Light Tank', kind: 'vehicle', role: 'tank',
     description: 'Fast light tank with a 37mm gun. Keep its thin rear armour away from AT weapons.',
     strongVs: 'Infantry and weapon teams',
     weakVs: 'Anti-tank squads, shots to its thin rear armour',
@@ -101,7 +103,7 @@ const LIST: UnitDef[] = [
 
   // ─── Imperial Japanese Army ───────────────────────────────
   unit({
-    id: 'ija_hq', name: 'Imperial Army Headquarters', kind: 'structure', role: 'hq',
+    id: 'ija_hq', name: 'Shireibu', short: 'Shireibu', type: 'Headquarters', kind: 'structure', role: 'hq',
     description: 'Produces units, heals and reinforces nearby squads. Lose it and you lose the battle.',
     strongVs: 'Infantry raids on the base',
     weakVs: 'Tanks and mortars',
@@ -109,7 +111,7 @@ const LIST: UnitDef[] = [
     armor: { front: 180, rear: 180 }, radius: 36, receivedAccuracy: 1.5, vetXp: [],
   }),
   unit({
-    id: 'ija_riflemen', name: 'Hohei Rifle Squad', kind: 'infantry', role: 'line',
+    id: 'ija_riflemen', name: 'Hohei', short: 'Hohei', type: 'Rifle Squad', kind: 'infantry', role: 'line',
     description: 'Six riflemen with bolt-action Arisakas. Fragile individually but numerous. Can throw grenades.',
     strongVs: 'Weapon teams from the flank, other infantry',
     weakVs: 'Machine guns from the front, tanks',
@@ -118,7 +120,7 @@ const LIST: UnitDef[] = [
     abilities: ['grenade_ija'], upgrades: ['ija_lmg', 'ija_at_rifle'],
   }),
   unit({
-    id: 'ija_engineers', name: 'Kohei Engineers', kind: 'infantry', role: 'engineer',
+    id: 'ija_engineers', name: 'Kohei', short: 'Kohei', type: 'Combat Engineers', kind: 'infantry', role: 'engineer',
     description: 'Four engineers with carbines. Build sandbags, barbed wire, tank traps, mines, MG nests, bunkers and aid tents, and repair tanks and structures.',
     strongVs: 'Fortifying ground, keeping tanks in the fight',
     weakVs: 'Any real firefight',
@@ -127,7 +129,7 @@ const LIST: UnitDef[] = [
     builds: ['sandbags', 'wire', 'tanktrap', 'mine', 'mg_nest', 'bunker', 'aid_tent'], canRepair: true,
   }),
   unit({
-    id: 'ija_hmg', name: 'Type 92 HMG Team', kind: 'team', role: 'mg',
+    id: 'ija_hmg', name: 'Kikanjū Type 92', short: 'Kikanjū', type: 'Heavy Machine Gun Team', kind: 'team', role: 'mg',
     description: 'Heavy machine gun with long reach. Must set up; devastating suppression in its arc.',
     strongVs: 'Infantry inside its firing cone',
     weakVs: 'Mortars, flanking infantry, tanks',
@@ -136,7 +138,7 @@ const LIST: UnitDef[] = [
     canCapture: true, setupTime: 2.6, teardownTime: 2.2,
   }),
   unit({
-    id: 'ija_mortar', name: 'Type 97 Mortar Team', kind: 'team', role: 'mortar',
+    id: 'ija_mortar', name: 'Hakugekihō Type 97', short: 'Hakugekihō', type: 'Mortar Team', kind: 'team', role: 'mortar',
     description: '81mm mortar: heavier shells and longer reach than the 60mm, slower rate of fire.',
     strongVs: 'Set-up weapon teams, infantry in cover',
     weakVs: 'Infantry rushes, tanks. Needs a spotter to see its target',
@@ -145,7 +147,7 @@ const LIST: UnitDef[] = [
     canCapture: true, setupTime: 2.2, teardownTime: 2, abilities: ['barrage_ija'],
   }),
   unit({
-    id: 'ija_at', name: 'AT Rifle Team', kind: 'infantry', role: 'at',
+    id: 'ija_at', name: 'Taisensha-hei', short: 'AT Rifle', type: 'Anti-Tank Rifle Team', kind: 'infantry', role: 'at',
     description: 'Two Type 97 20mm anti-tank rifles. Accurate at range; needs flank shots on heavier armour.',
     strongVs: 'Tanks, especially from the side or rear',
     weakVs: 'Infantry and machine guns',
@@ -154,7 +156,7 @@ const LIST: UnitDef[] = [
     canCapture: true,
   }),
   unit({
-    id: 'ija_chiha', name: 'Type 97 Chi-Ha', kind: 'vehicle', role: 'tank',
+    id: 'ija_chiha', name: 'Type 97 Chi-Ha', short: 'Chi-Ha', type: 'Medium Tank', kind: 'vehicle', role: 'tank',
     description: 'Medium tank with a low-velocity 57mm gun firing high-explosive shells. Deadly to infantry.',
     strongVs: 'Infantry and weapon teams',
     weakVs: 'Anti-tank squads, enemy tanks, shots to the rear',
@@ -165,7 +167,7 @@ const LIST: UnitDef[] = [
   }),
   // ─── Engineer structures (both sides) ─────────────────────
   unit({
-    id: 'mg_nest', name: 'MG Nest', kind: 'structure', role: 'fort',
+    id: 'mg_nest', name: 'MG Nest', short: 'MG Nest', type: 'Emplacement', kind: 'structure', role: 'fort',
     description: 'A machine gun behind a ring of sandbags. Fires all round and pins infantry down, but explosives and tank guns tear it apart quickly.',
     strongVs: 'Infantry in the open',
     weakVs: 'Mortars, grenades and tanks',
@@ -173,7 +175,7 @@ const LIST: UnitDef[] = [
     armor: { front: 6, rear: 6 }, radius: 10, receivedAccuracy: 1.6, vetXp: [],
   }),
   unit({
-    id: 'bunker', name: 'Bunker', kind: 'structure', role: 'fort',
+    id: 'bunker', name: 'Bunker', short: 'Bunker', type: 'Emplacement', kind: 'structure', role: 'fort',
     description: 'A log-and-earth bunker with a machine gun slit. Rifles cannot hurt it; it takes tank guns, bazookas or satchels of grenades. Squads nearby can reinforce and pick up upgrades there.',
     strongVs: 'Infantry assaults',
     weakVs: 'Tank guns and heavy mortar fire',
@@ -181,7 +183,7 @@ const LIST: UnitDef[] = [
     armor: { front: 45, rear: 45 }, radius: 13, receivedAccuracy: 1.7, vetXp: [], supplies: true,
   }),
   unit({
-    id: 'aid_tent', name: 'Aid Tent', kind: 'structure', role: 'fort',
+    id: 'aid_tent', name: 'Aid Tent', short: 'Aid Tent', type: 'Field Hospital', kind: 'structure', role: 'fort',
     description: 'Medics patch up friendly soldiers nearby when they are out of the fight. Unarmed canvas: it goes down fast under any fire.',
     strongVs: 'Keeping squads at the front healthy',
     weakVs: 'Anything that shoots at it',
