@@ -399,7 +399,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
   /** HQ: set the rally point where new units go. */
   private rallyButton(): void {
     const node = this.gridButton(this.buildGrid, 'rally', 'Rally Point', '', () => {
-      if (!this.input.selectedOwn().some((s) => s.def.role === 'hq')) this.input.selectHq();
+      if (!this.input.selectedOwn().some((s) => s.def.role === 'hq' || s.def.role === 'tech')) this.input.selectHq();
       this.input.rallyMode();
     });
     this.tip(node, () => ({
@@ -412,7 +412,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
   private buildButton(id: string): void {
     const def = UNITS[id];
     const node = this.gridButton(this.buildGrid, unitIcon(def), def.name, '', () => {
-      const r = queueProduction(this.world, this.player, id);
+      const r = queueProduction(this.world, this.player, id, this.producer());
       if (!r.ok) this.toast(r.reason ?? 'Cannot build', 'bad');
     });
     this.tip(node, () => ({
@@ -470,7 +470,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     const own = this.input.selectedOwn();
     const units = own.filter((s) => s.def.kind !== 'structure');
     // Units selected → their orders; HQ or nothing selected → the recruit menu; a nest, bunker or tent → nothing to order.
-    const fort = units.length === 0 ? own.find((s) => s.def.role === 'fort' || s.def.role === 'tech') : undefined;
+    const fort = units.length === 0 ? own.find((s) => s.def.role === 'fort') : undefined;
     const building = units.length === 0 && !fort;
     if (this.ui.buildMenu && !own.some((s) => s.def.builds.length > 0)) this.ui.buildMenu = false;
     this.orderGrid.style.display = building || fort ? 'none' : '';
@@ -484,7 +484,10 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
       if (!single && !c.common) c.node.style.display = 'none';
       if ((c.buildPage ?? false) !== this.ui.buildMenu) c.node.style.display = 'none';
     }
+    const producer = this.producer();
+    const tier = producer?.def.role === 'tech' ? producer.def.id : null;
     for (const b of this.builds) {
+      b.node.style.display = tier && UNITS[b.id].requires !== tier ? 'none' : '';
       const open = this.world.hasTech(this.player, UNITS[b.id].requires);
       b.node.classList.toggle('locked', !open);
       b.node.disabled = !open || !canAfford(r, UNITS[b.id].cost);
@@ -531,6 +534,12 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
   // ─── Production queue ────────────────────────────────────────
 
   /** Squads whose queue is shown: the selected units, or none (then it is the HQ's queue). */
+  /** The building whose recruits are shown: a selected tier building, otherwise headquarters. */
+  private producer(): Squad | undefined {
+    const own = this.input.selectedOwn();
+    return own.find((s) => s.def.role === 'tech') ?? this.world.hqOf(this.player);
+  }
+
   private queueOwners(): Squad[] {
     return this.input.selectedOwn().filter((s) => s.def.kind !== 'structure');
   }
@@ -544,8 +553,8 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
     const jobs: QueueJob[] = [];
     const squads = this.queueOwners();
     if (squads.length > 0) return this.squadJobs(squads);
-    const hq = this.world.hqOf(this.player);
-    (hq?.production ?? []).forEach((item, i) => {
+    const producer = this.producer();
+    (producer?.production ?? []).forEach((item, i) => {
       const def = UNITS[item.unitId];
       jobs.push({
         key: `unit:${i}:${item.unitId}`,
@@ -558,7 +567,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
         body: i === 0 ? `Recruiting · ${Math.ceil(item.remaining)}s left.` : 'Waiting for the recruit ahead of it.',
         action: 'Click to cancel and get the full cost back.',
         cost: def.cost,
-        click: () => cancelProduction(this.world, this.player, i),
+        click: () => cancelProduction(this.world, this.player, i, producer),
       });
     });
     return jobs;
@@ -629,7 +638,7 @@ Buy near headquarters or a supplied friendly point. Arrives in ${o.def.time}s. O
           body:
             this.queueOwners().length > 0
               ? 'This squad’s queue: its weapon upgrade and reinforcements show here while they run.'
-              : `Headquarters’ recruiting queue: up to ${ECONOMY.maxQueue} units at a time.`,
+              : `${this.producer()?.def.name ?? 'Headquarters'}: recruiting queue, up to ${ECONOMY.maxQueue} units at a time.`,
         };
       }
       return { title: job.title, body: `${job.body}\n${job.action}`, cost: job.cost };
