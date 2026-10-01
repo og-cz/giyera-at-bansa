@@ -142,6 +142,11 @@ export function issueBuild(world: World, sq: Squad, buildId: string, from: Vec2,
   const def = BUILDABLES[buildId];
   if (!commandable(sq) || !def || !sq.def.builds.includes(buildId)) return fail('Only engineers can build that');
   if (sq.retreating) return RETREATING;
+  const standing = (unitId: string | undefined) => world.squads.some((s) => !s.dead && s.team === sq.team && s.def.id === unitId);
+  if (def.unique && (standing(def.unit) || world.constructions.some((c) => c.team === sq.team && c.buildId === buildId))) {
+    return fail(`${def.name} is already built`);
+  }
+  if (def.requires && !standing(def.requires)) return fail(`Build the ${UNITS[def.requires].name} first`);
   const plan = planBuild(world, buildId, from, to);
   const tiles = plan.tiles.filter((t) => t.valid);
   if (tiles.length === 0) return fail('Cannot build there');
@@ -191,6 +196,7 @@ export function issueUpgrade(world: World, sq: Squad, upgradeId: string): Comman
   if (!commandable(sq) || !def || !sq.def.upgrades.includes(upgradeId)) return fail('This squad cannot take that upgrade');
   if (sq.upgrades.length > 0 || sq.upgrading) return fail('Squad is already upgraded');
   if (sq.retreating) return RETREATING;
+  if (!world.hasTech(sq.team, def.requires)) return fail(`Build the ${UNITS[def.requires!].name} first`);
   if (!canReinforceHere(world, sq)) return fail('Must be near HQ or a supplied friendly point');
   const res = world.teams[sq.team].resources;
   if (!canAfford(res, def.cost)) return fail('Not enough munitions');
@@ -240,6 +246,7 @@ export function queueProduction(world: World, team: TeamId, unitId: string): Com
   const def = UNITS[unitId];
   if (!hq || hq.dead) return fail('Headquarters destroyed');
   if (!def || !t.faction.roster.includes(unitId)) return fail('Not in roster');
+  if (!world.hasTech(team, def.requires)) return fail(`Build the ${UNITS[def.requires!].name} first`);
   if (hq.production.length >= ECONOMY.maxQueue) return fail('Production queue full');
   if (popUsed(world, team) + def.pop > ECONOMY.popCap) return fail('Population cap reached');
   if (!canAfford(t.resources, def.cost)) {
