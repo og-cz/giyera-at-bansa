@@ -14,6 +14,8 @@ export const T = {
   Rampart: 10,
   Wire: 11,
   TankTrap: 12,
+  /** Ground taken up by a structure: nothing passes through it. */
+  Emplacement: 13,
 } as const;
 
 export type TerrainId = (typeof T)[keyof typeof T];
@@ -37,6 +39,7 @@ export const TERRAIN: readonly TerrainDef[] = [
   // Built by engineers. Wire stops infantry but tanks roll over it; tank traps are the reverse.
   { id: T.Wire, name: 'Barbed Wire', cover: 'none', infantryCost: X, vehicleCost: 1.2, blocksSight: false, sightDensity: 0, crushInto: T.Open },
   { id: T.TankTrap, name: 'Tank Traps', cover: 'light', infantryCost: 1.3, vehicleCost: X, blocksSight: false, sightDensity: 0, crushInto: null },
+  { id: T.Emplacement, name: 'Emplacement', cover: 'heavy', infantryCost: X, vehicleCost: X, blocksSight: false, sightDensity: 0, crushInto: null },
 ];
 
 /** Lowest per-tile cost of any terrain; keeps the A* heuristic admissible. */
