@@ -61,13 +61,18 @@ export class AICommander {
     const hq = world.hqOf(this.team);
     if (!hq || hq.production.length > 0) return;
     const t = world.teams[this.team];
-    const counts: Record<UnitRole, number> = { hq: 0, line: 0, mg: 0, mortar: 0, at: 0, tank: 0, engineer: 0, fort: 0 };
+    const counts: Record<UnitRole, number> = { hq: 0, line: 0, mg: 0, mortar: 0, at: 0, tank: 0, engineer: 0, fort: 0, tech: 0 };
     for (const sq of own) counts[sq.def.role]++;
     const unitFor = (role: UnitRole) => t.faction.roster.find((id) => UNITS[id].role === role);
     const threats = this.seenVehicles.size;
 
+    // Hold manpower back when a tier building is due and the engineers are waiting on it.
+    const due = this.nextTech(world);
+    if (due && counts.line >= 2 && !canAfford(t.resources, BUILDABLES[due].cost)) return;
+
     const plan: [boolean, UnitRole, boolean][] = [
       // [condition, role, skip if unaffordable]
+      [counts.engineer < 1, 'engineer', false],
       [counts.line < 2, 'line', false],
       [threats > 0 && counts.at < Math.min(3, threats + 1), 'at', false],
       [counts.mg < 1, 'mg', false],
@@ -82,7 +87,8 @@ export class AICommander {
     for (const [want, role, optional] of plan) {
       if (!want) continue;
       const id = unitFor(role);
-      if (!id) continue;
+      // Units whose tier building is not up yet are skipped.
+      if (!id || !world.hasTech(this.team, UNITS[id].requires)) continue;
       if (!canAfford(t.resources, UNITS[id].cost)) {
         if (optional) continue;
         return;
@@ -124,6 +130,7 @@ export class AICommander {
     this.upgrade(world, sq);
     if (atBase && healthFraction(sq) < 0.8 && sq.order.kind === 'idle' && world.time - sq.lastHurt > 5) return;
 
+    if (sq.def.builds.length > 0 && this.techUp(world, sq)) return;
     if (sq.def.canRepair && this.repair(world, sq, own)) return;
     if (sq.def.builds.length > 0 && this.fortify(world, sq)) return;
     this.useAbilities(world, sq);
@@ -147,7 +154,9 @@ export class AICommander {
     if (sq.def.upgrades.length === 0 || sq.upgrades.length > 0 || sq.upgrading || !canReinforceHere(world, sq)) return;
     const antiTank = (id: string) => UPGRADES[id].weapons.some((w) => WEAPONS[w].prefers === 'vehicle');
     const wantAt = this.seenVehicles.size > 0;
-    const id = sq.def.upgrades.find((u) => antiTank(u) === wantAt) ?? sq.def.upgrades[0];
+    const open = sq.def.upgrades.filter((u) => world.hasTech(this.team, UPGRADES[u].requires));
+    if (open.length === 0) return;
+    const id = open.find((u) => antiTank(u) === wantAt) ?? open[0];
     // Keep some munitions back for grenades and barrages.
     if (world.teams[this.team].resources.munitions < UPGRADES[id].cost.munitions + 25) return;
     issueUpgrade(world, sq, id);
@@ -164,6 +173,39 @@ export class AICommander {
     if (candidates.length === 0) return false;
     candidates.sort((a, b) => healthFraction(a) - healthFraction(b));
     return issueRepair(world, sq, candidates[0]).ok;
+  }
+
+  /**
+   * The next tier building that is due, if any: Tier 1 straight away, Tier 2
+   * once the army has grown a little, Tier 3 later on.
+   */
+  private nextTech(world: World): string | null {
+    if (world.techFree) return null;
+    const engineer = world.squads.find((s) => !s.dead && s.team === this.team && s.def.builds.length > 0);
+    if (!engineer) return null;
+    const tiers = engineer.def.builds.filter((b) => BUILDABLES[b].page === 'base');
+    const standing = (b: string) => world.squads.some((s) => !s.dead && s.team === this.team && s.def.id === BUILDABLES[b].unit);
+    const next = tiers.find((b) => !standing(b));
+    if (!next || world.constructions.some((c) => c.team === this.team && c.buildId === next)) return null;
+    const pace = [15, 150, 270][tiers.indexOf(next)] ?? 0;
+    return world.time >= pace ? next : null;
+  }
+
+  /** Engineers raise the next tier building beside headquarters when it is due and affordable. */
+  private techUp(world: World, sq: Squad): boolean {
+    if (sq.order.kind === 'build') return true;
+    const next = this.nextTech(world);
+    const hq = world.hqOf(this.team);
+    if (!next || !hq || !canAfford(world.teams[this.team].resources, BUILDABLES[next].cost)) return false;
+    const enemyBase = world.teams[this.team === 0 ? 1 : 0].base;
+    const ahead = Math.atan2(enemyBase.y - hq.pos.y, enemyBase.x - hq.pos.x);
+    for (const d of [6, 8, 10]) {
+      for (const turn of [1.3, -1.3, 2, -2, 0.7, -0.7]) {
+        const spot = { x: hq.pos.x + Math.cos(ahead + turn) * TILE * d, y: hq.pos.y + Math.sin(ahead + turn) * TILE * d };
+        if (issueBuild(world, sq, next, spot, spot).ok) return true;
+      }
+    }
+    return false;
   }
 
   /** Engineers dig in at a quiet point we hold: an MG nest first, a bunker once munitions are short. */
