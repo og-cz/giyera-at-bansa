@@ -7,3 +7,11 @@ Menus: "Laments of the War" by Cethiel
 Battle: "Five Armies" by Kevin MacLeod (incompetech.com)
   Licensed under Creative Commons: By Attribution 4.0
   https://creativecommons.org/licenses/by/4.0/
+
+Victory: "Triumphant" by Emma_MA
+  https://opengameart.org/node/69666
+  Released under CC0 (public domain).
+
+Defeat: "The Sad Battle" by Eldritch Grim
+  https://opengameart.org/content/the-sad-battle
+  Released under CC0 (public domain).
