@@ -104,6 +104,9 @@ function play(setup: MatchSetup, origin: Origin): void {
 }
 
 installUiSounds();
+// Load the display font now: the first screen that uses it may be the result
+// screen, and the title must never flash up in a fallback font.
+void document.fonts.load("400 48px 'Quiapo'").catch(() => {});
 // Development only: ?battle=<map> starts a skirmish straight away (for quick checks).
 // &spawn=<unit id>[,<unit id>…] adds our units by the HQ (&enemy=… adds enemy ones beside them), &select=<unit id> selects our
 // first unit of that type, &zoom=<n> zooms in on them, &edge=1 zooms out to the map corner,
