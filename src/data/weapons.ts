@@ -128,9 +128,14 @@ const LIST: WeaponDef[] = [
     range: 200, accuracy: [0.4, 0.25], damage: 8, cooldown: 0.25, clip: 30, reload: 4, suppression: 0.02,
   }),
 
+  // Emplaced guns only fire through their front arc (the way they were built facing).
   weapon('nest_mg', 'Emplaced MG', {
     vs: { team: 0.75, structure: 0.1 },
-    range: 220, accuracy: [0.42, 0.25], damage: 9, cooldown: 0.16, clip: 40, reload: 4.5, suppression: 0.03,
+    range: 220, accuracy: [0.42, 0.25], damage: 9, cooldown: 0.16, clip: 40, reload: 4.5, suppression: 0.03, arc: 120,
+  }),
+  weapon('bunker_mg', 'Bunker MG', {
+    vs: { team: 0.75, structure: 0.1 },
+    range: 230, accuracy: [0.45, 0.27], damage: 9, cooldown: 0.16, clip: 40, reload: 4.5, suppression: 0.035, arc: 90,
   }),
 
   // A buried mine: built by engineers, set off by enemies stepping on it.
