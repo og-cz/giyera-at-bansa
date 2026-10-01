@@ -835,26 +835,6 @@ export class Renderer {
       ctx.fillRect(x + ridge - 2, top + hh - 2, 4, 4);
     }
 
-    // Flagpole by the gate: the Maharlika sun, or the army's star pennant.
-    const fx = x + wall - 5;
-    const fy = y + wall - 5;
-    ctx.fillStyle = '#2b2b2b';
-    ctx.fillRect(fx - 0.8, fy - 22, 1.6, 22);
-    ctx.fillStyle = filipino ? '#2d5aa8' : '#b9a46a';
-    ctx.beginPath();
-    if (filipino) ctx.rect(fx + 0.8, fy - 22, 14, 9);
-    else {
-      ctx.moveTo(fx + 0.8, fy - 22);
-      ctx.lineTo(fx + 16, fy - 18);
-      ctx.lineTo(fx + 0.8, fy - 13);
-    }
-    ctx.fill();
-    if (filipino) {
-      ctx.fillStyle = '#b3261e';
-      ctx.fillRect(fx + 0.8, fy - 17.5, 14, 4.5);
-    }
-    this.emblem(look.emblem, fx + 6, fy - 17.5, 2.4);
-
     if (ui.selected.has(sq.id)) {
       ctx.strokeStyle = '#9dff7a';
       ctx.lineWidth = 1.5;
