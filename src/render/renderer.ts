@@ -385,6 +385,16 @@ export class Renderer {
         ctx.closePath();
         ctx.fill();
       }
+      const emplaced = sq.def.kind === 'structure' ? sq.models[0]?.weapons.find((w) => w.def.arc < 360) : undefined;
+      if (emplaced) {
+        const half = (emplaced.def.arc * Math.PI) / 360;
+        ctx.fillStyle = 'rgba(255,230,120,0.1)';
+        ctx.beginPath();
+        ctx.moveTo(sq.pos.x, sq.pos.y);
+        ctx.arc(sq.pos.x, sq.pos.y, emplaced.def.range, sq.heading - half, sq.heading + half);
+        ctx.closePath();
+        ctx.fill();
+      }
       if (sq.def.kind === 'structure' && sq.rally) {
         ctx.strokeStyle = 'rgba(155,226,155,0.7)';
         ctx.lineWidth = 1.5;
@@ -935,7 +945,7 @@ export class Renderer {
     } else if (sq.def.id === 'bunker') {
       ctx.save();
       ctx.translate(x, y);
-      ctx.rotate(aim);
+      ctx.rotate(sq.heading);
       if (filipino) {
         // Coconut logs laid side by side.
         ctx.fillStyle = '#5a4630';
@@ -1015,7 +1025,7 @@ export class Renderer {
         ctx.stroke();
       }
       ctx.restore();
-      this.barrel(x + Math.cos(aim) * (r - 2), y + Math.sin(aim) * (r - 2), aim, 4, '#1c1c1a', 1.5);
+      this.barrel(x + Math.cos(sq.heading) * (r - 2), y + Math.sin(sq.heading) * (r - 2), aim, 4, '#1c1c1a', 1.5);
     } else if (filipino) {
       // Bamboo-and-nipa klinika: a thatched roof on a bamboo frame.
       const hw = r;
@@ -1103,8 +1113,8 @@ export class Renderer {
     const tier = Number(sq.def.id.slice(-1));
     const r = sq.def.radius;
     const { x, y } = sq.pos;
-    const hw = r * 1.15;
-    const hh = r * 0.72;
+    const hw = r * 1.4;
+    const hh = r * 0.9;
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fillRect(x - hw + 3, y - hh + 4, hw * 2, hh * 2);
     if (tier === 3) {
@@ -1398,21 +1408,36 @@ export class Renderer {
       ctx.fillRect(t.tx * TILE, t.ty * TILE, TILE, TILE);
       ctx.strokeRect(t.tx * TILE + 0.5, t.ty * TILE + 0.5, TILE - 1, TILE - 1);
     }
-    // Structures: show what the finished one will cover (gun range or healing area).
+    // Structures: show what the finished one will cover. Guns cover a wedge in front,
+    // facing the way you drag (or away from headquarters); aid stations a circle.
     const def = BUILDABLES[ui.mode.buildId];
     const tile = plan.tiles[0];
     if (def.shape === 'structure' && tile) {
       const unit = UNITS[def.unit!];
-      const center = world.map.tileCenter(tile.tx, tile.ty);
-      const reach = unit.healRadius || Math.max(0, ...unit.loadout.flatMap((l) => l.weapons.map((w) => WEAPONS[w].range)));
-      ctx.strokeStyle = tile.valid ? 'rgba(120,230,120,0.5)' : 'rgba(240,80,60,0.5)';
+      const xs = plan.tiles.map((k) => k.tx);
+      const ys = plan.tiles.map((k) => k.ty);
+      const center = { x: ((Math.min(...xs) + Math.max(...xs) + 1) / 2) * TILE, y: ((Math.min(...ys) + Math.max(...ys) + 1) / 2) * TILE };
+      const guns = unit.loadout.flatMap((l) => l.weapons.map((w) => WEAPONS[w]));
+      const reach = unit.healRadius || Math.max(0, ...guns.map((w) => w.range));
+      const arc = guns.length ? Math.max(...guns.map((w) => w.arc)) : 360;
+      const from = ui.buildFrom ?? ui.mouse.world;
+      const dragged = ui.buildFrom && Math.hypot(ui.mouse.world.x - from.x, ui.mouse.world.y - from.y) > TILE * 0.75;
+      const hq = world.hqOf(this.player);
+      const facing = dragged ? angleTo(from, ui.mouse.world) : hq ? angleTo(hq.pos, center) : 0;
+      ctx.strokeStyle = tile.valid ? 'rgba(120,230,120,0.6)' : 'rgba(240,80,60,0.6)';
+      ctx.fillStyle = tile.valid ? 'rgba(120,230,120,0.08)' : 'rgba(240,80,60,0.06)';
       ctx.lineWidth = lw;
       ctx.setLineDash([6, 5]);
       ctx.beginPath();
-      ctx.arc(center.x, center.y, reach, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(center.x, center.y, unit.radius, 0, Math.PI * 2);
+      if (arc < 360 && reach > 0) {
+        const half = (arc * Math.PI) / 360;
+        ctx.moveTo(center.x, center.y);
+        ctx.arc(center.x, center.y, reach, facing - half, facing + half);
+        ctx.closePath();
+      } else if (reach > 0) {
+        ctx.arc(center.x, center.y, reach, 0, Math.PI * 2);
+      }
+      ctx.fill();
       ctx.stroke();
       ctx.setLineDash([]);
     }
