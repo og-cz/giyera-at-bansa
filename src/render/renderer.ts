@@ -39,6 +39,12 @@ interface FactionLook {
   barrel: number;
   emblem: 'sun' | 'star';
   chiHa: boolean;
+  /** Headquarters: a Filipino bahay na bato, or a Japanese tiled building. */
+  hq: 'bahay' | 'japanese';
+  roofLight: string;
+  roofMid: string;
+  roofDark: string;
+  ridge: string;
 }
 
 const LOOK: Record<string, FactionLook> = {
@@ -52,6 +58,12 @@ const LOOK: Record<string, FactionLook> = {
     barrel: 19,
     emblem: 'sun',
     chiHa: false,
+    // Terracotta tiles.
+    hq: 'bahay',
+    roofLight: '#b86340',
+    roofMid: '#a1522f',
+    roofDark: '#8a4426',
+    ridge: '#6e3219',
   },
   ija: {
     cloth: '#8c7c47',
@@ -64,6 +76,12 @@ const LOOK: Record<string, FactionLook> = {
     barrel: 10,
     emblem: 'star',
     chiHa: true,
+    // Dark grey kawara tiles with pale ridge caps.
+    hq: 'japanese',
+    roofLight: '#5d646c',
+    roofMid: '#4c535b',
+    roofDark: '#3c4249',
+    ridge: '#9aa0a6',
   },
 };
 
@@ -704,34 +722,144 @@ export class Renderer {
       return;
     }
     const { ctx } = this;
-    const col = TEAM[sq.team];
+    const look = this.look(sq);
+    const filipino = look.hq === 'bahay';
     const r = sq.def.radius;
     const { x, y } = sq.pos;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.fillRect(x - r + 4, y - r + 6, r * 2, r * 2);
-    ctx.fillStyle = '#4a4238';
-    ctx.strokeStyle = ui.selected.has(sq.id) ? '#9dff7a' : col.main;
-    ctx.lineWidth = 3;
+    const wall = r + 7;
+
+    // The compound: packed earth inside an adobe wall or a timber fence.
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(x - wall + 3, y - wall + 4, wall * 2, wall * 2);
+    ctx.fillStyle = filipino ? '#8f7f5c' : '#7d7458';
+    ctx.fillRect(x - wall, y - wall, wall * 2, wall * 2);
+    ctx.strokeStyle = filipino ? '#c2ab80' : '#3b2f22';
+    ctx.lineWidth = filipino ? 3 : 2;
     ctx.beginPath();
-    ctx.roundRect(x - r, y - r, r * 2, r * 2, 4);
-    ctx.fill();
+    // Wall all round, with a gate gap at the front (south).
+    ctx.moveTo(x - 7, y + wall);
+    ctx.lineTo(x - wall, y + wall);
+    ctx.lineTo(x - wall, y - wall);
+    ctx.lineTo(x + wall, y - wall);
+    ctx.lineTo(x + wall, y + wall);
+    ctx.lineTo(x + 7, y + wall);
     ctx.stroke();
-    ctx.fillStyle = '#5c5246';
-    ctx.fillRect(x - r + 8, y - r + 8, r * 2 - 16, r * 2 - 16);
-    ctx.fillStyle = '#2d2d2d';
-    ctx.fillRect(x - 1, y - r - 22, 2, 26);
-    ctx.fillStyle = col.main;
+    if (filipino) {
+      // Adobe blocks.
+      ctx.strokeStyle = 'rgba(90,70,40,0.45)';
+      ctx.lineWidth = 0.6;
+      for (let i = -wall; i < wall; i += 5) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, y - wall - 1.5);
+        ctx.lineTo(x + i, y - wall + 1.5);
+        ctx.moveTo(x - wall - 1.5, y + i);
+        ctx.lineTo(x - wall + 1.5, y + i);
+        ctx.moveTo(x + wall - 1.5, y + i);
+        ctx.lineTo(x + wall + 1.5, y + i);
+        ctx.stroke();
+      }
+    } else {
+      // Fence posts.
+      ctx.fillStyle = '#2a2119';
+      for (let i = -wall; i <= wall; i += 6) {
+        ctx.fillRect(x + i - 1, y - wall - 1, 2, 2);
+        ctx.fillRect(x - wall - 1, y + i - 1, 2, 2);
+        ctx.fillRect(x + wall - 1, y + i - 1, 2, 2);
+      }
+    }
+
+    // The house: a hipped roof seen from above.
+    const hw = r;
+    const hh = r * 0.78;
+    const top = y - hh - 3;
+    const ridge = hw * 0.45;
+    const eave = filipino ? 0 : 2.5;
+    const faces: [string, [number, number][]][] = [
+      [look.roofLight, [[x - hw - eave, top - eave], [x + hw + eave, top - eave], [x + ridge, top + hh], [x - ridge, top + hh]]],
+      [look.roofDark, [[x - hw - eave, top + hh * 2 + eave], [x + hw + eave, top + hh * 2 + eave], [x + ridge, top + hh], [x - ridge, top + hh]]],
+      [look.roofMid, [[x - hw - eave, top - eave], [x - ridge, top + hh], [x - hw - eave, top + hh * 2 + eave]]],
+      [look.roofMid, [[x + hw + eave, top - eave], [x + ridge, top + hh], [x + hw + eave, top + hh * 2 + eave]]],
+    ];
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(x - hw - eave + 4, top - eave + 5, (hw + eave) * 2, (hh + eave) * 2);
+    for (const [color, pts] of faces) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      pts.forEach(([px, py], i) => (i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
+      ctx.closePath();
+      ctx.fill();
+    }
+    // Rows of tiles running down each slope.
+    ctx.save();
     ctx.beginPath();
-    ctx.moveTo(x + 1, y - r - 22);
-    ctx.lineTo(x + 18, y - r - 16);
-    ctx.lineTo(x + 1, y - r - 10);
+    ctx.rect(x - hw - eave, top - eave, (hw + eave) * 2, (hh + eave) * 2);
+    ctx.clip();
+    ctx.strokeStyle = filipino ? 'rgba(70,25,10,0.35)' : 'rgba(15,18,22,0.45)';
+    ctx.lineWidth = 0.7;
+    for (let i = -hw - eave; i <= hw + eave; i += 3) {
+      ctx.beginPath();
+      ctx.moveTo(x + i, top - eave);
+      ctx.lineTo(x + i * 0.5, top + hh);
+      ctx.lineTo(x + i, top + hh * 2 + eave);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // Ridge and hip lines.
+    ctx.strokeStyle = look.ridge;
+    ctx.lineWidth = filipino ? 1.6 : 2.4;
+    ctx.beginPath();
+    ctx.moveTo(x - ridge, top + hh);
+    ctx.lineTo(x + ridge, top + hh);
+    for (const [cx, cy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      ctx.moveTo(x + cx * ridge, top + hh);
+      ctx.lineTo(x + cx * (hw + eave), top + hh + cy * (hh + eave));
+    }
+    ctx.stroke();
+    if (filipino) {
+      // Capiz-shell windows along the upper floor, under the eaves.
+      ctx.fillStyle = 'rgba(236,228,200,0.85)';
+      for (let i = -hw + 5; i < hw - 3; i += 6) ctx.fillRect(x + i, top + hh * 2 + 1, 4, 2);
+      // Sandbags either side of the gate.
+      ctx.fillStyle = '#b09c70';
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 3; k++) {
+          ctx.beginPath();
+          ctx.ellipse(x + side * (10 + k * 4.5), y + wall + 4, 2.4, 1.6, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else {
+      // Pale ridge-end caps, as on a temple-style roof.
+      ctx.fillStyle = look.ridge;
+      ctx.fillRect(x - ridge - 2, top + hh - 2, 4, 4);
+      ctx.fillRect(x + ridge - 2, top + hh - 2, 4, 4);
+    }
+
+    // Flagpole by the gate: the Maharlika sun, or the army's star pennant.
+    const fx = x + wall - 5;
+    const fy = y + wall - 5;
+    ctx.fillStyle = '#2b2b2b';
+    ctx.fillRect(fx - 0.8, fy - 22, 1.6, 22);
+    ctx.fillStyle = filipino ? '#2d5aa8' : '#b9a46a';
+    ctx.beginPath();
+    if (filipino) ctx.rect(fx + 0.8, fy - 22, 14, 9);
+    else {
+      ctx.moveTo(fx + 0.8, fy - 22);
+      ctx.lineTo(fx + 16, fy - 18);
+      ctx.lineTo(fx + 0.8, fy - 13);
+    }
     ctx.fill();
-    ctx.fillStyle = '#eee';
-    ctx.font = 'bold 14px "Segoe UI", system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('HQ', x, y);
-    ctx.textBaseline = 'alphabetic';
+    if (filipino) {
+      ctx.fillStyle = '#b3261e';
+      ctx.fillRect(fx + 0.8, fy - 17.5, 14, 4.5);
+    }
+    this.emblem(look.emblem, fx + 6, fy - 17.5, 2.4);
+
+    if (ui.selected.has(sq.id)) {
+      ctx.strokeStyle = '#9dff7a';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x - wall - 3, y - wall - 3, wall * 2 + 6, wall * 2 + 6);
+    }
   }
 
   /**
