@@ -167,6 +167,8 @@ export interface BuildableDef {
   requires?: string;
   /** Only one per army (tier buildings). */
   unique?: boolean;
+  /** Structures: the tiles it takes up, wide × deep. */
+  footprint?: readonly [number, number];
   /** Terrain laid down when a tile is finished; null for mines and structures. */
   terrain: number | null;
   maxLength: number;
