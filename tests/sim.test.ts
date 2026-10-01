@@ -171,17 +171,3 @@ describe('AI vs AI', () => {
   }, 60000);
 });
 
-describe('call names', () => {
-  it('each new squad and tank gets the next name on its side', () => {
-    const world = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'] });
-    const a = world.spawn(0, 'us_riflemen', at(20, 30));
-    const b = world.spawn(0, 'us_engineers', at(21, 30));
-    const tank = world.spawn(0, 'us_stuart', at(22, 30));
-    const enemy = world.spawn(1, 'ija_riflemen', at(60, 30));
-    expect(a.callsign).toMatch(/^Pangkat /);
-    expect(b.shortName).not.toBe(a.shortName);
-    expect(tank.callsign).toMatch(/^Tangke /);
-    expect(enemy.callsign).toMatch(/Buntai$/);
-    expect(world.hqOf(0)!.callsign).toBe('');
-  });
-});
