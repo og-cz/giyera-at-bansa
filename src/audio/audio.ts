@@ -146,6 +146,17 @@ class AudioSystem {
     src.start();
   }
 
+  /**
+   * A one-off piece from audio/ played straight away, such as the studio sting
+   * at startup. Skipped quietly if sound is not allowed yet (in a browser,
+   * before the first click).
+   */
+  playOnce(file: string, gain = 1): void {
+    const el = new Audio(`audio/${file}.ogg`);
+    el.volume = Math.min(1, Math.max(0, this.volume.master * this.volume.effects * gain));
+    void el.play().catch(() => {});
+  }
+
   /** A looping clip whose loudness, pan and pitch can be changed while it plays. */
   loop(name: string): Loop | null {
     const ctx = this.ctx;
