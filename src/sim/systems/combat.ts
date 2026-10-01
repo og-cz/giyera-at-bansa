@@ -83,8 +83,10 @@ function acquireTarget(world: World, sq: Squad, dt: number): Squad | null {
     let score = Math.max(d, 1);
     if (prefers === 'vehicle') score *= armored ? 0.4 : 1.6;
     else if (prefers === 'infantry' && armored) score *= 1.6;
-    // The HQ is a last resort; a nest or bunker that is shooting at us is fair game.
-    if (e.def.kind === 'structure') score *= e.def.role === 'fort' ? 1.3 : 2.5;
+    // Nests, bunkers and aid stations are worth killing: squads that can hurt
+    // one go for it first; those that cannot leave it alone. The HQ is a last resort.
+    if (e.def.role === 'fort') score *= fortPriority(sq, e);
+    else if (e.def.kind === 'structure') score *= 2.5;
     if (e === cur) score *= 0.8;
     if (score < bestScore) {
       bestScore = score;
@@ -93,6 +95,24 @@ function acquireTarget(world: World, sq: Squad, dt: number): Squad | null {
   }
   sq.targetId = best?.id ?? null;
   return best;
+}
+
+/** How eager a squad is to shoot at an emplacement: low (eager) when its weapons can really hurt it. */
+export function fortPriority(sq: Squad, fort: Squad): number {
+  const armor = fort.def.armor?.front ?? 0;
+  let best = 0;
+  for (const m of sq.models) {
+    if (!m.alive) continue;
+    for (const ws of m.weapons) {
+      const w = ws.def;
+      const pen = Math.max(w.penetration[0], w.penetration[1]);
+      const hurt = damageVs(w, fort) * penetrationChance(pen, armor) * (w.aoe > 0 ? 1.5 : 1);
+      best = Math.max(best, hurt);
+    }
+  }
+  if (best >= 1) return 0.45;
+  if (best >= 0.15) return 1;
+  return 4;
 }
 
 function aimTurret(sq: Squad, target: Squad | null, dt: number): void {
