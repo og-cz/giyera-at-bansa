@@ -87,7 +87,12 @@ export interface VehicleDef {
 
 export interface UnitDef {
   id: string;
+  /** The unit's own name, in its army's language (e.g. "Sundalo ng Maharlika"). */
   name: string;
+  /** A word or two for small labels (roster cards). */
+  short: string;
+  /** What it is, plainly (e.g. "Rifle Squad"). */
+  type: string;
   description: string;
   kind: UnitKind;
   role: UnitRole;
