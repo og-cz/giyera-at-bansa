@@ -151,6 +151,8 @@ describe('capture and territory', () => {
 
   it('production spends resources and spawns the unit', () => {
     const world = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'] });
+    expect(queueProduction(world, 0, 'us_hmg').reason).toMatch(/Build the/);
+    world.spawn(0, 'us_tech1', at(12, 20));
     const before = world.squads.length;
     expect(queueProduction(world, 0, 'us_hmg').ok).toBe(true);
     expect(queueProduction(world, 0, 'us_stuart').ok).toBe(false);
