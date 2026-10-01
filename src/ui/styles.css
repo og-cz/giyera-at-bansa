@@ -203,6 +203,7 @@ button:disabled {
 }
 
 .resources {
+  flex: none;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -633,10 +634,13 @@ button:disabled {
 }
 
 /* Orders: square icon buttons, the hotkey in the corner */
+/* Always the same size, whatever is selected (four buttons wide, two high). */
 .command-card {
+  flex: none;
   display: flex;
   align-items: center;
-  padding: 6px 7px;
+  width: calc(4 * 56px + 3 * 5px + 16px);
+  padding: 6px 8px;
 }
 
 .cmd-grid {
@@ -739,6 +743,7 @@ button:disabled {
 
 /* Queue: three slots beside the orders */
 .queue-panel {
+  flex: none;
   width: 58px;
   display: flex;
   flex-direction: column;
