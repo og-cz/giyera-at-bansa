@@ -717,6 +717,10 @@ export class Renderer {
   }
 
   private drawStructure(sq: Squad, ui: UIState): void {
+    if (sq.def.role === 'tech') {
+      this.drawTech(sq, ui);
+      return;
+    }
     if (sq.def.role !== 'hq') {
       this.drawFort(sq, ui);
       return;
@@ -1084,6 +1088,104 @@ export class Renderer {
       ctx.beginPath();
       ctx.ellipse(x, y, r + 3, r + 2.5, 0, 0, Math.PI * 2);
       ctx.stroke();
+    }
+  }
+
+  /**
+   * Tier buildings. Tiers 1 and 2: a barracks under nipa thatch (Maharlika) or
+   * grey tiles (Imperial Army), with ammunition crates or an anti-tank gun by
+   * the door. Tier 3: a corrugated iron motor pool shed with a wide door.
+   */
+  private drawTech(sq: Squad, ui: UIState): void {
+    const { ctx } = this;
+    const look = this.look(sq);
+    const filipino = look.hq === 'bahay';
+    const tier = Number(sq.def.id.slice(-1));
+    const r = sq.def.radius;
+    const { x, y } = sq.pos;
+    const hw = r * 1.15;
+    const hh = r * 0.72;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(x - hw + 3, y - hh + 4, hw * 2, hh * 2);
+    if (tier === 3) {
+      // Corrugated iron roof, rusting at the edges, and the big door at the front.
+      ctx.fillStyle = filipino ? '#8a8e8c' : '#7a7f80';
+      ctx.fillRect(x - hw, y - hh, hw * 2, hh * 2);
+      ctx.strokeStyle = 'rgba(40,44,46,0.45)';
+      ctx.lineWidth = 0.8;
+      for (let i = -hw + 2; i < hw; i += 2.2) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, y - hh);
+        ctx.lineTo(x + i, y + hh);
+        ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(140,80,40,0.35)';
+      ctx.fillRect(x - hw, y - hh, hw * 2, 2.5);
+      ctx.fillRect(x - hw, y + hh - 2.5, hw * 2, 2.5);
+      ctx.strokeStyle = '#3a3d3e';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - hw, y - hh, hw * 2, hh * 2);
+      ctx.fillStyle = '#2a2c2c';
+      ctx.fillRect(x - hw * 0.55, y + hh - 1, hw * 1.1, 3);
+      // Oil stains on the apron.
+      ctx.fillStyle = 'rgba(20,20,18,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(x - 3, y + hh + 6, 4, 2, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 5, y + hh + 5, 3, 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Barracks: a ridged roof, thatch or tiles.
+      const roof = filipino ? ['#c4a868', '#a88f55'] : [look.roofLight, look.roofDark];
+      ctx.fillStyle = roof[0];
+      ctx.fillRect(x - hw, y - hh, hw * 2, hh);
+      ctx.fillStyle = roof[1];
+      ctx.fillRect(x - hw, y, hw * 2, hh);
+      ctx.strokeStyle = filipino ? 'rgba(90,70,35,0.45)' : 'rgba(15,18,22,0.45)';
+      ctx.lineWidth = 0.6;
+      for (let i = -hw + 1.5; i < hw; i += filipino ? 1.8 : 2.6) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, y - hh);
+        ctx.lineTo(x + i, y + hh);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = filipino ? '#6f5a2f' : look.ridge;
+      ctx.lineWidth = filipino ? 1.2 : 2;
+      ctx.beginPath();
+      ctx.moveTo(x - hw, y);
+      ctx.lineTo(x + hw, y);
+      ctx.stroke();
+      ctx.strokeStyle = filipino ? '#5d4a26' : '#2e3338';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - hw, y - hh, hw * 2, hh * 2);
+      if (tier === 1) {
+        // Ammunition crates stacked by the door.
+        ctx.fillStyle = '#6b5a35';
+        ctx.strokeStyle = '#3d331e';
+        ctx.lineWidth = 0.6;
+        for (const [cx, cy] of [[hw - 4, hh + 3], [hw - 10, hh + 3], [hw - 7, hh + 7]]) {
+          ctx.fillRect(x + cx - 2.5, y + cy - 1.8, 5, 3.6);
+          ctx.strokeRect(x + cx - 2.5, y + cy - 1.8, 5, 3.6);
+        }
+      } else {
+        // A small anti-tank gun parked out front.
+        ctx.fillStyle = '#3a3d33';
+        ctx.fillRect(x - 4, y + hh + 3, 6, 4);
+        ctx.strokeStyle = '#1c1d18';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x + 2, y + hh + 5);
+        ctx.lineTo(x + 11, y + hh + 5);
+        ctx.moveTo(x - 4, y + hh + 6);
+        ctx.lineTo(x - 10, y + hh + 9);
+        ctx.moveTo(x - 4, y + hh + 6);
+        ctx.lineTo(x - 10, y + hh + 3);
+        ctx.stroke();
+      }
+    }
+    if (ui.selected.has(sq.id)) {
+      ctx.strokeStyle = '#9dff7a';
+      ctx.lineWidth = 1.4;
+      ctx.strokeRect(x - hw - 3, y - hh - 3, hw * 2 + 6, hh * 2 + 6);
     }
   }
 
