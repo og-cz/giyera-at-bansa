@@ -64,9 +64,17 @@ export function planBuild(world: World, buildId: string, from: Vec2, to: Vec2): 
   const def = BUILDABLES[buildId];
   const tx0 = Math.floor(from.x / TILE);
   const ty0 = Math.floor(from.y / TILE);
-  const cells = def.shape === 'point' ? [[tx0, ty0] as [number, number]] : lineTiles(tx0, ty0, Math.floor(to.x / TILE), Math.floor(to.y / TILE), def.maxLength);
+  const cells =
+    def.shape === 'structure'
+      ? footprintTiles(def, tx0, ty0).map((f) => [f.tx, f.ty] as [number, number])
+      : def.shape === 'point'
+        ? [[tx0, ty0] as [number, number]]
+        : lineTiles(tx0, ty0, Math.floor(to.x / TILE), Math.floor(to.y / TILE), def.maxLength);
   const pending = new Set<number>();
-  for (const c of world.constructions) for (const t of c.tiles) if (!t.done) pending.add(world.map.idx(t.tx, t.ty));
+  for (const c of world.constructions) {
+    for (const t of c.tiles) if (!t.done) pending.add(world.map.idx(t.tx, t.ty));
+    for (const f of c.footprint ?? []) pending.add(world.map.idx(f.tx, f.ty));
+  }
   const tiles = cells.map(([tx, ty]) => {
     let valid = world.map.inBounds(tx, ty) && BUILDABLE_GROUND.has(world.map.get(tx, ty)) && !pending.has(world.map.idx(tx, ty));
     if (valid && def.shape === 'point') {
@@ -74,16 +82,37 @@ export function planBuild(world: World, buildId: string, from: Vec2, to: Vec2): 
       valid = !world.mines.some((m) => dist(m.pos, center) < TILE);
     }
     if (valid && def.shape === 'structure') {
-      // Structures need a little room: not on top of another one or a building job.
+      // Not on top of another structure (the HQ has no footprint of its own, so keep clear of it).
       const center = world.map.tileCenter(tx, ty);
-      valid =
-        !world.squads.some((s) => !s.dead && s.def.kind === 'structure' && dist(s.pos, center) < s.def.radius + TILE * 1.5) &&
-        !world.constructions.some((c) => BUILDABLES[c.buildId].shape === 'structure' && c.tiles.some((t) => dist(world.map.tileCenter(t.tx, t.ty), center) < TILE * 2.5));
+      valid = !world.squads.some((s) => !s.dead && s.def.kind === 'structure' && s.footprint.length === 0 && dist(s.pos, center) < s.def.radius + TILE);
     }
     return { tx, ty, valid };
   });
+  // A structure is one building: all its tiles must be free, and it costs once.
+  if (def.shape === 'structure') {
+    const ok = tiles.every((t) => t.valid);
+    for (const t of tiles) t.valid = ok;
+    return { tiles, cost: ok ? { ...def.cost } : { manpower: 0, munitions: 0, fuel: 0 } };
+  }
   const n = tiles.filter((t) => t.valid).length;
   return { tiles, cost: { manpower: def.cost.manpower * n, munitions: def.cost.munitions * n, fuel: def.cost.fuel * n } };
+}
+
+/** The tiles a structure takes up when placed on (tx, ty), wide × deep around that tile. */
+export function footprintTiles(def: { footprint?: readonly [number, number] }, tx: number, ty: number): { tx: number; ty: number }[] {
+  const [w, h] = def.footprint ?? [1, 1];
+  const x0 = tx - Math.floor((w - 1) / 2);
+  const y0 = ty - Math.floor((h - 1) / 2);
+  const out: { tx: number; ty: number }[] = [];
+  for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) out.push({ tx: x, ty: y });
+  return out;
+}
+
+/** Centre of a footprint in world units. */
+function footprintCenter(tiles: { tx: number; ty: number }[]): Vec2 {
+  const xs = tiles.map((t) => t.tx);
+  const ys = tiles.map((t) => t.ty);
+  return { x: ((Math.min(...xs) + Math.max(...xs) + 1) / 2) * TILE, y: ((Math.min(...ys) + Math.max(...ys) + 1) / 2) * TILE };
 }
 
 export function currentTile(c: Construction): Construction['tiles'][number] | undefined {
@@ -126,9 +155,19 @@ export function constructionOf(world: World, sq: Squad): Construction | undefine
 }
 
 export function updateEngineering(world: World, dt: number): void {
+  clearRuins(world);
   updateConstructions(world, dt);
   updateRepairs(world, dt);
   updateMines(world);
+}
+
+/** A fallen structure leaves rubble that units can cross again. */
+function clearRuins(world: World): void {
+  for (const s of world.squads) {
+    if (!s.dead || s.footprint.length === 0) continue;
+    for (const f of s.footprint) if (world.map.get(f.tx, f.ty) === T.Emplacement) world.map.set(f.tx, f.ty, T.Crater);
+    s.footprint = [];
+  }
 }
 
 /** Engineer squads currently assigned to a construction job. */
@@ -168,7 +207,17 @@ function updateConstructions(world: World, dt: number): void {
     if (tile.progress < 1) continue;
     tile.done = true;
     if (def.shape === 'structure') {
-      world.spawn(c.team as TeamId, def.unit!, center, workers[0].heading);
+      const tiles = c.footprint ?? [{ tx: tile.tx, ty: tile.ty }];
+      const sq = world.spawn(c.team as TeamId, def.unit!, footprintCenter(tiles), c.facing ?? workers[0].heading);
+      sq.footprint = tiles;
+      for (const f of tiles) world.map.set(f.tx, f.ty, T.Emplacement);
+      // Anyone standing where it now stands steps out of the way.
+      for (const s of world.squads) {
+        if (s.dead || s.def.kind === 'structure') continue;
+        const mover = s.def.vehicle ? 'vehicle' : 'infantry';
+        if (!world.map.worldPassable(s.pos, mover)) s.pos = world.map.nearestPassable(s.pos, mover);
+        for (const m of s.models) if (m.alive && !world.map.worldPassable(m.pos, 'infantry')) m.pos = world.map.nearestPassable(m.pos, 'infantry');
+      }
     } else if (def.terrain !== null) {
       if (BUILDABLE_GROUND.has(world.map.get(tile.tx, tile.ty))) world.map.set(tile.tx, tile.ty, def.terrain);
       resetDefense(world, tile.tx, tile.ty);
