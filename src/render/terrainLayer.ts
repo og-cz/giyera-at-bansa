@@ -76,7 +76,7 @@ export class TerrainLayer {
     canvas.height = Math.ceil((h + m * 2) * SURROUND_SCALE);
     const c = canvas.getContext('2d')!;
     const world = () => c.setTransform(SURROUND_SCALE, 0, 0, SURROUND_SCALE, m * SURROUND_SCALE, m * SURROUND_SCALE);
-    c.filter = 'blur(2.5px) saturate(0.6) brightness(0.72) sepia(0.15)';
+    c.filter = 'blur(2.5px) saturate(0.45) brightness(0.45) sepia(0.15)';
     for (const i of [-1, 0, 1]) {
       for (const j of [-1, 0, 1]) {
         if (i === 0 && j === 0) continue;
@@ -92,9 +92,9 @@ export class TerrainLayer {
     // Darker the further from the battlefield, like haze over distant country.
     const fade = (gx0: number, gy0: number, gx1: number, gy1: number, rx: number, ry: number, rw: number, rh: number) => {
       const g = c.createLinearGradient(gx0, gy0, gx1, gy1);
-      g.addColorStop(0, 'rgba(8,11,8,0.28)');
-      g.addColorStop(0.35, 'rgba(8,11,8,0.6)');
-      g.addColorStop(1, 'rgba(8,11,8,0.92)');
+      g.addColorStop(0, 'rgba(6,8,6,0.5)');
+      g.addColorStop(0.3, 'rgba(6,8,6,0.78)');
+      g.addColorStop(1, 'rgba(6,8,6,0.96)');
       c.fillStyle = g;
       c.fillRect(rx, ry, rw, rh);
     };
