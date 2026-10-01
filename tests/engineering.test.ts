@@ -3,7 +3,7 @@ import { SIM_DT, TILE } from '../src/data/balance';
 import { MAPS } from '../src/data/maps';
 import { T } from '../src/data/terrain';
 import { WEAPONS } from '../src/data/weapons';
-import { issueBuild, issueHelpBuild, issueMove, issueRepair, issueRepairDefense, queueProduction } from '../src/sim/commands';
+import { issueBuild, issueHelpBuild, issueMove, issueReinforce, issueRepair, issueRepairDefense, queueProduction } from '../src/sim/commands';
 import { SCENARIOS } from '../src/data/scenarios';
 import { explode } from '../src/sim/systems/combat';
 import { defenseAt } from '../src/sim/systems/defenses';
@@ -333,5 +333,69 @@ describe('tier buildings', () => {
   it('missions that drop you into a fight have everything unlocked', () => {
     const w = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'], scenario: { ...SCENARIOS['tow-summit'] } });
     expect(w.hasTech(0, 'us_tech3')).toBe(true);
+  });
+});
+
+describe('bases and emplacements', () => {
+  it('an MG nest only fires through its front arc', () => {
+    const w = battle();
+    // Headquarters' gun and the starting engineers are in range here; keep them out of this.
+    w.hqOf(0)!.models[0].weapons.length = 0;
+    for (const s of w.squads) if (s.def.id === 'us_engineers') for (const m of s.models) m.weapons.length = 0;
+    const nest = w.spawn(0, 'mg_nest', at(24, 30), 0); // facing east
+    const behind = w.spawn(1, 'ija_riflemen', at(18, 30), 0);
+    run(w, 6);
+    expect(behind.models.every((m) => m.hp === m.maxHp || !m.alive)).toBe(true);
+    const front = w.spawn(1, 'ija_riflemen', at(30, 30), 0);
+    run(w, 6);
+    expect(front.models.some((m) => m.hp < m.maxHp || !m.alive)).toBe(true);
+    expect(nest.dead).toBe(false);
+  });
+
+  it('a finished structure takes up its footprint, and frees it when destroyed', () => {
+    const w = battle();
+    w.teams[0].resources = { manpower: 2000, munitions: 200, fuel: 200 };
+    const eng = w.spawn(0, 'us_engineers', at(20, 32), 0);
+    expect(issueBuild(w, eng, 'bunker', at(24, 30), at(27, 30)).ok).toBe(true);
+    run(w, 45);
+    const bunker = w.squads.find((s) => s.def.id === 'bunker')!;
+    expect(bunker.footprint).toHaveLength(4);
+    expect(Math.abs(bunker.heading)).toBeLessThan(0.1);
+    for (const f of bunker.footprint) expect(w.map.passable(f.tx, f.ty, 'infantry')).toBe(false);
+    const tiles = [...bunker.footprint];
+    bunker.models[0].alive = false;
+    bunker.dead = true;
+    run(w, 0.1);
+    for (const f of tiles) expect(w.map.passable(f.tx, f.ty, 'infantry')).toBe(true);
+  });
+
+  it('a tier building recruits its own units and they come out of it', () => {
+    const w = battle();
+    w.teams[0].resources = { manpower: 2000, munitions: 200, fuel: 200 };
+    const tech = w.spawn(0, 'us_tech1', at(24, 30), 0);
+    expect(queueProduction(w, 0, 'us_hmg', tech).ok).toBe(true);
+    expect(tech.production).toHaveLength(1);
+    expect(queueProduction(w, 0, 'us_riflemen', tech).ok).toBe(true);
+    expect(w.hqOf(0)!.production).toHaveLength(1);
+    run(w, 30);
+    const hmg = w.squads.find((s) => s.def.id === 'us_hmg')!;
+    expect(Math.hypot(hmg.pos.x - tech.pos.x, hmg.pos.y - tech.pos.y)).toBeLessThan(TILE * 5);
+  });
+
+  it('squads reinforce only close to a base, and the soldier comes from that base', () => {
+    const w = battle();
+    for (const p of w.points) p.owner = -1;
+    w.hqOf(0)!.pos = { x: 0, y: 0 };
+    const rifles = w.spawn(0, 'us_riflemen', at(24, 32), 0);
+    expect(canReinforceHere(w, rifles)).toBe(false);
+    const tech = w.spawn(0, 'us_tech1', at(28, 30), 0);
+    expect(canReinforceHere(w, rifles)).toBe(true);
+    rifles.models[0].alive = false;
+    w.teams[0].resources.manpower = 500;
+    expect(issueReinforce(w, rifles).ok).toBe(true);
+    run(w, 5.6);
+    const recruit = rifles.models[rifles.models.length - 1];
+    expect(recruit.alive).toBe(true);
+    expect(Math.hypot(recruit.pos.x - tech.pos.x, recruit.pos.y - tech.pos.y)).toBeLessThan(Math.hypot(rifles.pos.x - tech.pos.x, rifles.pos.y - tech.pos.y) + TILE);
   });
 });
