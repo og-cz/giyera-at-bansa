@@ -179,7 +179,7 @@ const LIST: UnitDef[] = [
     description: 'A log-and-earth bunker with a machine gun slit. Rifles cannot hurt it; it takes tank guns, bazookas or satchels of grenades. Squads nearby can reinforce and pick up upgrades there.',
     strongVs: 'Infantry assaults',
     weakVs: 'Tank guns and heavy mortar fire',
-    modelHp: 1100, speed: 0, sight: 240, loadout: [{ weapons: ['nest_mg'], count: 1 }],
+    modelHp: 1100, speed: 0, sight: 240, loadout: [{ weapons: ['bunker_mg'], count: 1 }],
     armor: { front: 45, rear: 45 }, radius: 13, receivedAccuracy: 1.7, vetXp: [], supplies: true,
   }),
   unit({
@@ -203,7 +203,7 @@ const LIST: UnitDef[] = [
       id, name, short, type, description, kind: 'structure', role: 'tech',
       strongVs: 'Opening up new units', weakVs: 'Tanks and mortars: lose it and its units cannot be recruited',
       modelHp: 900, speed: 0, sight: 160, loadout: [],
-      armor: { front: 60, rear: 60 }, radius: 16, receivedAccuracy: 1.6, vetXp: [],
+      armor: { front: 60, rear: 60 }, radius: 16, receivedAccuracy: 1.6, vetXp: [], supplies: true,
     }),
   ),
 ];
