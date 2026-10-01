@@ -239,10 +239,14 @@ export class Input {
     this.ui.buildMenu = false;
   }
 
-  /** Open or close the engineers' Build submenu. */
-  toggleBuildMenu(): void {
-    if (!this.ui.buildMenu && (!this.oneUnitType() || !this.selectedOwn().some((s) => s.def.builds.length > 0))) return;
-    this.ui.buildMenu = !this.ui.buildMenu;
+  /** Open or close one of the engineers' submenus: field defenses (Q) or base buildings (W). */
+  toggleBuildMenu(page: 'defense' | 'base' = 'defense'): void {
+    if (this.ui.buildMenu === page) {
+      this.ui.buildMenu = false;
+      return;
+    }
+    if (!this.oneUnitType() || !this.selectedOwn().some((s) => s.def.builds.length > 0)) return;
+    this.ui.buildMenu = page;
     this.ui.mode = { kind: 'none' };
   }
 
@@ -251,9 +255,11 @@ export class Input {
     if (this.selectedOwn().some((s) => s.def.role === 'hq')) this.ui.mode = { kind: 'rally' };
   }
 
+  /** A build key: picks from the open submenu, or from the field defenses when none is open. */
   private buildHotkey(key: string): boolean {
+    const page = this.ui.buildMenu || 'defense';
     for (const sq of this.selectedOwn()) {
-      const id = sq.def.builds.find((b) => BUILDABLES[b].hotkey.toLowerCase() === key);
+      const id = sq.def.builds.find((b) => BUILDABLES[b].hotkey.toLowerCase() === key && (BUILDABLES[b].page ?? 'defense') === page);
       if (id) {
         this.buildMode(id);
         return true;
@@ -600,7 +606,10 @@ export class Input {
         this.abilityMode(key);
         break;
       case 'q':
-        this.toggleBuildMenu();
+        this.toggleBuildMenu('defense');
+        break;
+      case 'w':
+        this.toggleBuildMenu('base');
         break;
       case 'z':
       case 'x':
