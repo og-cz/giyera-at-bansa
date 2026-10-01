@@ -1,3 +1,4 @@
+import { audio } from '../../audio/audio';
 import { el } from '../dom';
 import { gameLogo } from './logo';
 import studioLogo from './ogcz.svg?raw';
@@ -13,6 +14,8 @@ export function playIntro(layer: HTMLElement, onDone: () => void): void {
   logo.setAttribute('aria-label', 'OGCZ');
   const splash = el('div', { class: 'splash' }, el('div', { class: 'splash-card' }, logo, el('div', { class: 'splash-presents', text: 'presents' })));
   layer.append(splash);
+  // A deep boom as the studio card comes up.
+  audio.playOnce('intro');
 
   let stage = 0;
   let timer = window.setTimeout(() => showTitle(), 3200);
