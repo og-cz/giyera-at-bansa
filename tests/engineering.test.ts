@@ -3,7 +3,8 @@ import { SIM_DT, TILE } from '../src/data/balance';
 import { MAPS } from '../src/data/maps';
 import { T } from '../src/data/terrain';
 import { WEAPONS } from '../src/data/weapons';
-import { issueBuild, issueHelpBuild, issueMove, issueRepair, issueRepairDefense } from '../src/sim/commands';
+import { issueBuild, issueHelpBuild, issueMove, issueRepair, issueRepairDefense, queueProduction } from '../src/sim/commands';
+import { SCENARIOS } from '../src/data/scenarios';
 import { explode } from '../src/sim/systems/combat';
 import { defenseAt } from '../src/sim/systems/defenses';
 import { planBuild } from '../src/sim/systems/engineering';
@@ -308,5 +309,29 @@ describe('emplacements as targets', () => {
       w.events.length = 0;
     }
     expect(nest.dead).toBe(true);
+  });
+});
+
+describe('tier buildings', () => {
+  it('lock units and upgrades until the engineers raise them, in order', () => {
+    const w = battle();
+    w.teams[0].resources = { manpower: 5000, munitions: 500, fuel: 500 };
+    expect(queueProduction(w, 0, 'us_hmg').ok).toBe(false);
+    expect(queueProduction(w, 0, 'us_riflemen').ok).toBe(true);
+    const eng = w.spawn(0, 'us_engineers', at(20, 32), 0);
+    // Tier 2 needs Tier 1 first.
+    expect(issueBuild(w, eng, 'us_tech2', at(24, 30), at(24, 30)).reason).toMatch(/Build the/);
+    expect(issueBuild(w, eng, 'us_tech1', at(24, 30), at(24, 30)).ok).toBe(true);
+    run(w, 45);
+    expect(w.hasTech(0, 'us_tech1')).toBe(true);
+    expect(queueProduction(w, 0, 'us_hmg').ok).toBe(true);
+    expect(queueProduction(w, 0, 'us_bazooka').ok).toBe(false);
+    // Only one of each.
+    expect(issueBuild(w, eng, 'us_tech1', at(20, 29), at(20, 29)).reason).toMatch(/already built/);
+  });
+
+  it('missions that drop you into a fight have everything unlocked', () => {
+    const w = new World({ map: MAPS.bataan, factions: ['usaffe', 'ija'], scenario: { ...SCENARIOS['tow-summit'] } });
+    expect(w.hasTech(0, 'us_tech3')).toBe(true);
   });
 });
