@@ -27,8 +27,8 @@ export interface UIState {
   buildFrom: Vec2 | null;
   /** Clicked defense, construction or mine shown on the unit card (only while no unit is selected). */
   inspect: Inspect | null;
-  /** The engineers' Build submenu is open on the command grid. */
-  buildMenu: boolean;
+  /** Which engineers' submenu is open on the command grid: field defenses or base (tier) buildings. */
+  buildMenu: false | 'defense' | 'base';
 }
 
 export interface FaceDrag {
