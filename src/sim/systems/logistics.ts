@@ -1,23 +1,41 @@
 import { LOGISTICS } from '../../data/balance';
 import type { UnitDef } from '../../data/types';
-import { add, dist, rotate } from '../../core/vec';
+import { add, dist, rotate, type Vec2 } from '../../core/vec';
 import { aliveCount, createModel, formationOffset, type Squad } from '../entities';
 import type { World } from '../world';
 
 export const reinforceCost = (def: UnitDef): number =>
   Math.round((def.cost.manpower / def.models) * LOGISTICS.reinforceCostMult);
 
-/** Reinforce near the HQ, or at any owned capture point that is still supplied. */
-export function canReinforceHere(world: World, sq: Squad): boolean {
-  if (sq.def.kind === 'vehicle' || sq.def.kind === 'structure') return false;
+/**
+ * The base a squad can reinforce from: headquarters, a tier building or a
+ * bunker close by (in an assault, also the forward rally point). Returns where
+ * the new soldiers come out, or null when the squad is too far from any base.
+ */
+export function reinforceSource(world: World, sq: Squad): Vec2 | null {
+  if (sq.def.kind === 'vehicle' || sq.def.kind === 'structure') return null;
+  let best: Vec2 | null = null;
+  let bestD = Infinity;
+  const consider = (p: Vec2, reach: number) => {
+    const d = dist(sq.pos, p);
+    if (d <= reach && d < bestD) {
+      best = p;
+      bestD = d;
+    }
+  };
   const hq = world.hqOf(sq.team);
-  if (hq && !hq.dead && dist(sq.pos, hq.pos) <= LOGISTICS.reinforceHqRadius) return true;
-  for (const p of world.points) {
-    if (p.owner !== sq.team || !world.territory.isSupplied(sq.team, p.sector)) continue;
-    if (dist(sq.pos, p.pos) <= LOGISTICS.reinforcePointRadius) return true;
+  if (hq && !hq.dead) consider(hq.pos, LOGISTICS.reinforceHqRadius);
+  for (const s of world.squads) {
+    if (!s.dead && s.team === sq.team && s.def.supplies) consider(s.pos, LOGISTICS.reinforceBaseRadius);
   }
-  // Bunkers are forward supply posts.
-  return world.squads.some((s) => !s.dead && s.team === sq.team && s.def.supplies && dist(sq.pos, s.pos) <= LOGISTICS.reinforcePointRadius);
+  // Assaults: the reinforcement point moves forward with the front.
+  if (world.objective.mode === 'offensive') consider(world.teams[sq.team].spawn, LOGISTICS.reinforcePointRadius);
+  return best;
+}
+
+/** True when the squad is close enough to a base to reinforce or pick up an upgrade. */
+export function canReinforceHere(world: World, sq: Squad): boolean {
+  return reinforceSource(world, sq) !== null;
 }
 
 /** Which loadout slot a new recruit should fill (e.g. replace the lost bazooka first). */
@@ -28,9 +46,10 @@ function missingLoadout(sq: Squad): number {
   return i < 0 ? sq.loadout.length - 1 : i;
 }
 
-export function addRecruit(world: World, sq: Squad): void {
+/** A new soldier comes out of the base (`from`, or right beside the squad) and walks to his place. */
+export function addRecruit(world: World, sq: Squad, from?: Vec2): void {
   const n = aliveCount(sq);
-  const pos = add(sq.pos, rotate(formationOffset(n, n + 1), sq.heading));
+  const pos = from ?? add(sq.pos, rotate(formationOffset(n, n + 1), sq.heading));
   const m = createModel(world.nextId(), sq.loadout, missingLoadout(sq), sq.def.modelHp, world.map.nearestPassable(pos, 'infantry'));
   m.facing = sq.heading;
   sq.models.push(m);
@@ -63,14 +82,14 @@ export function updateLogistics(world: World, dt: number): void {
     if (aliveCount(sq) >= sq.def.models || sq.retreating || !canReinforceHere(world, sq)) {
       // Full, retreating or out of supply: the soldiers still waiting are called off and refunded.
       if (!sq.retreating && aliveCount(sq) < sq.def.models) {
-        world.emit({ type: 'notify', team: sq.team, text: `${sq.def.name}: reinforcements called off (out of supply)`, tone: 'bad' });
+        world.emit({ type: 'notify', team: sq.team, text: `${sq.def.name}: reinforcements called off (too far from a base)`, tone: 'bad' });
       }
       dropReinforcements(world, sq);
       continue;
     }
     sq.reinforceTimer -= dt;
     if (sq.reinforceTimer > 0) continue;
-    addRecruit(world, sq);
+    addRecruit(world, sq, reinforceSource(world, sq) ?? undefined);
     sq.reinforceQueued--;
     sq.reinforcing = sq.reinforceQueued > 0;
     sq.reinforceTimer = LOGISTICS.reinforceTime;
