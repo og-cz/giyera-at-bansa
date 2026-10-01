@@ -9,6 +9,8 @@ import { defenseAt } from '../src/sim/systems/defenses';
 import { planBuild } from '../src/sim/systems/engineering';
 import { canReinforceHere } from '../src/sim/systems/logistics';
 import { World } from '../src/sim/world';
+import { AICommander } from '../src/ai/commander';
+import { fortPriority } from '../src/sim/systems/combat';
 
 const at = (tx: number, ty: number) => ({ x: (tx + 0.5) * TILE, y: (ty + 0.5) * TILE });
 
@@ -281,5 +283,30 @@ describe('structure toughness', () => {
     w.spawn(0, 'us_riflemen', at(18, 30), 0);
     run(w, 30);
     expect(tent.dead).toBe(true);
+  });
+});
+
+describe('emplacements as targets', () => {
+  it('weapons that can break an emplacement go for it; rifles leave a bunker alone', () => {
+    const w = battle();
+    const bunker = w.spawn(0, 'bunker', at(24, 30), 0);
+    const nest = w.spawn(0, 'mg_nest', at(22, 30), 0);
+    const tank = w.spawn(1, 'ija_chiha', at(30, 30), 0);
+    const rifles = w.spawn(1, 'ija_riflemen', at(30, 32), 0);
+    expect(fortPriority(tank, nest)).toBeLessThan(1);
+    expect(fortPriority(rifles, bunker)).toBeGreaterThan(1);
+  });
+
+  it('the enemy commander sends its tank after a nest it can see', () => {
+    const w = battle();
+    const nest = w.spawn(0, 'mg_nest', at(22, 30), 0);
+    w.spawn(1, 'ija_chiha', at(32, 30), Math.PI);
+    const ai = new AICommander(1);
+    for (let t = 0; t < 25 && !nest.dead; t += SIM_DT) {
+      ai.update(w, SIM_DT);
+      w.step(SIM_DT);
+      w.events.length = 0;
+    }
+    expect(nest.dead).toBe(true);
   });
 });
