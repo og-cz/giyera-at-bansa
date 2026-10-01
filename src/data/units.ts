@@ -61,10 +61,10 @@ const LIST: UnitDef[] = [
     weakVs: 'Any real firefight',
     models: 4, modelHp: 75, cost: { manpower: 200, munitions: 0, fuel: 0 }, pop: 4, buildTime: 18,
     speed: 22, sight: 200, loadout: [{ weapons: ['m1_carbine'], count: 4 }], canCapture: true,
-    builds: ['sandbags', 'wire', 'tanktrap', 'mine', 'mg_nest', 'bunker', 'aid_tent'], canRepair: true,
+    builds: ['sandbags', 'wire', 'tanktrap', 'mine', 'mg_nest', 'bunker', 'aid_tent', 'us_tech1', 'us_tech2', 'us_tech3'], canRepair: true,
   }),
   unit({
-    id: 'us_hmg', name: 'Ametralyadora M1917', short: 'Ametralyadora', type: 'Heavy Machine Gun Team', kind: 'team', role: 'mg',
+    id: 'us_hmg', requires: 'us_tech1', name: 'Ametralyadora M1917', short: 'Ametralyadora', type: 'Heavy Machine Gun Team', kind: 'team', role: 'mg',
     description: 'Water-cooled heavy machine gun. Must set up to fire; pins infantry inside its arc.',
     strongVs: 'Infantry inside its firing cone',
     weakVs: 'Mortars, flanking infantry, tanks',
@@ -73,7 +73,7 @@ const LIST: UnitDef[] = [
     canCapture: true, setupTime: 2.4, teardownTime: 2,
   }),
   unit({
-    id: 'us_mortar', name: 'Mortero 60mm', short: 'Mortero', type: 'Mortar Team', kind: 'team', role: 'mortar',
+    id: 'us_mortar', requires: 'us_tech1', name: 'Mortero 60mm', short: 'Mortero', type: 'Mortar Team', kind: 'team', role: 'mortar',
     description: 'Indirect fire support. Needs allied eyes on the target. Can fire a barrage.',
     strongVs: 'Set-up weapon teams, infantry in cover',
     weakVs: 'Infantry rushes, tanks. Needs a spotter to see its target',
@@ -82,7 +82,7 @@ const LIST: UnitDef[] = [
     canCapture: true, setupTime: 2, teardownTime: 2, abilities: ['barrage_us'],
   }),
   unit({
-    id: 'us_bazooka', name: 'Pangontra-Tangke', short: 'Bazooka', type: 'Bazooka Squad', kind: 'infantry', role: 'at',
+    id: 'us_bazooka', requires: 'us_tech2', name: 'Pangontra-Tangke', short: 'Bazooka', type: 'Bazooka Squad', kind: 'infantry', role: 'at',
     description: 'Two M1 bazookas and two carbines. Hunts armour; weak against infantry.',
     strongVs: 'Tanks, especially from the side or rear',
     weakVs: 'Infantry and machine guns',
@@ -91,7 +91,7 @@ const LIST: UnitDef[] = [
     canCapture: true,
   }),
   unit({
-    id: 'us_stuart', name: 'M3 Stuart', short: 'Stuart', type: 'Light Tank', kind: 'vehicle', role: 'tank',
+    id: 'us_stuart', requires: 'us_tech3', name: 'M3 Stuart', short: 'Stuart', type: 'Light Tank', kind: 'vehicle', role: 'tank',
     description: 'Fast light tank with a 37mm gun. Keep its thin rear armour away from AT weapons.',
     strongVs: 'Infantry and weapon teams',
     weakVs: 'Anti-tank squads, shots to its thin rear armour',
@@ -126,10 +126,10 @@ const LIST: UnitDef[] = [
     weakVs: 'Any real firefight',
     models: 4, modelHp: 70, cost: { manpower: 190, munitions: 0, fuel: 0 }, pop: 4, buildTime: 18,
     speed: 23, sight: 200, loadout: [{ weapons: ['type38_carbine'], count: 4 }], canCapture: true,
-    builds: ['sandbags', 'wire', 'tanktrap', 'mine', 'mg_nest', 'bunker', 'aid_tent'], canRepair: true,
+    builds: ['sandbags', 'wire', 'tanktrap', 'mine', 'mg_nest', 'bunker', 'aid_tent', 'ija_tech1', 'ija_tech2', 'ija_tech3'], canRepair: true,
   }),
   unit({
-    id: 'ija_hmg', name: 'Kikanjū Type 92', short: 'Kikanjū', type: 'Heavy Machine Gun Team', kind: 'team', role: 'mg',
+    id: 'ija_hmg', requires: 'ija_tech1', name: 'Kikanjū Type 92', short: 'Kikanjū', type: 'Heavy Machine Gun Team', kind: 'team', role: 'mg',
     description: 'Heavy machine gun with long reach. Must set up; devastating suppression in its arc.',
     strongVs: 'Infantry inside its firing cone',
     weakVs: 'Mortars, flanking infantry, tanks',
@@ -138,7 +138,7 @@ const LIST: UnitDef[] = [
     canCapture: true, setupTime: 2.6, teardownTime: 2.2,
   }),
   unit({
-    id: 'ija_mortar', name: 'Hakugekihō Type 97', short: 'Hakugekihō', type: 'Mortar Team', kind: 'team', role: 'mortar',
+    id: 'ija_mortar', requires: 'ija_tech1', name: 'Hakugekihō Type 97', short: 'Hakugekihō', type: 'Mortar Team', kind: 'team', role: 'mortar',
     description: '81mm mortar: heavier shells and longer reach than the 60mm, slower rate of fire.',
     strongVs: 'Set-up weapon teams, infantry in cover',
     weakVs: 'Infantry rushes, tanks. Needs a spotter to see its target',
@@ -147,7 +147,7 @@ const LIST: UnitDef[] = [
     canCapture: true, setupTime: 2.2, teardownTime: 2, abilities: ['barrage_ija'],
   }),
   unit({
-    id: 'ija_at', name: 'Taisensha-hei', short: 'AT Rifle', type: 'Anti-Tank Rifle Team', kind: 'infantry', role: 'at',
+    id: 'ija_at', requires: 'ija_tech2', name: 'Taisensha-hei', short: 'AT Rifle', type: 'Anti-Tank Rifle Team', kind: 'infantry', role: 'at',
     description: 'Two Type 97 20mm anti-tank rifles. Accurate at range; needs flank shots on heavier armour.',
     strongVs: 'Tanks, especially from the side or rear',
     weakVs: 'Infantry and machine guns',
@@ -156,7 +156,7 @@ const LIST: UnitDef[] = [
     canCapture: true,
   }),
   unit({
-    id: 'ija_chiha', name: 'Type 97 Chi-Ha', short: 'Chi-Ha', type: 'Medium Tank', kind: 'vehicle', role: 'tank',
+    id: 'ija_chiha', requires: 'ija_tech3', name: 'Type 97 Chi-Ha', short: 'Chi-Ha', type: 'Medium Tank', kind: 'vehicle', role: 'tank',
     description: 'Medium tank with a low-velocity 57mm gun firing high-explosive shells. Deadly to infantry.',
     strongVs: 'Infantry and weapon teams',
     weakVs: 'Anti-tank squads, enemy tanks, shots to the rear',
@@ -190,6 +190,22 @@ const LIST: UnitDef[] = [
     modelHp: 220, speed: 0, sight: 160, loadout: [],
     armor: { front: 1, rear: 1 }, radius: 11, receivedAccuracy: 1.7, vetXp: [], healRadius: 150, healRate: 3.5,
   }),
+  // ─── Tier buildings: engineers raise them to unlock the rest of the army ───
+  ...[
+    ['us_tech1', 'Kampo ng Suporta', 'Suporta', 'Support Command · Tier 1', 'Unlocks machine gun and mortar teams, and the BAR upgrade for riflemen.'],
+    ['us_tech2', 'Kampo Pangontra-Tangke', 'Kontra-Tangke', 'Anti-Tank Command · Tier 2', 'Unlocks bazooka squads and the bazooka upgrade for riflemen.'],
+    ['us_tech3', 'Garahe ng Tangke', 'Garahe', 'Motor Pool · Tier 3', 'Unlocks the M3 Stuart light tank.'],
+    ['ija_tech1', 'Shien Honbu', 'Shien', 'Support Command · Tier 1', 'Unlocks machine gun and mortar teams, and the light machine gun upgrade for riflemen.'],
+    ['ija_tech2', 'Taisen Honbu', 'Taisen', 'Anti-Tank Command · Tier 2', 'Unlocks anti-tank rifle teams and the AT rifle upgrade for riflemen.'],
+    ['ija_tech3', 'Sensha Shako', 'Shako', 'Motor Pool · Tier 3', 'Unlocks the Type 97 Chi-Ha medium tank.'],
+  ].map(([id, name, short, type, description]) =>
+    unit({
+      id, name, short, type, description, kind: 'structure', role: 'tech',
+      strongVs: 'Opening up new units', weakVs: 'Tanks and mortars: lose it and its units cannot be recruited',
+      modelHp: 900, speed: 0, sight: 160, loadout: [],
+      armor: { front: 60, rear: 60 }, radius: 16, receivedAccuracy: 1.6, vetXp: [],
+    }),
+  ),
 ];
 
 export const UNITS: Readonly<Record<string, UnitDef>> = Object.fromEntries(LIST.map((u) => [u.id, u]));
