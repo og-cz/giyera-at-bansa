@@ -843,14 +843,19 @@ export class Renderer {
   }
 
   /**
-   * Engineer structures, drawn small and plain from above: a ring of sandbags
-   * round a machine-gun pit, an earth-covered bunker with a firing slit, and a
-   * canvas aid tent. The plate above each one shows whose it is.
+   * Engineer structures, each army building in its own way:
+   * MG nest: Maharlika sandbags round a water-cooled M1917; Imperial log-lined
+   * pit round a finned Type 92.
+   * Bunker: Maharlika coconut logs under palm fronds; Imperial round concrete
+   * pillbox under camouflage netting.
+   * Aid station: Maharlika bamboo-and-nipa klinika; Imperial khaki field tent.
+   * The plate above each one shows whose it is.
    */
   private drawFort(sq: Squad, ui: UIState): void {
     const { ctx } = this;
     const r = sq.def.radius;
     const { x, y } = sq.pos;
+    const filipino = this.look(sq).hq === 'bahay';
     const target = this.world.get(sq.targetId);
     const aim = target && !target.dead ? Math.atan2(target.pos.y - y, target.pos.x - x) : sq.heading;
     const seed = sq.id * 7.13;
@@ -861,22 +866,38 @@ export class Renderer {
 
     if (sq.def.id === 'mg_nest') {
       // Dug-in pit.
-      ctx.fillStyle = '#3a3226';
+      ctx.fillStyle = filipino ? '#3a3226' : '#33291d';
       ctx.beginPath();
       ctx.arc(x, y, r - 2.5, 0, Math.PI * 2);
       ctx.fill();
-      // Sandbags laid round it, each a little different.
-      const bags = 11;
+      const pieces = filipino ? 11 : 9;
       ctx.lineWidth = 0.7;
-      for (let i = 0; i < bags; i++) {
-        const a = (i / bags) * Math.PI * 2 + seed;
+      for (let i = 0; i < pieces; i++) {
+        const a = (i / pieces) * Math.PI * 2 + seed;
         const shade = 0.9 + 0.2 * Math.abs(Math.sin(seed + i * 1.7));
-        ctx.fillStyle = `rgb(${Math.round(176 * shade)},${Math.round(158 * shade)},${Math.round(116 * shade)})`;
-        ctx.strokeStyle = 'rgba(70,58,38,0.8)';
-        ctx.beginPath();
-        ctx.ellipse(x + Math.cos(a) * (r - 1.8), y + Math.sin(a) * (r - 1.8), 3.1, 1.9, a + Math.PI / 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+        const px = x + Math.cos(a) * (r - 1.8);
+        const py = y + Math.sin(a) * (r - 1.8);
+        if (filipino) {
+          // Sandbags.
+          ctx.fillStyle = `rgb(${Math.round(176 * shade)},${Math.round(158 * shade)},${Math.round(116 * shade)})`;
+          ctx.strokeStyle = 'rgba(70,58,38,0.8)';
+          ctx.beginPath();
+          ctx.ellipse(px, py, 3.1, 1.9, a + Math.PI / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          // Logs laid round the rim, cut ends showing.
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(a + Math.PI / 2);
+          ctx.fillStyle = `rgb(${Math.round(112 * shade)},${Math.round(82 * shade)},${Math.round(50 * shade)})`;
+          ctx.fillRect(-3.6, -1.4, 7.2, 2.8);
+          ctx.fillStyle = '#c9a86f';
+          ctx.beginPath();
+          ctx.arc(3.6, 0, 1.3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
       }
       // The gun on its tripod.
       ctx.strokeStyle = '#2b2b27';
@@ -887,44 +908,153 @@ export class Renderer {
         ctx.lineTo(x + Math.cos(leg) * 4, y + Math.sin(leg) * 4);
         ctx.stroke();
       }
-      this.barrel(x, y, aim, r + 2, '#1c1c1a', 1.6);
+      if (filipino) {
+        // M1917: a fat water jacket round the barrel.
+        this.barrel(x, y, aim, r - 1, '#2a2b26', 2.8);
+        this.barrel(x, y, aim, r + 2.5, '#1c1c1a', 1.2);
+      } else {
+        // Type 92: a finned barrel.
+        this.barrel(x, y, aim, r + 2, '#1c1c1a', 1.5);
+        ctx.strokeStyle = '#1c1c1a';
+        ctx.lineWidth = 0.8;
+        for (let k = 3; k < r - 1; k += 1.8) {
+          const bx = x + Math.cos(aim) * k;
+          const by = y + Math.sin(aim) * k;
+          ctx.beginPath();
+          ctx.moveTo(bx - Math.sin(aim) * 1.6, by + Math.cos(aim) * 1.6);
+          ctx.lineTo(bx + Math.sin(aim) * 1.6, by - Math.cos(aim) * 1.6);
+          ctx.stroke();
+        }
+      }
       ctx.fillStyle = '#26261f';
       ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
     } else if (sq.def.id === 'bunker') {
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(aim);
-      // Earth piled over logs, grass growing back on top.
-      ctx.fillStyle = '#56523b';
-      ctx.beginPath();
-      ctx.roundRect(-r, -r * 0.85, r * 2, r * 1.7, 5);
-      ctx.fill();
-      ctx.fillStyle = '#65703f';
-      ctx.beginPath();
-      ctx.roundRect(-r + 2.5, -r * 0.85 + 2.5, r * 2 - 5, r * 1.7 - 5, 4);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(40,36,24,0.35)';
-      ctx.lineWidth = 0.8;
-      for (let i = -1; i <= 1; i++) {
+      if (filipino) {
+        // Coconut logs laid side by side.
+        ctx.fillStyle = '#5a4630';
         ctx.beginPath();
-        ctx.moveTo(-r + 4, i * 3.5);
-        ctx.lineTo(r - 6, i * 3.5 + 0.8);
+        ctx.roundRect(-r, -r * 0.85, r * 2, r * 1.7, 3);
+        ctx.fill();
+        for (let i = 0; i < 5; i++) {
+          const ly = -r * 0.85 + 1 + i * ((r * 1.7 - 2) / 5);
+          ctx.fillStyle = i % 2 ? '#7a5f3e' : '#6e5436';
+          ctx.fillRect(-r + 1, ly, r * 2 - 2, (r * 1.7 - 2) / 5 - 0.6);
+          ctx.fillStyle = '#b8935e';
+          ctx.beginPath();
+          ctx.arc(-r + 1.5, ly + 1.4, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Palm fronds thrown over the top.
+        ctx.strokeStyle = 'rgba(86,120,52,0.95)';
+        ctx.lineWidth = 0.8;
+        for (const [fx, fy, fa] of [[-4, -3, 0.4], [3, 2, -0.6], [-2, 4, 2.6]]) {
+          ctx.beginPath();
+          ctx.moveTo(fx - Math.cos(fa) * 6, fy - Math.sin(fa) * 6);
+          ctx.lineTo(fx + Math.cos(fa) * 6, fy + Math.sin(fa) * 6);
+          for (let k = -5; k <= 5; k += 1.5) {
+            const sx = fx + Math.cos(fa) * k;
+            const sy = fy + Math.sin(fa) * k;
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + Math.cos(fa + 1.2) * 2.6, sy + Math.sin(fa + 1.2) * 2.6);
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + Math.cos(fa - 1.2) * 2.6, sy + Math.sin(fa - 1.2) * 2.6);
+          }
+          ctx.stroke();
+        }
+        // Firing slit in the front logs.
+        ctx.fillStyle = '#121212';
+        ctx.fillRect(r - 2.2, -3.5, 2.2, 7);
+      } else {
+        // Round concrete pillbox.
+        ctx.fillStyle = '#8b887d';
+        ctx.strokeStyle = '#5c5a52';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, r - 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#9d9a8f';
+        ctx.beginPath();
+        ctx.arc(-1, -1, r - 5, 0, Math.PI * 2);
+        ctx.fill();
+        // Camouflage netting with scraps of foliage, draped over the dome.
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.strokeStyle = 'rgba(70,80,45,0.55)';
+        ctx.lineWidth = 0.6;
+        for (let k = -r; k <= r; k += 3) {
+          ctx.beginPath();
+          ctx.moveTo(k, -r);
+          ctx.lineTo(k + r, r);
+          ctx.moveTo(k + r, -r);
+          ctx.lineTo(k, r);
+          ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(88,108,56,0.7)';
+        for (let k = 0; k < 6; k++) {
+          const a = seed + k * 1.1;
+          ctx.beginPath();
+          ctx.ellipse(Math.cos(a) * (r - 5), Math.sin(a) * (r - 5), 2.4, 1.4, a, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        // Embrasure.
+        ctx.strokeStyle = '#121212';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, r - 1.5, -0.35, 0.35);
         ctx.stroke();
       }
-      // Concrete face with the firing slit, towards whatever it is shooting at.
-      ctx.fillStyle = '#8b877a';
-      ctx.fillRect(r - 4, -r * 0.6, 4, r * 1.2);
-      ctx.fillStyle = '#121212';
-      ctx.fillRect(r - 2.2, -3.5, 2.2, 7);
       ctx.restore();
       this.barrel(x + Math.cos(aim) * (r - 2), y + Math.sin(aim) * (r - 2), aim, 4, '#1c1c1a', 1.5);
+    } else if (filipino) {
+      // Bamboo-and-nipa klinika: a thatched roof on a bamboo frame.
+      const hw = r;
+      const hh = r * 0.8;
+      ctx.fillStyle = '#7d6a3f';
+      ctx.fillRect(x - hw - 1, y - hh - 1, hw * 2 + 2, hh * 2 + 2);
+      const thatch: [string, [number, number][]][] = [
+        ['#c4a868', [[x - hw, y - hh], [x + hw, y - hh], [x + hw * 0.35, y], [x - hw * 0.35, y]]],
+        ['#a88f55', [[x - hw, y + hh], [x + hw, y + hh], [x + hw * 0.35, y], [x - hw * 0.35, y]]],
+        ['#b69b5e', [[x - hw, y - hh], [x - hw * 0.35, y], [x - hw, y + hh]]],
+        ['#b69b5e', [[x + hw, y - hh], [x + hw * 0.35, y], [x + hw, y + hh]]],
+      ];
+      for (const [color, pts] of thatch) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        pts.forEach(([px, py], i) => (i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Straw lines and the ridge.
+      ctx.strokeStyle = 'rgba(90,70,35,0.45)';
+      ctx.lineWidth = 0.5;
+      for (let i = -hw; i <= hw; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(x + i, y - hh);
+        ctx.lineTo(x + i * 0.35, y);
+        ctx.lineTo(x + i, y + hh);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#6f5a2f';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x - hw * 0.35, y);
+      ctx.lineTo(x + hw * 0.35, y);
+      ctx.stroke();
+      this.medicalMark(x, y - hh * 0.5);
     } else {
+      // Khaki field tent.
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(sq.heading);
       const hw = r;
       const hh = r * 0.66;
-      // Guy lines out to the pegs.
       ctx.strokeStyle = 'rgba(210,200,170,0.45)';
       ctx.lineWidth = 0.6;
       for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
@@ -933,24 +1063,18 @@ export class Renderer {
         ctx.lineTo(sx * (hw + 2), sy * (hh + 3));
         ctx.stroke();
       }
-      // Two sloping halves of olive canvas, lit from one side, and the ridge pole.
-      ctx.fillStyle = '#86825b';
+      ctx.fillStyle = '#a2915d';
       ctx.fillRect(-hw, -hh, hw * 2, hh);
-      ctx.fillStyle = '#6b6847';
+      ctx.fillStyle = '#857647';
       ctx.fillRect(-hw, 0, hw * 2, hh);
-      ctx.strokeStyle = '#4f4c34';
+      ctx.strokeStyle = '#5e5333';
       ctx.lineWidth = 1;
       ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
       ctx.beginPath();
       ctx.moveTo(-hw, 0);
       ctx.lineTo(hw, 0);
       ctx.stroke();
-      // White medical marking on the roof.
-      ctx.fillStyle = '#e9e5d8';
-      ctx.fillRect(-3.5, -hh + 1.5, 7, 7);
-      ctx.fillStyle = '#b3261e';
-      ctx.fillRect(-0.9, -hh + 2.5, 1.8, 5);
-      ctx.fillRect(-2.5, -hh + 4.1, 5, 1.8);
+      this.medicalMark(0, -hh * 0.5);
       ctx.restore();
     }
 
@@ -961,6 +1085,16 @@ export class Renderer {
       ctx.ellipse(x, y, r + 3, r + 2.5, 0, 0, Math.PI * 2);
       ctx.stroke();
     }
+  }
+
+  /** White patch with a red cross, on an aid station's roof. */
+  private medicalMark(x: number, y: number): void {
+    const { ctx } = this;
+    ctx.fillStyle = '#e9e5d8';
+    ctx.fillRect(x - 3.5, y - 3.5, 7, 7);
+    ctx.fillStyle = '#b3261e';
+    ctx.fillRect(x - 0.9, y - 2.5, 1.8, 5);
+    ctx.fillRect(x - 2.5, y - 0.9, 5, 1.8);
   }
 
   private barrel(x: number, y: number, angle: number, length: number, color: string, width: number): void {
