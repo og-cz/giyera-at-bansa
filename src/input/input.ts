@@ -252,7 +252,7 @@ export class Input {
 
   /** HQ selected: click the map to set where new units go. */
   rallyMode(): void {
-    if (this.selectedOwn().some((s) => s.def.role === 'hq')) this.ui.mode = { kind: 'rally' };
+    if (this.selectedOwn().some((s) => s.def.role === 'hq' || s.def.role === 'tech')) this.ui.mode = { kind: 'rally' };
   }
 
   /** A build key: picks from the open submenu, or from the field defenses when none is open. */
@@ -345,7 +345,7 @@ export class Input {
     const units = own.filter(notStructure);
     const targets = this.formationTargets(units, p, facing);
     this.report(units.map((s) => issueMove(this.world, s, targets.get(s.id)!, shift, facing)));
-    for (const hq of own.filter((s) => s.def.role === 'hq')) issueMove(this.world, hq, p);
+    for (const hq of own.filter((s) => s.def.role === 'hq' || s.def.role === 'tech')) issueMove(this.world, hq, p);
   }
 
   private commandAt(p: Vec2, shift: boolean): void {
@@ -389,7 +389,7 @@ export class Input {
     const units = own.filter(notStructure);
     const targets = this.formationTargets(units, p);
     this.report(units.map((s) => issueMove(this.world, s, targets.get(s.id)!, shift)));
-    for (const hq of own.filter((s) => s.def.role === 'hq')) issueMove(this.world, hq, p);
+    for (const hq of own.filter((s) => s.def.role === 'hq' || s.def.role === 'tech')) issueMove(this.world, hq, p);
   }
 
   // ─── Event handlers ────────────────────────────────────────────
@@ -429,7 +429,7 @@ export class Input {
       return;
     }
     if (mode.kind === 'rally') {
-      for (const hq of this.selectedOwn().filter((s) => s.def.role === 'hq')) issueMove(this.world, hq, p);
+      for (const hq of this.selectedOwn().filter((s) => s.def.role === 'hq' || s.def.role === 'tech')) issueMove(this.world, hq, p);
       this.cb.acknowledge?.('order', this.selectedOwn());
       this.ui.mode = { kind: 'none' };
       return;
