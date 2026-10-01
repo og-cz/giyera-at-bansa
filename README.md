@@ -2,7 +2,7 @@
 
 Squad-based real-time tactics game for Windows. Luzon, 1941–45.
 
-Version 0.6.15 · Campaign, Theater of War and Skirmish vs. AI · Offline
+Version 0.6.16 · Campaign, Theater of War and Skirmish vs. AI · Offline
 
 ---
 
@@ -176,6 +176,10 @@ Machine guns turn slowly once set up, so attacking them from the side works. The
 - Missions: Intramuros (a walled city on the bay), Mount Samat, Route 3 and Layac Junction, plus Calumpit and San Fernando for the open battles.
 
 ## Changelog
+
+**0.6.16**
+- The order panel keeps the same size whatever is selected.
+- The land beyond the map edge is much darker, so the battlefield stands out.
 
 **0.6.15**
 - **Emplacements face the front.** MG nests cover a 120° arc and bunkers a 90° slit; drag while placing to choose the direction. They no longer fire all round, so they can be flanked.
